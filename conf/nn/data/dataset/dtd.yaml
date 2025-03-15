@@ -1,0 +1,4 @@
+# https://www.robots.ox.ac.uk/~vgg/data/dtd/
+dataset_name: DTD
+ft_epochs: 76
+num_classes: 47

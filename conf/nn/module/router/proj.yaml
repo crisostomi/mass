@@ -1,0 +1,29 @@
+_target_: tvp.modules.projection_router.ProjectionRouter
+
+name: proj
+
+routing_mode: 'topk' # top1, topk or weighted # ⚠️
+threshold: 0.2
+temperature: 1
+norm: l2 # mahalanobis, l1, l2
+
+layer_to_hook: ${nn.module.encoder.layer_to_hook}
+layer_num_to_hook: ${nn.module.encoder.layer_num_to_hook}
+hook_type: input
+routing_weights: ???
+
+device: ${device}
+model_name: ${nn.module.encoder.model_name}
+dataset_names: ${eval_datasets}
+
+use_constant_compressed_routing_weights: False 
+constant_compressed_ratio: null
+
+debug_residuals: False
+debug_layer_impact: False
+
+token_selection: cls
+max_num_tasks_to_select: 3
+
+svd_dict: ???
+openclip_cachedir: ${misc.openclip_cachedir}

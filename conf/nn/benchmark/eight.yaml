@@ -1,0 +1,9 @@
+tasks:
+  - "Cars"
+  - "DTD"
+  - "EuroSAT"
+  - "GTSRB"
+  - "MNIST"
+  - "RESISC45"
+  - "SUN397"
+  - "SVHN"

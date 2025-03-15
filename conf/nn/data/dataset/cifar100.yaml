@@ -1,0 +1,3 @@
+dataset_name: CIFAR100
+ft_epochs: 6
+num_classes: 100

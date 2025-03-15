@@ -1,0 +1,14 @@
+# @package hydra.launcher
+_target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.SlurmLauncher
+
+submitit_folder: ${hydra.sweep.dir}/.submitit/%j
+timeout_min: 1440
+nodes: 1
+tasks_per_node: 1
+gpus_per_node: 1
+partition: boost_usr_prod
+account: IscrC_MGNTC
+mem_gb: 100
+
+additional_parameters:
+  gres: gpu:1

@@ -1,0 +1,13 @@
+
+_target_: tvp.modules.nn_router.NNRouter
+name: nn
+model_name: ${nn.module.encoder.model_name}
+routing_mode: 'top1' # top1 or weighted 
+threshold: 0.2
+temperature: 1
+openclip_cachedir: ${misc.openclip_cachedir}
+device: ${device}
+cfg: ???
+dataset_names: ${eval_datasets}
+svd_dict: ???
+encoder: ???

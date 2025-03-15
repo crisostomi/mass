@@ -1,0 +1,3 @@
+dataset_name: MNIST
+ft_epochs: 1 #5
+num_classes: 10

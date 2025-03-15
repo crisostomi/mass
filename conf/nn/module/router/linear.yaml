@@ -1,0 +1,26 @@
+_target_: tvp.modules.linear_router.LinearRouter
+
+name: linear
+
+routing_mode: 'topk' # top1, topk or weighted # ⚠️
+threshold: 0.13
+temperature: 1
+norm: l2 # mahalanobis, l1, l2
+
+embedding_dims: 512
+hidden_dim: 1024
+dropout_prob: 0.5
+
+layer_to_hook: ${nn.module.encoder.layer_to_hook}
+layer_num_to_hook: ${nn.module.encoder.layer_num_to_hook}
+hook_type: input
+
+device: ${device}
+model_name: ${nn.module.encoder.model_name}
+dataset_names: ${eval_datasets}
+
+token_selection: cls
+max_num_tasks_to_select: 3
+
+svd_dict: ???
+openclip_cachedir: ${misc.openclip_cachedir}

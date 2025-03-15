@@ -1,0 +1,16 @@
+tasks:
+  - "Cars"
+  - "DTD"
+  - "EuroSAT"
+  - "GTSRB"
+  - "MNIST"
+  - "RESISC45"
+  - "SUN397"
+  - "SVHN"
+  # end of 8 tasks
+  - "CIFAR100"
+  - "STL10"
+  - "Flowers102"
+  - "OxfordIIITPet"
+  - "PCAM"
+  - "FER2013"

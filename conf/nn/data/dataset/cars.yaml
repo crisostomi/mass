@@ -1,0 +1,3 @@
+dataset_name: Cars
+ft_epochs: 35
+num_classes: 196

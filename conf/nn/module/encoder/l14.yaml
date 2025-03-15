@@ -1,0 +1,8 @@
+_target_: tvp.modules.encoder.ImageEncoder
+model_name: ViT-L-14 # ViT-B-32, ViT-L-14
+openclip_cachedir: ${misc.openclip_cachedir}
+cache_dir: ${misc.cache_dir}
+keep_lang: false 
+layer_to_hook: mlp # attn, mlp 
+layer_num_to_hook: 20 # <=23 
+

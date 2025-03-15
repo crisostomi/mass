@@ -1,0 +1,4 @@
+# https://paperswithcode.com/dataset/sun397
+dataset_name: SUN397
+ft_epochs: 14
+num_classes: 397

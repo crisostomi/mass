@@ -1,0 +1,6 @@
+tasks:
+  - 'CIFAR10'
+  - 'CIFAR100'
+  - 'STL10'
+  # - 'MNIST'
+  # - 'KMNIST'

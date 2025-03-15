@@ -1,0 +1,3 @@
+dataset_name: SVHN
+ft_epochs: 4
+num_classes: 10

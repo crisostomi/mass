@@ -1,0 +1,48 @@
+core:
+  project_name: task-vectors-playground
+  storage_dir: ${oc.env:PROJECT_ROOT}/storage
+  entity: gladia
+  version: 0.0.1
+  tags: 
+    - dev
+
+defaults:
+  - hydra: default
+  - nn: default
+  - train: default
+  - _self_
+
+seed_index: 0
+compute_text_features: true
+device: "cuda"
+model: "ViT-L-14"
+pretrained: "openai"
+data_path: "text_descriptions/image_descriptions_general.txt"
+output_dir: "./output_dir"
+dataset: "all"
+texts_per_head: 5
+num_of_last_layers: 4
+text_descriptions: "image_descriptions_general"
+layer: "model.visual.transformer.resblocks.21.mlp.c_fc.weight"
+
+conventions:
+  x_key: "x"
+  y_key: "y"
+
+eval_datasets: ${nn.benchmark.tasks}
+
+# Compression ratio = 1 / svd_compress_factor, if null the ratio is set to 1 / num_tasks
+svd_compress_factor: null
+
+misc:
+  ckpt_path: ${oc.env:MODELS_PATH}/${nn.module.encoder.model_name}
+  pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
+  openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
+  checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
+  svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.module.encoder.model_name}.pt"
+  merged_vector_path: "${oc.env:MODELS_PATH}/tv_merged_${nn.module.encoder.model_name}.pt"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/single/${nn.module.encoder.model_name}/nonlinear_ft_accuracies.json"
+  cache_dir: null
+  results_path: "${oc.env:PROJECT_ROOT}/results/${nn.module.router.name}/${nn.module.encoder.model_name}/"
+  text_description: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
+
