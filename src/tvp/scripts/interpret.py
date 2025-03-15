@@ -56,6 +56,8 @@ def main(cfg: DictConfig):
     
     pylogger.info("Translating into text descriptions...")
     run_completeness(cfg)
+
+    logger.log_configuration(cfg=cfg)
     
     logger.experiment.finish()
 

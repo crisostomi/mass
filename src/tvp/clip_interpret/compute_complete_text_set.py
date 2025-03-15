@@ -16,9 +16,9 @@ from tvp.task_vectors.task_singular_vectors import get_svd_dict
 pylogger = logging.getLogger(__name__)
 
 @torch.no_grad()
-def replace_with_iterative_removal(data, text_features, texts, iters, rank, device):
+def replace_with_iterative_removal(data, text_features, texts, iters, device):
     results = []
-    vh = data
+    vh = data # in our case we already have "vectors"...
     text_features = (
         vh.T.dot(np.linalg.inv(vh.dot(vh.T)).dot(vh)).dot(text_features.T).T
     )  # Project the text to the span of W_OV
@@ -109,7 +109,7 @@ def run_completeness(cfg):
     # Optionally also write the results to a file
     output_file = os.path.join(
         cfg.misc.output_dir,
-        f"{cfg.dataset}_completeness_{cfg.text_descriptions}_top_{cfg.texts_per_head}_heads_{cfg.model}.txt",
+        f"{cfg.dataset}_completeness_{cfg.text_descriptions}_top_{cfg.texts_per_task}_heads_{cfg.model}.txt",
     )
     out_f = open(output_file, "w")
     
@@ -123,18 +123,17 @@ def run_completeness(cfg):
         u = svd_dict[task][cfg.layer]['u'].to(cfg.device)
         s = torch.diag_embed(svd_dict[task][cfg.layer]['s']).to(cfg.device)
         v = svd_dict[task][cfg.layer]['v'].to(cfg.device)
-        pylogger.info(f"v shape for task {task}: {v.shape}")
+        # pylogger.info(f"v shape for task {task}: {v.shape}")
 
         # Compute the projected matrix
-        v = s @ v @ model.visual.proj
+        v_proj = s @ v @ model.visual.proj
 
         # Apply the iterative removal procedure
         reconstruct, images = replace_with_iterative_removal(
-            v.cpu().numpy(),
+            v_proj.cpu().numpy(),
             text_features,
             lines,
-            cfg.texts_per_head,
-            cfg.w_ov_rank,
+            cfg.texts_per_task,
             cfg.device,
         )
 
@@ -145,5 +144,4 @@ def run_completeness(cfg):
         pylogger.info(f"Task {task}: {images}")
 
     out_f.close()
-    wandb.log({"completeness_results": results_table})
-    pylogger.info("Logged completeness results to wandb.")
+    wandb.log({"interpret_results": results_table})

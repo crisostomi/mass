@@ -5,6 +5,7 @@ from typing import Tuple
 import torch
 from tqdm import tqdm
 import numpy as np
+from pathlib import Path
 import logging
 
 from tvp.utils.utils import is_matrix
@@ -225,37 +226,36 @@ def compress_tv(task_dicts, compress_rate: float, compress_ratio_per_task=None):
 
     Args:
         task_dicts (dict): A dictionary where keys are dataset names and values are task dicts.
-        sv_reduction (float): The fraction of singular values to keep for compression.
+        compress_rate (float): The fraction of singular values to keep for compression.
+        compress_ratio_per_task (dict, optional): Specific compression ratios per dataset.
 
     Returns:
-        dict: A dictionary with the same structure as `task_vectors`, but with each layer matrix
+        dict: A dictionary with the same structure as `task_dicts`, but with each layer matrix
               replaced by its compressed SVD components (u, s, v) if the layer is 2-dimensional.
               If the layer is not 2-dimensional, it is stored as is under the key "dim1".
     """
     with torch.no_grad():
         svd_dict = {}
 
-        for dataset, task_dict in tqdm(
-            task_dicts.items(), desc="Computing and compressing SVD"
-        ):
+        for dataset, task_dict in tqdm(task_dicts.items(), desc="Computing and compressing SVD"):
             svd_dict[dataset] = {}
 
             for key, layer in task_dict.items():
+                # Remove ".transformer" from the key but keep the layer
+                new_key = key.replace(".transformer", "")
+
                 if is_matrix(layer):
-
-                    if compress_ratio_per_task:
-                        compress_rate = compress_ratio_per_task.get(
-                            dataset, compress_rate
-                        )
-
-                    u, s, v = compute_svd_and_compress(layer, compress_rate)
-                    svd_dict[dataset][key] = {
+                    # Use dataset-specific compression ratio if provided
+                    current_compress_rate = compress_ratio_per_task.get(dataset, compress_rate) if compress_ratio_per_task else compress_rate
+                    
+                    u, s, v = compute_svd_and_compress(layer, current_compress_rate)
+                    svd_dict[dataset][new_key] = {
                         "u": u.detach().cpu(),
                         "s": s.detach().cpu(),
                         "v": v.detach().cpu(),
                     }
                 else:
-                    svd_dict[dataset][key] = {"dim1": layer.detach().cpu()}
+                    svd_dict[dataset][new_key] = {"dim1": layer.detach().cpu()}
 
         return svd_dict
 
@@ -277,36 +277,30 @@ def get_svd_dict(
         compression_factor (float, optional): Compression factor to use. Defaults to len(datasets) if not provided.
 
     Returns:
-        svd_dict: The SVD dictionary.
+        dict: The SVD dictionary.
     """
 
-    if compression_factor is None:
-        compression_factor = len(datasets)
-
+    compression_factor = compression_factor or len(datasets)
     compression_ratio = 1 / compression_factor
-    pylogger.info(f"Using compressione ratio {compression_ratio}")
+    pylogger.info(f"Using compression ratio: {compression_ratio:.4f}")
 
-    svd_path = svd_path[:-3] + f"_compress_{compression_factor}.pt"
-
-    if os.path.exists(svd_path):
-        pylogger.info(f"Loading SVD dictionary from {svd_path}")
+    svd_path = Path(svd_path).with_suffix("").as_posix() + f"_compress_{compression_factor}.pt"
+    
+    if Path(svd_path).exists():
+        pylogger.info(f"Loading precomputed SVD dictionary from: {svd_path}")
         svd_dict = torch.load(svd_path, map_location="cuda")
 
-        if set(svd_dict.keys()) != set(datasets):
-            pylogger.info(
-                "SVD dictionary does not match the provided datasets. Recomputing from scratch."
-            )
-            svd_dict = compress_tv(
-                task_dicts, compression_ratio, compress_ratio_per_task
-            )
-            torch.save(svd_dict, svd_path)
-            pylogger.info(f"SVD dictionary saved to {svd_path}")
-    else:
-        pylogger.info("SVD dictionary not found on disk. Computing from scratch.")
+        if set(svd_dict.keys()) == set(datasets):
+            return svd_dict
 
-        svd_dict = compress_tv(task_dicts, compression_ratio, compress_ratio_per_task)
-        torch.save(svd_dict, svd_path)
-        pylogger.info(f"SVD dictionary saved to {svd_path}")
+        pylogger.warning("Mismatch in datasets. Recomputing SVD dictionary...")
+
+    else:
+        pylogger.info("No precomputed SVD dictionary found. Computing from scratch...")
+
+    svd_dict = compress_tv(task_dicts, compression_ratio, compress_ratio_per_task)
+    torch.save(svd_dict, svd_path)
+    pylogger.info(f"SVD dictionary saved at: {svd_path}")
 
     return svd_dict
 
