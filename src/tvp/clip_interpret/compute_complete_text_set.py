@@ -88,7 +88,7 @@ def run_completeness(cfg):
     all_images = set()
 
     # Load text features from file
-    text_features_path = os.path.join(cfg.output_dir, f"{cfg.text_descriptions}_{cfg.model}.npy")
+    text_features_path = os.path.join(cfg.misc.output_dir, f"{cfg.text_descriptions}_{cfg.model}.npy")
     with open(text_features_path, "rb") as f:
         text_features = np.load(f)
     pylogger.info(f"Loaded text features from {text_features_path}")
@@ -104,7 +104,7 @@ def run_completeness(cfg):
 
     # Optionally also write the results to a file
     output_file = os.path.join(
-        cfg.output_dir,
+        cfg.misc.output_dir,
         f"{cfg.dataset}_completeness_{cfg.text_descriptions}_top_{cfg.texts_per_head}_heads_{cfg.model}.txt",
     )
     out_f = open(output_file, "w")

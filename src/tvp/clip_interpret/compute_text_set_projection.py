@@ -56,8 +56,8 @@ def run_text_features(cfg):
 
     # Get text features
     features = get_text_features(model, tokenizer, lines, cfg.device, cfg.batch_size)
-    base, name = os.path.split(cfg.data_path)
+    base, name = os.path.split(cfg.misc.description_dir)
     name = name.replace('.txt', '')
-    output_path = os.path.join(cfg.output_dir, f'{name}_{cfg.model}.npy')
+    output_path = os.path.join(cfg.misc.output_dir, f'{name}_{cfg.model}.npy')
     with open(output_path, 'wb') as f:
         np.save(f, features.numpy())

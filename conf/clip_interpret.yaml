@@ -17,8 +17,6 @@ compute_text_features: true
 device: "cuda"
 model: "ViT-L-14"
 pretrained: "openai"
-data_path: "text_descriptions/image_descriptions_general.txt"
-output_dir: "./output_dir"
 dataset: "all"
 texts_per_head: 5
 num_of_last_layers: 4
@@ -45,4 +43,6 @@ misc:
   cache_dir: null
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.module.router.name}/${nn.module.encoder.model_name}/"
   text_description: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
+  output_dir: "${oc.env:PROJECT_ROOT}/results/interpret/${nn.module.encoder.model_name}/"
+  description_dir: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
 
