@@ -6,6 +6,7 @@ import wandb
 # Import boilerplate dependencies from your training framework
 from nn_core.common.utils import enforce_tags, seed_index_everything
 from nn_core.callbacks import NNTemplateCore
+from nn_core.common import PROJECT_ROOT
 from nn_core.model_logging import NNLogger
 
 # Import the functions from your modified files.
@@ -33,14 +34,13 @@ def boilerplate(cfg: DictConfig):
     logger.upload_source()
     return logger, template_core
 
-@hydra.main(config_path="conf", config_name="clip_interpret.yaml")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="clip_interpret.yaml")
 def main(cfg: DictConfig):
     # Initialize boilerplate (advanced logging, tags, etc.)
     logger, template_core = boilerplate(cfg)
     
     # Log the resolved configuration
     resolved_cfg = OmegaConf.to_container(cfg, resolve=True)
-    pylogger.info("Configuration: %s", resolved_cfg)
     
     # Instead of building an argparse.Namespace, simply pass the configuration to your routines.
     if cfg.compute_text_features:

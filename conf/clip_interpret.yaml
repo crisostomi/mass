@@ -13,14 +13,16 @@ defaults:
   - _self_
 
 seed_index: 0
-compute_text_features: true
+compute_text_features: false
+batch_size: 2048
 device: "cuda"
 model: "ViT-L-14"
 pretrained: "openai"
 dataset: "all"
+w_ov_rank: 32
 texts_per_head: 5
 num_of_last_layers: 4
-text_descriptions: "image_descriptions_general"
+text_descriptions: "image_descriptions_general.txt"
 layer: "model.visual.transformer.resblocks.21.mlp.c_fc.weight"
 
 conventions:
@@ -29,20 +31,20 @@ conventions:
 
 eval_datasets: ${nn.benchmark.tasks}
 
+task_vectors:
+  to_apply: ${eval_datasets}
+
 # Compression ratio = 1 / svd_compress_factor, if null the ratio is set to 1 / num_tasks
 svd_compress_factor: null
 
 misc:
-  ckpt_path: ${oc.env:MODELS_PATH}/${nn.module.encoder.model_name}
+  ckpt_path: ${oc.env:MODELS_PATH}/${model}
   pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
   openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
   checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
-  svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.module.encoder.model_name}.pt"
-  merged_vector_path: "${oc.env:MODELS_PATH}/tv_merged_${nn.module.encoder.model_name}.pt"
-  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/single/${nn.module.encoder.model_name}/nonlinear_ft_accuracies.json"
+  svd_path: "${oc.env:MODELS_PATH}svd_dict_${model}.pt"
   cache_dir: null
-  results_path: "${oc.env:PROJECT_ROOT}/results/${nn.module.router.name}/${nn.module.encoder.model_name}/"
   text_description: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
-  output_dir: "${oc.env:PROJECT_ROOT}/results/interpret/${nn.module.encoder.model_name}/"
+  output_dir: "${oc.env:PROJECT_ROOT}/results/interpret/${model}/"
   description_dir: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
 

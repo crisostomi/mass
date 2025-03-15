@@ -12,6 +12,8 @@ from torch.utils.data import DataLoader
 import tqdm
 import open_clip
 import logging
+
+from nn_core.common import PROJECT_ROOT
 from tvp.clip_interpret.tokenizer.utils import get_tokenizer
 
 pylogger = logging.getLogger(__name__)
@@ -39,7 +41,7 @@ def run_text_features(cfg):
     Expects the following config attributes:
       - batch_size, model, pretrained, data_path, num_workers, output_dir, device
     """
-    model, _, preprocess = open_clip.create_model_and_transforms(cfg.model, pretrained=cfg.pretrained)
+    model, _, preprocess = open_clip.create_model_and_transforms(cfg.model, pretrained=cfg.pretrained, cache_dir=cfg.misc.openclip_cachedir)
     tokenizer = get_tokenizer(cfg.model)
     model.to(cfg.device)
     model.eval()
@@ -48,7 +50,9 @@ def run_text_features(cfg):
     pylogger.info(f"Model parameters: {np.sum([int(np.prod(p.shape)) for p in model.parameters()]):,}")
     pylogger.info(f"Vocab size: {vocab_size}")
     
-    with open(cfg.data_path, 'r') as f:
+    description_path = os.path.join(cfg.misc.description_dir, cfg.text_descriptions)
+
+    with open(description_path, 'r') as f:
         lines = f.readlines()
 
     # Remove newline characters and extra spaces
@@ -56,7 +60,7 @@ def run_text_features(cfg):
 
     # Get text features
     features = get_text_features(model, tokenizer, lines, cfg.device, cfg.batch_size)
-    base, name = os.path.split(cfg.misc.description_dir)
+    base, name = os.path.split(description_path)
     name = name.replace('.txt', '')
     output_path = os.path.join(cfg.misc.output_dir, f'{name}_{cfg.model}.npy')
     with open(output_path, 'wb') as f:

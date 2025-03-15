@@ -54,6 +54,7 @@ def replace_with_iterative_removal(data, text_features, texts, iters, rank, devi
         )
     return reconstruct, results
 
+@torch.no_grad()
 def run_completeness(cfg):
     """
     Run the SVD-based completeness procedure using the Hydra config.
@@ -84,17 +85,20 @@ def run_completeness(cfg):
         task_dicts, cfg.eval_datasets, cfg.misc.svd_path, cfg.svd_compress_factor
     )
 
-    model, _, preprocess = open_clip.create_model_and_transforms(cfg.model, pretrained="openai")
+    model, _, preprocess = open_clip.create_model_and_transforms(cfg.model, pretrained="openai", cache_dir=cfg.misc.openclip_cachedir)
+    model.to(cfg.device)
     all_images = set()
 
     # Load text features from file
-    text_features_path = os.path.join(cfg.misc.output_dir, f"{cfg.text_descriptions}_{cfg.model}.npy")
+    name = cfg.text_descriptions.replace('.txt', '')
+    text_features_path = os.path.join(cfg.misc.output_dir, f'{name}_{cfg.model}.npy')
+
     with open(text_features_path, "rb") as f:
         text_features = np.load(f)
     pylogger.info(f"Loaded text features from {text_features_path}")
 
     # Load text descriptions (each line is one text)
-    text_file = os.path.join(cfg.text_dir, f"{cfg.text_descriptions}.txt")
+    text_file = os.path.join(cfg.misc.description_dir, f"{cfg.text_descriptions}")
     with open(text_file, "r") as f:
         lines = [line.strip() for line in f.readlines()]
     pylogger.info(f"Loaded text descriptions from {text_file}")
@@ -116,9 +120,9 @@ def run_completeness(cfg):
         out_f.write(f"------------------\n")
         
         # Retrieve SVD components for the current task
-        u = svd_dict[task][cfg.layer]['u']
-        s = torch.diag_embed(svd_dict[task][cfg.layer]['s'])
-        v = svd_dict[task][cfg.layer]['v']
+        u = svd_dict[task][cfg.layer]['u'].to(cfg.device)
+        s = torch.diag_embed(svd_dict[task][cfg.layer]['s']).to(cfg.device)
+        v = svd_dict[task][cfg.layer]['v'].to(cfg.device)
         pylogger.info(f"v shape for task {task}: {v.shape}")
 
         # Compute the projected matrix
@@ -126,7 +130,7 @@ def run_completeness(cfg):
 
         # Apply the iterative removal procedure
         reconstruct, images = replace_with_iterative_removal(
-            v.numpy(),
+            v.cpu().numpy(),
             text_features,
             lines,
             cfg.texts_per_head,

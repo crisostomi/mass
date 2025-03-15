@@ -179,6 +179,7 @@ task-vectors-playground = { workspace = true }
 [project.scripts]
 evaluate = "tvp.scripts.evaluate_pipeline:main"
 train = "tvp.scripts.train_router:main"
+interpret = "tvp.scripts.interpret:main"
 
 [dependency-groups]
 dev = [
