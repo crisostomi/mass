@@ -2,6 +2,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import logging
 import wandb
+import os
 
 # Import boilerplate dependencies from your training framework
 from nn_core.common.utils import enforce_tags, seed_index_everything
@@ -41,15 +42,20 @@ def main(cfg: DictConfig):
     
     # Log the resolved configuration
     resolved_cfg = OmegaConf.to_container(cfg, resolve=True)
-    
-    # Instead of building an argparse.Namespace, simply pass the configuration to your routines.
-    if cfg.compute_text_features:
+
+
+    name = cfg.text_descriptions.replace('.txt', '')
+    output_path = os.path.join(cfg.misc.output_dir, f'{name}_{cfg.model}.npy')
+
+    # Check if output already exists
+    if os.path.exists(output_path):
+        pylogger.info(f"Output file already exists: {output_path}. Skipping computation.")
+    else:
         pylogger.info("Running text feature extraction...")
         run_text_features(cfg)
     
-    pylogger.info("Running completeness SVD removal...")
+    pylogger.info("Translating into text descriptions...")
     run_completeness(cfg)
-    pylogger.info("Completed all routines.")
     
     logger.experiment.finish()
 
