@@ -5,18 +5,13 @@ import torchvision.datasets as datasets
 from torch.utils.data import Subset
 
 class DTD:
-    def __init__(self, preprocess, location=os.path.expanduser("~/data"), batch_size=32, num_workers=8, train_batches=-1):
+    def __init__(self, preprocess, location=os.path.expanduser("~/data"), batch_size=32, num_workers=8):
         # Data loading code
         traindir = os.path.join(location, "dtd", "train")
         valdir = os.path.join(location, "dtd", "val")
 
         self.train_dataset = datasets.ImageFolder(traindir, transform=preprocess)
         self.class_to_idx = self.train_dataset.class_to_idx
-
-        if train_batches > 0:
-            num_samples = train_batches * batch_size
-            indices = list(range(num_samples))
-            self.train_dataset = Subset(self.train_dataset, indices)
 
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,

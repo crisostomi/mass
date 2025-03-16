@@ -3,12 +3,12 @@ seed_index: 0
 deterministic: False
 
 trainer:
-  max_epochs: 10 # change this
+  max_epochs: 50 # change this
   log_every_n_steps: 1
   fast_dev_run: False
   accelerator: 'gpu'
   devices: 1
-  precision: 32
+  precision: 64
   max_steps: -1
   num_sanity_val_steps: 3
   gradient_clip_val: 10.0
@@ -31,11 +31,14 @@ callbacks:
     mode: ${train.monitor.mode}
 
   - _target_: pytorch_lightning.callbacks.ModelCheckpoint
-    dirpath: ${misc.checkpoint_dir}
-    save_top_k: 1
+    dirpath: ${misc.checkpoint_dir} 
+    filename: "${nn.module.encoder.model_name}_${ntasks}tasks"
+    save_top_k: 1 
+    save_last: False  
     verbose: False
     monitor: ${train.monitor.metric}
     mode: ${train.monitor.mode}
+    save_on_train_epoch_end: False 
 
   - _target_: pytorch_lightning.callbacks.LearningRateMonitor
     logging_interval: "step"

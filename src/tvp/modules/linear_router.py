@@ -48,13 +48,15 @@ class LinearRouter(AbstractRouter):
                 
         self.mlp_router = torch.nn.Sequential(
             nn.Linear(embedding_dims, hidden_dim),
-            nn.BatchNorm1d(hidden_dim),
-            nn.LeakyReLU(),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_prob),
+
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
             nn.Dropout(p=dropout_prob),
             
             nn.Linear(hidden_dim, hidden_dim),
-            nn.BatchNorm1d(hidden_dim),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             nn.Dropout(p=dropout_prob),
             
             nn.Linear(hidden_dim, len(dataset_names)) 
@@ -67,7 +69,9 @@ class LinearRouter(AbstractRouter):
     def predict_task_train(self, images) -> torch.Tensor:
         with torch.no_grad():
             embedding = self.encoder(images)
+            
         embedding = embedding.detach().requires_grad_(True)
+
         logits = self.mlp_router(embedding)
         return logits
 

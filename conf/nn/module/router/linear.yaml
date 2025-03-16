@@ -3,7 +3,7 @@ _target_: tvp.modules.linear_router.LinearRouter
 name: linear
 
 routing_mode: 'topk' # top1, topk or weighted # ⚠️
-threshold: 0.13
+threshold: 0.20
 temperature: 1
 norm: l2 # mahalanobis, l1, l2
 

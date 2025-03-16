@@ -246,7 +246,6 @@ def run(cfg: DictConfig) -> str:
             preprocess_fn=zeroshot_encoder.val_preprocess,
             location=cfg.nn.data.data_path,
             batch_size=cfg.nn.data.batch_size.train,
-            number_of_train_batches=cfg.number_of_train_batches,
         )
 
         model.set_metrics(len(dataset.classnames))
@@ -264,6 +263,7 @@ def run(cfg: DictConfig) -> str:
             plugins=[NNCheckpointIO(jailing_dir=logger.run_dir)],
             logger=logger,
             callbacks=callbacks,
+            limit_test_batches= cfg.number_of_train_batches if cfg.eval_on_train else None,
             **cfg.train.trainer,
         )
 

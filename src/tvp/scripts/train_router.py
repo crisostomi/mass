@@ -76,6 +76,15 @@ def run(cfg: DictConfig) -> str:
 
     logger, template_core = boilerplate(cfg)
 
+    ntasks = len(cfg.eval_datasets)
+
+    # Temporarily disable struct mode to allow dynamic update
+    omegaconf.OmegaConf.set_struct(cfg, False)
+    cfg.ntasks = ntasks  # Now we can safely update it
+    omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
+
+    pylogger.info(f"Number of tasks (ntasks): {cfg.ntasks}")
+
     # only has vision encoder, no text transformer
     zeroshot_encoder_statedict = load_model_from_disk(cfg.misc.pretrained_checkpoint)
 
@@ -94,7 +103,6 @@ def run(cfg: DictConfig) -> str:
 
     pylogger.info(f"Checkpoint saving to: {cfg.misc.checkpoint_dir}")
     # pylogger.info(f"Number of finetuned models: {len(finetuned_models)}")
-    pylogger.info(f"Number of tasks: {len(cfg.eval_datasets)}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
 
     task_dicts = {}
@@ -169,6 +177,8 @@ def run(cfg: DictConfig) -> str:
         plugins=[NNCheckpointIO(jailing_dir=logger.run_dir)],
         logger=logger,
         callbacks=callbacks,
+        limit_train_batches= cfg.number_of_train_batches, 
+        limit_val_batches= cfg.number_of_val_batches,
         **cfg.train.trainer,
     )
 

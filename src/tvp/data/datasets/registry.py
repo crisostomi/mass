@@ -93,7 +93,7 @@ def split_train_into_train_val(
 
 
 def get_dataset(
-    dataset_name, preprocess_fn, location, batch_size=128, num_workers=1, val_fraction=0.1, max_val_samples=5000, number_of_train_batches=-1
+    dataset_name, preprocess_fn, location, batch_size=128, num_workers=1, val_fraction=0.1, max_val_samples=5000
 ):
     if dataset_name.endswith("Val"):
         # Handle val splits
@@ -111,7 +111,7 @@ def get_dataset(
             dataset_name in registry
         ), f"Unsupported dataset: {dataset_name}. Supported datasets: {list(registry.keys())}"
         dataset_class = registry[dataset_name]
-        dataset = dataset_class(preprocess_fn, location=location, batch_size=batch_size, num_workers=num_workers, train_batches=number_of_train_batches)
+        dataset = dataset_class(preprocess_fn, location=location, batch_size=batch_size, num_workers=num_workers)
     return dataset
 
 def get_task_evaluation_dataset(
@@ -120,8 +120,6 @@ def get_task_evaluation_dataset(
     location,
     batch_size=128,
     num_workers=8,
-    train_samples=8e3,
-    test_samples=5e2,
     seed=42
 ):
     train_datasets = []
@@ -130,29 +128,16 @@ def get_task_evaluation_dataset(
     for dataset_name in tqdm(dataset_names, desc="Loading Datasets"):
         dataset = get_dataset(dataset_name, preprocess_fn, location, batch_size, num_workers)
         if dataset is None:
+            pylogger.error("A dataset is missing!!")
             continue 
 
-        full_train_dataset = dataset.train_dataset
-        full_test_dataset = dataset.test_dataset
-
-        num_train = len(full_train_dataset)
-        num_test = len(full_test_dataset)
-
-        train_indices = list(range(min(int(train_samples), int(num_train))))
-        test_indices = list(range(min(int(test_samples), int(num_test))))
-
-        if int(num_train) < int(train_samples):
-            pylogger.warning(f"Insufficient train samples for {dataset_name}")
-        if int(num_test) < int(test_samples):
-            pylogger.warning(f"Insufficient test samples for {dataset_name}")
-
-        train_subset = Subset(full_train_dataset, train_indices)
-        test_subset = Subset(full_test_dataset, test_indices)
+        train_dataset = dataset.train_dataset
+        test_dataset = dataset.test_dataset
 
         task_index = get_dataset_label(dataset_name)
 
-        train_datasets.append(TaskDataset(train_subset, task_index))
-        test_datasets.append(TaskDataset(test_subset, task_index))
+        train_datasets.append(TaskDataset(train_dataset, task_index))
+        test_datasets.append(TaskDataset(test_dataset, task_index))
 
     unified_train_dataset = ConcatDataset(train_datasets)
     unified_test_dataset = ConcatDataset(test_datasets)

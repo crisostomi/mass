@@ -95,19 +95,13 @@ class PCAM:
         preprocess: Optional[Callable] = None,
         location: str = os.path.expanduser("~/data"),
         batch_size: int = 128,
-        num_workers: int = 6,
-        train_batches=-1
+        num_workers: int = 6
     ):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
         # Create datasets manually
         self.train_dataset = PCAMDataset(location, split="train", transform=preprocess)
-
-        if train_batches > 0:
-            num_samples = train_batches * batch_size
-            indices = list(range(num_samples))
-            self.train_dataset = Subset(self.train_dataset, indices)
 
         self.test_dataset = PCAMDataset(location, split="test", transform=preprocess)
 

@@ -12,8 +12,7 @@ class EMNIST:
         preprocess,
         location=os.path.expanduser("~/data"),
         batch_size=128,
-        num_workers=6,
-        train_batches=-1
+        num_workers=6
     ):
 
         preprocess = torchvision.transforms.Compose(
@@ -35,10 +34,6 @@ class EMNIST:
 
         self.classnames = self.train_dataset.classes
 
-        if train_batches > 0:
-            num_samples = train_batches * batch_size
-            indices = list(range(num_samples))
-            self.train_dataset = Subset(self.train_dataset, indices)
 
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,

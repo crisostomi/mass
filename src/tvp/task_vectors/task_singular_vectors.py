@@ -92,6 +92,7 @@ def sum_svd(ref_state_dict, svd_dicts, device="cuda"):
 
     for layer_name in tqdm(layer_names, desc="Summing SVD"):
         is_matrix = aggregated_model_dict[layer_name].dim() == 2
+        new_key = layer_name.replace(".transformer", "")
         offset = 0
 
         for i, dataset in enumerate(datasets):
@@ -101,7 +102,7 @@ def sum_svd(ref_state_dict, svd_dicts, device="cuda"):
 
             if is_matrix:
 
-                delta_layer_svd = svd_dicts[dataset][layer_name]
+                delta_layer_svd = svd_dicts[dataset][new_key]
 
                 u, s, v = (
                     delta_layer_svd["u"],
@@ -112,7 +113,7 @@ def sum_svd(ref_state_dict, svd_dicts, device="cuda"):
 
                 if i == 0:
                     total_rank = sum(
-                        svd_dicts[d][layer_name]["s"].shape[0] for d in datasets
+                        svd_dicts[d][new_key]["s"].shape[0] for d in datasets
                     )
                     sum_u = torch.zeros(u.shape[0], total_rank, device=device)
                     sum_s = torch.zeros(total_rank, device=device)
@@ -130,7 +131,7 @@ def sum_svd(ref_state_dict, svd_dicts, device="cuda"):
 
             # layer is not a matrix, compute the mean
             else:
-                delta_layer = svd_dicts[datasets[i]][layer_name]["dim1"].to(device)
+                delta_layer = svd_dicts[datasets[i]][new_key]["dim1"].to(device)
 
                 if i == 0:
                     aggregated_model_dict[layer_name] = delta_layer

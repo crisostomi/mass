@@ -2,11 +2,11 @@
 defaults:
   - _self_
   - encoder: b32 #b16, b32, l14
-  - router: proj # linear, nn, proj
+  - router: linear # linear, nn, proj
   - aggregator: tsvm
 
-# _target_: tvp.pl_module.router_task_classifier.RouterTaskClassifier
-_target_: tvp.pl_module.mass.MASS
+_target_: tvp.pl_module.router_task_classifier.RouterTaskClassifier
+# _target_: tvp.pl_module.mass.MASS
 # _target_: tvp.pl_module.image_classifier.ImageClassifier
 x_key: ${conventions.x_key}
 y_key: ${conventions.y_key}

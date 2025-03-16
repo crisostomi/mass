@@ -16,7 +16,7 @@ def pretify_classname(classname):
 
 
 class EuroSATBase:
-    def __init__(self, preprocess, test_split, location="~/datasets", batch_size=32, num_workers=8, train_batches=-1):
+    def __init__(self, preprocess, test_split, location="~/datasets", batch_size=32, num_workers=8):
         # Data loading code
         traindir = os.path.join(location, "EuroSAT_splits", "train")
         testdir = os.path.join(location, "EuroSAT_splits", test_split)
@@ -24,10 +24,6 @@ class EuroSATBase:
         self.train_dataset = datasets.ImageFolder(traindir, transform=preprocess)
         self.class_to_idx = self.train_dataset.class_to_idx
 
-        if train_batches > 0:
-            num_samples = train_batches * batch_size
-            indices = list(range(num_samples))
-            self.train_dataset = Subset(self.train_dataset, indices)
 
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,
@@ -60,8 +56,8 @@ class EuroSATBase:
 
 
 class EuroSAT(EuroSATBase):
-    def __init__(self, preprocess, location="~/datasets", batch_size=32, num_workers=16, train_batches=-1):
-        super().__init__(preprocess, "test", location, batch_size, num_workers, train_batches=train_batches)
+    def __init__(self, preprocess, location="~/datasets", batch_size=32, num_workers=16):
+        super().__init__(preprocess, "test", location, batch_size, num_workers)
 
 
 class EuroSATVal(EuroSATBase):

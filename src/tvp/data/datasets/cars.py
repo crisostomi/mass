@@ -126,17 +126,11 @@ class PytorchStanfordCars(VisionDataset):
 
 
 class Cars:
-    def __init__(self, preprocess, location=os.path.expanduser("~/data"), batch_size=32, num_workers=8,  train_batches=-1):
+    def __init__(self, preprocess, location=os.path.expanduser("~/data"), batch_size=32, num_workers=8):
         # Data loading code
 
         self.train_dataset = PytorchStanfordCars(location, "train", preprocess, download=False)
         self.class_to_idx = self.train_dataset.class_to_idx
-
-        if train_batches > 0:
-            num_samples = train_batches * batch_size
-            indices = list(range(num_samples))
-            self.train_dataset = Subset(self.train_dataset, indices)
-
 
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,

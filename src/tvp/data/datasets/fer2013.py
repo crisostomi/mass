@@ -35,8 +35,7 @@ class FER2013:
         preprocess,
         location=os.path.expanduser("~/data"),
         batch_size=128,
-        num_workers=6,
-        train_batches=-1
+        num_workers=6
     ):
         train_dataset_path = os.path.join(location, "fer-2013/train")
         test_dataset_path = os.path.join(location, "fer-2013/test")
@@ -56,10 +55,6 @@ class FER2013:
         # Instantiate the custom PyTorch training dataset
         self.train_dataset = CustomFER2013Dataset(train_data, transform=preprocess)
 
-        if train_batches > 0:
-            num_samples = train_batches * batch_size
-            indices = list(range(num_samples))
-            self.train_dataset = Subset(self.train_dataset, indices)
 
         self.train_loader = DataLoader(
             self.train_dataset,
