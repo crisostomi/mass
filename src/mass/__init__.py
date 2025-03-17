@@ -45,9 +45,9 @@ except ImportError:
 # hack to reuse models finetuned with code having relative paths instead of properly installed modules
 
 import sys
-import tvp
-import tvp.data
-import tvp.modules
+from import mass
+from import mass.data
+from import mass.modules
 import types
 
 src = types.ModuleType("src")

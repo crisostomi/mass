@@ -15,7 +15,7 @@ from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
-import tvp  # noqa
+from import mass  # noqa
 from mass.data.datamodule import MetaData
 
 pylogger = logging.getLogger(__name__)
