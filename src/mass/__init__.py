@@ -54,8 +54,8 @@ src = types.ModuleType("src")
 
 # Insert the alias into sys.modules so that any import of "src" resolves to this module.
 sys.modules["src"] = src
-sys.modules["src.data"] = tvp.data
-sys.modules["src.modules"] = tvp.modules
+sys.modules["src.data"] = mass.data
+sys.modules["src.modules"] = mass.modules
 
 
 from dotenv import dotenv_values, load_dotenv
