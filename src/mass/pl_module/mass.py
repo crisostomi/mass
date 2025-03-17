@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import wandb
 import torch
 
-from import mass
+import mass
 from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
 
 import torchmetrics

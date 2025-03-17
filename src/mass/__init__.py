@@ -45,9 +45,9 @@ except ImportError:
 # hack to reuse models finetuned with code having relative paths instead of properly installed modules
 
 import sys
-from import mass
-from import mass.data
-from import mass.modules
+import mass
+import mass.data
+import mass.modules
 import types
 
 src = types.ModuleType("src")

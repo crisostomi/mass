@@ -25,7 +25,7 @@ from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
-from import mass  # noqa
+import mass  # noqa
 from mass.data.datasets.registry import get_dataset
 from mass.modules.encoder import ClassificationHead, ImageEncoder
 from mass.modules.projection_router import ProjectionRouter
