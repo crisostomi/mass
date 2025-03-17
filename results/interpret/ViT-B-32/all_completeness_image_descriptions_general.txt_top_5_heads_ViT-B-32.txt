@@ -1,0 +1,160 @@
+------------------
+V for task Cars
+------------------
+Image with a seamless white background
+Image of a police car
+Detailed illustration of a vehicle
+Image of a truck
+Image of a car
+------------------
+V for task DTD
+------------------
+A floor
+A houndstooth texture
+A honeycomb pattern
+Image with houndstooth patterns
+Close-up of a textured mesh
+------------------
+V for task EuroSAT
+------------------
+Aerial view of a river or stream
+Aerial view of a countryside
+Aerial view of a natural landscape
+Aerial view of an agricultural field
+Aerial view of a farmland
+------------------
+V for task GTSRB
+------------------
+A photo with the letter R
+An image of the number 7
+Facial close-up
+A button
+A badge
+------------------
+V for task MNIST
+------------------
+The number twenty-five
+An image of the number 4
+An image of the number 6
+The number six
+An image of the number 8
+------------------
+V for task RESISC45
+------------------
+Aerial view
+Aerial view of a construction site
+Aerial view of a town
+Aerial view of a paradise
+Aerial view of an industrial area
+------------------
+V for task SUN397
+------------------
+Image with a high-contrast color palette
+A bonnet
+Image with a white color
+Image with a variety of colors
+An image of an interior of a room
+------------------
+V for task SVHN
+------------------
+An image of the number 5
+An image of the number 3
+An image of the number 8
+An image of the number 4
+An image of the number 7
+------------------
+V for task CIFAR100
+------------------
+Photograph with the artistic style of motion blur
+An image of fish
+A low-resolution image
+Photograph of a rodent
+A blurry image
+------------------
+V for task STL10
+------------------
+A photo of an adult
+Photo of a furry animal
+Photograph of a rodent
+An animal
+A blurry image
+------------------
+V for task Flowers102
+------------------
+Whispering foliage
+Flowers
+Blossoming springtime blooms
+Picture with a close-up of a flower
+Glistening dew-covered foliage
+------------------
+V for task OxfordIIITPet
+------------------
+Photo of a furry animal
+Picture of a feline
+Photograph of a rodent
+A dog
+An image with dogs
+------------------
+V for task PCAM
+------------------
+A group photo
+delicate soap bubble pattern
+A zebra stripe pattern
+Image with polka dot patterns
+Image with leopard print patterns
+------------------
+V for task FER2013
+------------------
+Contemplative monochrome portrait
+Photograph showcasing laughter
+Angry facial expression
+Jubilant facial expression
+Portraits in black and white
+------------------
+V for task EMNIST
+------------------
+An image of the number 4
+An image of the number 8
+An image of the number 5
+The number twenty-five
+An image of the number 7
+------------------
+V for task CIFAR10
+------------------
+Artistic blur
+Motion blur
+A low-resolution image
+A photo with motion blur
+A blurry image
+------------------
+V for task Food101
+------------------
+An image of a entree
+A photo of food
+A plate
+An image of a main course
+A close up of food
+------------------
+V for task FashionMNIST
+------------------
+Image with houndstooth patterns
+A charcoal gray color
+A coat
+A jacket
+A shirt
+------------------
+V for task RenderedSST2
+------------------
+Photo with crisp, monochrome tones
+Facial close-up
+Photograph showcasing smiles
+Image with a white color
+Portraits in black and white
+------------------
+V for task KMNIST
+------------------
+A teardrop shape
+An image of a Gymnast
+Graceful ballet performance
+A ribbon
+Image with a shattered mosaic pattern
