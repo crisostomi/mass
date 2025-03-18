@@ -1,9 +1,11 @@
 import copy
+import os
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
 from tvp.modules.router import AbstractRouter
+from tvp.utils.utils import unzip_all_in_folder
 
 import logging
 
@@ -22,6 +24,8 @@ class LinearRouter(AbstractRouter):
         embedding_dims,
         hidden_dim,
         dropout_prob,
+        load,
+        filename,
         routing_mode: str,  # top1 or weighted
         cfg,
         openclip_cachedir=None,
@@ -48,19 +52,30 @@ class LinearRouter(AbstractRouter):
                 
         self.mlp_router = torch.nn.Sequential(
             nn.Linear(embedding_dims, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_prob),
-
-            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout_prob),
             
             nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_prob),
+
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout_prob),
             
             nn.Linear(hidden_dim, len(dataset_names)) 
         )
+
+        if load:
+            unzip_all_in_folder(cfg.misc.checkpoint_dir)
+            pylogger.info(f"Loading router from {cfg.misc.checkpoint_dir}/{filename}")
+            checkpoint_path = os.path.join(os.path.join(cfg.misc.checkpoint_dir, filename), "checkpoint.ckpt")
+            state_dict = torch.load(checkpoint_path)
+            self.load_state_dict(state_dict['state_dict']['router'], strict=False)
+            self.mlp_router.eval()
 
 
     def parameters(self):

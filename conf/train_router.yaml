@@ -21,7 +21,7 @@ seed_index: 0
 ntasks: 0
 similarity_threshold: 0.4
 number_of_train_batches: 400 # number of batches of the val set, used for grid search
-number_of_val_batches: 60
+number_of_val_batches: 100
 device: 'cuda'
 
 conventions:

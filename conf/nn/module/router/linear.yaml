@@ -10,6 +10,8 @@ norm: l2 # mahalanobis, l1, l2
 embedding_dims: 512
 hidden_dim: 1024
 dropout_prob: 0.5
+load: true
+filename: "${nn.module.encoder.model_name}_${ntasks}tasks"
 
 layer_to_hook: ${nn.module.encoder.layer_to_hook}
 layer_num_to_hook: ${nn.module.encoder.layer_num_to_hook}

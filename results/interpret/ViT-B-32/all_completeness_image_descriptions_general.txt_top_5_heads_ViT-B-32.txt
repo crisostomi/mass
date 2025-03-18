@@ -1,0 +1,64 @@
+------------------
+V for task Cars
+------------------
+Image of a car
+Photograph with the artistic style of split toning
+A zephyr
+Rustic authenticity
+Illustration of an ancient myth
+------------------
+V for task DTD
+------------------
+Close-up of a textured synthetic fabric
+Close-up of a textured synthetic leather
+A rectangle
+Woven textile design
+Image with argyle patterns
+------------------
+V for task EuroSAT
+------------------
+Aerial view of an agricultural field
+Aerial view of a farmland
+Aerial view of an archaeological site
+Aerial view of a village
+Aerial view of a hamlet
+------------------
+V for task GTSRB
+------------------
+Image with a single road sign
+The number seven
+Photo taken in Cape Town, South Africa
+Photograph taken in a car
+An image of the number 0
+------------------
+V for task MNIST
+------------------
+The number six
+The number eight
+The number fifteen
+The number seven
+An image of the number 4
+------------------
+V for task RESISC45
+------------------
+Aerial view of an archaeological site
+Aerial view of a construction site
+Aerial view of a town
+Aerial view of a marketplace
+Aerial view of an agricultural field
+------------------
+V for task SUN397
+------------------
+Abandoned spaces
+Modern office workspace
+A photo taken in the summer
+Photograph with the artistic style of tilt-shift
+A photo taken in the spring
+------------------
+V for task SVHN
+------------------
+An image of the number 7
+The number twenty-five
+The number six
+An image of the number 1
+An image of the number 2

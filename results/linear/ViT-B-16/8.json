@@ -1,0 +1,80 @@
+{
+    "Cars": [
+        {
+            "task_accuracy/Cars": 0.9990050792694092,
+            "task_survival/Cars": 0.9996269345283508,
+            "acc/test/Cars": 0.8640716075897217,
+            "loss/test/Cars": 0.5315455794334412,
+            "normalized_acc/test/Cars": 0.9862313270568848
+        }
+    ],
+    "DTD": [
+        {
+            "task_accuracy/DTD": 0.9707705974578857,
+            "task_survival/DTD": 0.9875996708869934,
+            "acc/test/DTD": 0.9557130336761475,
+            "loss/test/DTD": 0.39527708292007446,
+            "normalized_acc/test/DTD": 0.9722622036933899
+        }
+    ],
+    "EuroSAT": [
+        {
+            "task_accuracy/EuroSAT": 0.9996296167373657,
+            "task_survival/EuroSAT": 1.0,
+            "acc/test/EuroSAT": 0.9959259033203125,
+            "loss/test/EuroSAT": 0.025078628212213516,
+            "normalized_acc/test/EuroSAT": 1.0071160793304443
+        }
+    ],
+    "GTSRB": [
+        {
+            "task_accuracy/GTSRB": 0.9973080158233643,
+            "task_survival/GTSRB": 0.9984164834022522,
+            "acc/test/GTSRB": 0.9888361096382141,
+            "loss/test/GTSRB": 0.09410253167152405,
+            "normalized_acc/test/GTSRB": 0.9988003969192505
+        }
+    ],
+    "MNIST": [
+        {
+            "task_accuracy/MNIST": 1.0,
+            "task_survival/MNIST": 1.0,
+            "acc/test/MNIST": 0.9973999857902527,
+            "loss/test/MNIST": 0.021153947338461876,
+            "normalized_acc/test/MNIST": 0.9998997449874878
+        }
+    ],
+    "RESISC45": [
+        {
+            "task_accuracy/RESISC45": 0.9971428513526917,
+            "task_survival/RESISC45": 0.9998412728309631,
+            "acc/test/RESISC45": 0.9603174328804016,
+            "loss/test/RESISC45": 0.2292148768901825,
+            "normalized_acc/test/RESISC45": 0.9906664490699768
+        }
+    ],
+    "SUN397": [
+        {
+            "task_accuracy/SUN397": 0.990226686000824,
+            "task_survival/SUN397": 0.9978841543197632,
+            "acc/test/SUN397": 0.7723929286003113,
+            "loss/test/SUN397": 1.1142348051071167,
+            "normalized_acc/test/SUN397": 0.9800562262535095
+        }
+    ],
+    "SVHN": [
+        {
+            "task_accuracy/SVHN": 0.9997695088386536,
+            "task_survival/SVHN": 0.9999231696128845,
+            "acc/test/SVHN": 0.9778349995613098,
+            "loss/test/SVHN": 0.10011779516935349,
+            "normalized_acc/test/SVHN": 0.9996073246002197
+        }
+    ],
+    "avg": [
+        {
+            "acc/test/avg": 0.9390615001320839,
+            "normalized_acc/test/avg": 0.9918299689888954
+        }
+    ]
+}

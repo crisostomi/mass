@@ -13,6 +13,7 @@ defaults:
   - _self_ # as last argument to allow the override of parameters via this main config
 
 seed_index: 0
+ntasks: 0
 
 reset_pretrained_model: true
 reset_classification_head: true

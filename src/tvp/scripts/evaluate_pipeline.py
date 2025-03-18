@@ -99,10 +99,10 @@ def get_merged_base(
 
     elif merging_method == "tsvm":
 
-        multi_task_vector = sum_svd_no_redundant_tasks_simple(
+        multi_task_vector = sum_svd(
             ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
-            svd_dict=svd_dicts,
-            similarity_threshold=cfg.similarity_threshold,
+            svd_dicts=svd_dicts,
+            #similarity_threshold=cfg.similarity_threshold,
         )
     elif merging_method == "zeroshot":
         return zeroshot_encoder
@@ -152,6 +152,13 @@ def run(cfg: DictConfig) -> str:
     seed_index_everything(cfg)
 
     logger, template_core = boilerplate(cfg)
+
+    ntasks = len(cfg.eval_datasets)
+
+    # Temporarily disable struct mode to allow dynamic update
+    omegaconf.OmegaConf.set_struct(cfg, False)
+    cfg.ntasks = ntasks  # Now we can safely update it
+    omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
 
     # upperbound accuracies, used for logging the normalized accuracy
     finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)

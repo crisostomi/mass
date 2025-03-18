@@ -3,12 +3,12 @@ seed_index: 0
 deterministic: False
 
 trainer:
-  max_epochs: 50 # change this
+  max_epochs: 80 # change this
   log_every_n_steps: 1
   fast_dev_run: False
   accelerator: 'gpu'
   devices: 1
-  precision: 64
+  precision: 32
   max_steps: -1
   num_sanity_val_steps: 3
   gradient_clip_val: 10.0

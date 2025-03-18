@@ -682,6 +682,7 @@ def sum_svd_no_redundant_tasks_simple(
 
     for layer_name in tqdm(layer_names, desc="Summing SVD"):
         # check if this layer is 2D (weight matrix) or not
+        new_key = layer_name.replace(".transformer", "")
         is_layer_matrix = aggregated_model_dict[layer_name].dim() == 2
         offset = 0
 
@@ -696,7 +697,7 @@ def sum_svd_no_redundant_tasks_simple(
 
             if is_layer_matrix:
                 # Retrieve the SVD factors
-                delta_layer_svd = svd_dict[dataset][layer_name]
+                delta_layer_svd = svd_dict[dataset][new_key]
                 u, s, v = (
                     delta_layer_svd["u"].to(device),
                     delta_layer_svd["s"].to(device),
@@ -728,7 +729,7 @@ def sum_svd_no_redundant_tasks_simple(
 
             else:
                 # For 1D layers, we do the usual average
-                delta_layer = svd_dict[dataset][layer_name]["dim1"].to(device)
+                delta_layer = svd_dict[dataset][new_key]["dim1"].to(device)
                 if i == 0:
                     aggregated_model_dict[layer_name] = delta_layer
                 else:

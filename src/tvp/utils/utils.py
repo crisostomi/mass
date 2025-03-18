@@ -5,6 +5,7 @@ import os
 import pickle
 import psutil
 import json
+import zipfile
 from pathlib import Path
 from typing import Dict, List
 
@@ -431,3 +432,30 @@ def compute_task_dict(pretrained, finetuned):
         new_state_dict[key] = difference
 
     return new_state_dict
+
+def unzip_all_in_folder(folder_path):
+    """
+    Unzips all .zip files in the given folder.
+
+    Args:
+        folder_path (str): The path to the folder containing zip files.
+
+    Returns:
+        None
+    """
+    if not os.path.isdir(folder_path):
+        print(f"Error: {folder_path} is not a valid directory.")
+        return
+
+    for file in os.listdir(folder_path):
+        if file.endswith(".zip"):  # Check if the file is a ZIP archive
+            zip_path = os.path.join(folder_path, file)
+
+            # Remove all extensions from the filename
+            folder_name = file.split(".")[0]  
+            extract_path = os.path.join(folder_path, folder_name)
+
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(extract_path)  # Extract files
+
+            print(f"Extracted: {zip_path} → {extract_path}")
