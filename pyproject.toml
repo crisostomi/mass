@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "task-vectors-playground"
+name = "mass"
 version = "0.1.0"
 requires-python = "== 3.11.8"
 description = "Playing with those task vectors"
@@ -73,6 +73,7 @@ dependencies = [
     "dvc-task==0.4.0",
     "ecos==2.0.13",
     "editor==1.6.6",
+    "einops>=0.8.1",
     "entrypoints==0.4",
     "fastapi==0.88.0",
     "filelock==3.13.1",
@@ -171,17 +172,17 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["tvp"]
+packages = ["mass"]
 
 [tool.uv.sources]
-task-vectors-playground = { workspace = true }
+mass = { workspace = true }
 
 [project.scripts]
-evaluate = "tvp.scripts.evaluate_pipeline:main"
-train = "tvp.scripts.train_router:main"
-interpret = "tvp.scripts.interpret:main"
+evaluate = "mass.scripts.evaluate_pipeline:main"
+train = "mass.scripts.train_router:main"
+interpret = "mass.scripts.interpret:main"
 
 [dependency-groups]
 dev = [
-    "task-vectors-playground",
+    "mass",
 ]
