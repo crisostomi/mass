@@ -1,7 +1,7 @@
 core:
   project_name: task-vectors-playground
   storage_dir: ${oc.env:PROJECT_ROOT}/storage
-  entity: gladia
+  entity: antoandgar #gladia
   version: 0.0.1
   tags: 
     - dev
@@ -16,13 +16,15 @@ seed_index: 0
 ntasks: 0
 batch_size: 2048
 device: "cuda"
-model: "ViT-B-16"
+model: "ViT-B-32"
 pretrained: "openai"
 dataset: "all"
-texts_per_task: 5
+texts_per_task: 96
 text_descriptions: "image_descriptions_general.txt"
-layer: "model.visual.resblocks.10.mlp.c_fc.weight"
+layer: ["model.visual.resblocks.1.mlp.c_proj.weight","model.visual.resblocks.1.mlp.c_fc.weight","model.visual.resblocks.1.attn.out_proj.weight","model.visual.resblocks.1.attn.in_proj_weight"]
 # layer = "model.visual.transformer.resblocks.11.attn.in_proj_weight"
+eval_on_train: false
+
 
 conventions:
   x_key: "x"
@@ -37,13 +39,16 @@ task_vectors:
 svd_compress_factor: null
 
 misc:
-  ckpt_path: ${oc.env:MODELS_PATH}/${model}
+  ckpt_path: ${oc.env:PROJECT_ROOT}/${oc.env:CKPT_PATH}${model}
   pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
-  openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
+  openclip_cachedir: "${oc.env:MODELS_PATH}/${oc.env:OPENCLIP_CACHEDIR_PATH}"
   checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
   svd_path: "${oc.env:MODELS_PATH}svd_dict_${model}.pt"
   cache_dir: null
   text_description: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
   output_dir: "${oc.env:PROJECT_ROOT}/results/interpret/${model}/"
   description_dir: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/single/${nn.module.encoder.model_name}/nonlinear_ft_accuracies.json"
+  results_path: "${oc.env:PROJECT_ROOT}/results/layer_remotion/${nn.module.encoder.model_name}/"
+
 

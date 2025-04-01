@@ -39,7 +39,7 @@ task_vectors:
   scaling_coefficient: 1.0
 
   aggregator:
-    _target_: tvp.task_vectors.aggregator.TaskSingularVectorAggregator
+    _target_: mass.task_vectors.aggregator.TaskSingularVectorAggregator
     zeroshot_model: ???
 
     # _target_: tvp.task_vectors.aggregator.SphericalAggregator
@@ -50,7 +50,7 @@ task_vectors:
 misc:
   ckpt_path: ${oc.env:MODELS_PATH}/${nn.module.encoder.model_name}
   pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
-  openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
+  openclip_cachedir: "${oc.env:MODELS_PATH}/${oc.env:OPENCLIP_CACHEDIR_PATH}"
   checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
   svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.module.encoder.model_name}.pt"
   merged_vector_path: "${oc.env:MODELS_PATH}/tv_merged_${nn.module.encoder.model_name}.pt"

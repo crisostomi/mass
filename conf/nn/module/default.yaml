@@ -6,12 +6,12 @@ defaults:
   - aggregator: tsvm
 
 # _target_: tvp.pl_module.router_task_classifier.RouterTaskClassifier
-_target_: tvp.pl_module.mass.MASS
+_target_: mass.pl_module.mass.MultiHeadImageClassifier
 # _target_: tvp.pl_module.image_classifier.ImageClassifier
 x_key: ${conventions.x_key}
 y_key: ${conventions.y_key}
 dataset_names: {eval_dataset}
-base_merging_method: tsvm # isotropic, tsvm, zeroshot
+base_merging_method: tsvm_modified # isotropic, tsvm, zeroshot, tsvm_modified
 heads_selection_method: max # avg, max 
 
 image_encoder: ??  

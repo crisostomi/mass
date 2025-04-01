@@ -48,6 +48,7 @@ import sys
 import mass
 import mass.data
 import mass.modules
+import mass.modules.heads
 import types
 
 src = types.ModuleType("src")
@@ -56,6 +57,7 @@ src = types.ModuleType("src")
 sys.modules["src"] = src
 sys.modules["src.data"] = mass.data
 sys.modules["src.modules"] = mass.modules
+sys.modules["src.models.modeling"] = mass.modules.heads
 
 
 from dotenv import dotenv_values, load_dotenv

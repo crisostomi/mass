@@ -244,3 +244,5 @@ submitit/*
 notebooks/lightning_logs/*
 notebooks/media/*
 */notebooks/media/*
+svd_dict*
+conf/*

@@ -181,6 +181,7 @@ mass = { workspace = true }
 evaluate = "mass.scripts.evaluate_pipeline:main"
 train = "mass.scripts.train_router:main"
 interpret = "mass.scripts.interpret:main"
+learning = "mass.scripts.chat_learning:main"
 
 [dependency-groups]
 dev = [

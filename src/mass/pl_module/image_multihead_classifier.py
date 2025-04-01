@@ -3,6 +3,7 @@ import torch
 from typing import Any, Dict, Mapping, Optional
 
 import torch.nn.functional as F
+import torchmetrics
 
 from mass.data.datamodule import MetaData
 from mass.utils.utils import torch_load, torch_save
@@ -38,6 +39,18 @@ class MultiHeadImageClassifier(pl.LightningModule):
             metric, val, on_step=False, on_epoch=True
         )
         self.freeze_head()
+
+    def set_metrics(self, num_classes):
+
+        self.output_classes = num_classes
+
+        metric = torchmetrics.Accuracy(
+            task="multiclass", num_classes=num_classes, top_k=1
+        )
+
+        self.train_acc = metric.clone()
+        self.val_acc = metric.clone()
+        self.test_acc = metric.clone()
 
     def freeze_head(self):
         for idx in range(len(self.classification_heads)):

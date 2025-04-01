@@ -6,7 +6,7 @@ trainer:
   max_epochs: 80 # change this
   log_every_n_steps: 1
   fast_dev_run: False
-  accelerator: 'gpu'
+  accelerator: 'auto'
   devices: 1
   precision: 32
   max_steps: -1

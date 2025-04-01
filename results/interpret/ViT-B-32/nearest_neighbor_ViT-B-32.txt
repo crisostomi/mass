@@ -4,82 +4,198 @@ V for task Cars
 A statue
 Image of a car
 serene oceanside retreat
-Excited facial expression
-An image of a Flight Attendant
+Caricature of an iconic explorer
+Image of a tractor
 Ancient and weathered artifact
 Towering redwood forest
 Mysterious night scene
 An image of a Plumber
 An isosceles triangle
 Photo taken in Santander, Spain
-thrilling motorsport action
-Image captured in the Patagonian wilderness
-A whirlpool
+Soft pastel hues
+Image showing prairie grouse
+A cube
 Aerial view of a promenade
-Urban rooftop panorama
+Picture taken in Sumatra
 Close-up of a textured plant leaf
 A network of veins
 cozy reading nook
-Lush rainforest canopy
+Golden hour glow
 A circuit
 Impressionist-style digital painting
-Enchanting forest nymph aesthetic
-Picture snapped in the Swiss Alps
+Image with a futuristic nanotechnology laboratory
+Photo taken in Galápagos Islands
 intricate mechanical gears
 An image of a Welder
-Image with a futuristic augmented reality scene
-Detailed illustration of a building
+Minimalist white backdrop
+A helix
 Artwork featuring cubist elements
-Dappled sunlight
+Deserted coastal pier
 A meteor
-An image of a Flight Attendant
-Photo taken in Galápagos Islands
-Artwork featuring retro TV test patterns
-Intricate pencil drawing
-Image with paisley patterns
-A checkerboard pattern
-Playful reflections
+Rural windmill silhouette
+Sunlit foliage
+A photo of Manchester
+Picture snapped in the Icelandic glaciers
+Photograph with a yellow color palette
+Detailed illustration of a futuristic biome
+Whirling carousel at a fair
+Photograph with the artistic style of lens flare
+A pearl
+intricate gemstone arrangement
+tranquil beach sunset
+Snow-covered mountain peaks
+Artwork featuring crossword grid pattern
+Deserted coastal pier
+emotional candid embrace
+Detailed illustration of a futuristic vehicle
+Picture taken in Bhutan
+An equilateral pentagon
+Photograph with a yellow color palette
+Picture with cars
+Golden hour glow
+Reflective and calm lake surface
+Photo taken in Bora Bora
+Photo taken in Okavango Delta
+Ocean sunset silhouette
+Intricate pottery design
+A pearl
+Ethereal double exposure photography
+Bustling city from above
+Photograph with a red color palette
+Photo taken in the Rub' al Khali (Empty Quarter)
+Towering redwood forest
+Photo featuring a vibrant masquerade ball
+Photo taken in the Californian coastline
+Cascading waterfall
+an image of portsmouth
+Picture with cars
+Whirling carousel at a fair
+intricate pocket watch
+Rural windmill silhouette
+A scorpion
+Enigmatic mist-covered lake
+Image with shattered glass sculptures
+Detailed illustration of a futuristic bioreactor
+Photo featuring a vibrant street graffiti
+Street lit by neon signs
+Sunlit meadow path
+Image of a submarine
+cozy countryside cottage
+A megaphone
+Illustration with Roman numerals
+Architectural ink sketch
+Image with camouflage pattern
+Image of a horse-drawn carriage
+Serene an countryside
+Secluded beach cove
+Modern airport terminal
+intricate clock mechanism
+Fast-paced race car blur
+Image of a submarine
+Evocative shadows
+Coastal lighthouse beacon
+Glistening dew-covered foliage
+Photograph taken in a toy store
+Coastal lighthouse beacon
 ------------------
 V for task DTD
 ------------------
 Detailed illustration of a futuristic quantum realm
 Close-up of a textured synthetic fabric
-Abstract artwork with splatter paint
-Close-up of a textured fur
+Artwork with woven basket design
+Artwork featuring retro TV test patterns
 A polka dot
 Artwork with Mondrian-like grids
 Intricate stained glass design
 Time-worn stone structure
-Image with elemental magic and fire
+Close-up of a textured fabric
 Aerial view of a coral reef
 detailed architectural carving
 Close-up of a textured fabric
-Photo taken in Machu Picchu, Peru
+Image with interlocking hexagon patterns
 Ethereal double exposure photography
 Checkered design
 Image with tribal tattoo-like designs
 Glistening dew-covered foliage
 A rope
-intricate mandala artwork
+Mysterious misty forest
 Image with shattered glass sculptures
-Antique architectural element
-Rustic countryside charm
+Close-up of a textured insect
+Hypnotic spiral patterns
 Detailed illustration of a futuristic quantum realm
-Image with a spiral staircase
+Glistening dew-covered foliage
 Photo taken in Venice, Italy
-Detailed charcoal sketch
-Enigmatic mist-covered lake
+Vibrant watercolor painting
+Mesmerizing kinetic sculpture
 A tunnel
 A silhouette
-intricate gemstone arrangement
-Image with a zebra
-Photo taken in Bora Bora, French Polynesia
+Photo featuring a vibrant street graffiti
+Whimsical conceptual photography
+Aerial view of an archaeological site
 Image captured in the Japanese tea gardens
 fleeting soap bubble art
 Enigmatic mist-covered lake
-Futuristic architectural design
+A quilt pattern
 Image with a spiral staircase
-Tranquil intersections
+Caricature of a political leader
+Image with woven basket textures
+A whirlpool
+Image taken in the Thai street markets
+Photo featuring a vibrant street graffiti
+Artwork with retro pixel patterns
+Mysterious misty forest
+intricate clock mechanism
+Close-up of a textured rubber
+Precise pocket watch
+Intricate pencil drawing
+Picture captured in the Dutch tulip fields
+Aerial view of a snowy landscape
+serene waterfall scene
+Image taken in Bora Bora
+Aerial view of a teeming rainforest
+intricate gemstone display
+Enigmatic mist-covered lake
+Quaint countryside barn
+Image showing prairie grouse
+Artwork with stippling technique
+Abstract acrylic painting
+Image with shattered ice or frost
+cozy cabin interior
+A folded paper shape
+mesmerizing fractal design
+Ocean sunset silhouette
+Secluded forest cabin
+Close-up of a textured wood grain
+Illustration of a underwater scene
+Image with Celtic knotwork patterns
+Image with shattered glass skyscrapers
+Image with camouflage print
+Swirling aurora borealis
+A napkin
+Picture taken in the Spanish Flamenco festivals
+A dress
+Image with shattered porcelain patterns
+Detailed illustration of a geological formation
+Close-up of a textured feather
+Photo taken in the Rub' al Khali (Empty Quarter)
+Evocative light and shadow
+Captivating negative space
+Reflective cityscape at twilight
+Lush rainforest canopy
+Sepia-toned photograph
+Texture of a feather
+Photograph with the artistic style of light leaks
+Collage of vintage magazine clippings
+Picture taken in Morocco
+Serene garden pond
+Image with octagon tessellation
+Image with camouflage pattern
+Photo featuring a vibrant masquerade ball
+Close-up of a textured bark
+A cobweb
+Image with shattered glass art installation
+Image with a shattered mosaic pattern
+Picture taken in a serene lakeside cabin
 ------------------
 V for task EuroSAT
 ------------------
@@ -87,734 +203,590 @@ Whimsical conceptual photography
 Ocean sunset silhouette
 Ephemeral soap bubble
 Artwork with woven basket design
-Secluded forest cabin
-Photo of dynamic streets
-Image taken in the Namibian desert
+A tail
+peaceful meadow landscape
+Reflective cityscape at twilight
 Picture captured in the Dutch tulip fields
 Aerial view of a coral reef
-Tranquil lakeside pier
-Image captured in the Arabian dunes
-Aerial view of a harbor
-Aerial view of a construction site
+Image captured in the Icelandic glaciers
+Bustling cityscape at night
+Photo taken in Monument Valley
+Tranquil meadows
 Tranquil forest waterfall
 Aerial view of a teeming rainforest
 Aerial view of a river or stream
-Picture captured in the Dutch tulip fields
-Picture taken in a coastal lighthouse
-serene forest glade
-Glowing neon cityscape
-Sunlit meadow path
-Playful silhouettes
+Playful zoo animal interactions
+cozy outdoor seating
+A earring
+Aerial view of an archaeological site
+Image with a whirlpool in the ocean
+Aerial view of a river or stream
 Image snapped in the Swiss chocolate factories
 Photo taken in Santander, Spain
 Evocative silhouettes
 Photograph with the artistic style of long exposure
-Deserted coastal pier
-Serene garden pond
+Photo of a fireworks display
+An image of a Firefighter
 Vibrant watercolor painting
 Photo featuring a vibrant street graffiti
-A basket
+A cloverleaf
 Photograph with a green color palette
-Aerial view of a teeming rainforest
+Photo taken in Monument Valley
 A wire
-Image of a delivery van
+serene oceanside retreat
 intricate mechanical gears
 Mountain peak sunrise
-Ephemeral soap bubble art
+Aerial view of a harbor
+Picture taken in Italy
+Photo featuring a lively sports match
+A marsh
+Picture taken in a serene lakeside cabin
+Impressionist-style digital painting
+Vibrant autumn foliage
+A heptagon
+Colorful hot air balloons
+Picture taken in a serene lakeside sanctuary
+Aerial view of a coastal area
+Towering redwood forest
+A photo of Monaco
+serene oceanside retreat
+Detailed illustration of a piece of jewelry
+Vintage sepia tones
+Cubist still life painting
+Minimalist architectural photography
+Image with shattered glass sculptures
+Photograph with a green color palette
+Stained glass design
+italic words
+Image showing prairie grouse
+Image with a spiral staircase
+Image taken in the Californian coastline
+Image of a horse-drawn carriage
+Photo taken in Namib Desert
+A scalene quadrilateral
+A graffiti with a sentence
+Caricature of an iconic actor
+Picture taken in Maldives
+Glistening dew-covered foliage
+Photo featuring a bustling airport
+Picture taken in Rwanda
+colorful graffiti art
+Detailed charcoal sketch
+Picture with multiple domesticated animals
+Photo with high contrast black and white tones
+Aerial view of a coral reef
+emotional candid embrace
+Photograph with a blue color palette
+Desert oasis palm trees
+Vintage sepia tones
+Enchanting  twilight sky
+A cable
+An image of Andorra
+Caricature of an iconic explorer
+Vintage sepia tones
+Ethereal double exposure photography
+Photograph with the artistic style of lens flare
+Image with a cloudy sky
+Close-up of a textured seashell
+Ocean sunset silhouette
+intricate mechanical gears
+Picture taken in the Japanese cherry blossoms
+Swirling aurora borealis
+Picture snapped in the Californian coastline
+Close-up of a textured leather
+Image with Celtic knotwork patterns
 ------------------
 V for task GTSRB
 ------------------
 Facial close-up
 Image with a single road sign
 An image of a Gymnast
-abstract geometric shapes
-Illustration of an enchanted forest
-An image of the number 7
+Aerial view of a bay
+A photo with the letter Z
+A barbed wire design
 The number eleven
 Photograph with the artistic style of fisheye lens
-The number twenty-five
-Golden hour glow
-Coastal lighthouse beacon
-Photo featuring a vibrant cultural procession
+Reflective  mountain view
+An equilateral triangle
+A photo with the letter S
+A fractal snowflake
 A photo with the letter L
-A decagon
-Hidden passage
-Picture with cars
+A scorpion
+A photo of a tranquil lake
+Close-up of a textured seashell
 Vast desert dunes
 A puck
-A whirlpool
-A caterpillar
+Photo featuring a vibrant street graffiti
+A labyrinth
 Detailed illustration of a futuristic vehicle
-Futuristic robotics
-An image of the number 8
+A scalene quadrilateral
+Photo with cool, twilight tones
 An image with pedestrians
-Close-up of a textured synthetic fur
-A modular structure
+Remote mountain cabin
+Desert oasis palm trees
 Fast-paced race car blur
 Aerial view of an island
-A megaphone
-Image of a delivery van
+intricate pocket watch
+Optical illusion artwork
 Towering redwood forest
 A mirror
-Burst of colorful confetti
+A cushion
 A bamboo
 Precise medical equipment
 Image with a lunar eclipse
 Elemental fusion
 Abstract artwork with splatter paint
+A gazebo
+Image with Aboriginal dot painting style
+Minimalist architectural photography
+Coastal lighthouse beacon
+A bolt
+An image of a Flight Attendant
+A thimble
+Image with shattered glass patterns
+Rural windmill silhouette
+A trampoline
+colorful festival
+Rural windmill silhouette
+A lightning bolt shape
+Photo taken in Santorini, Greece
+An image of a Painter
+Image with shattered glass art installation
+Tranquil garden pathway
+A kite
+Image with a blue color
+Captivating silhouettes
+Colorful hot air balloons
+An image of a Orthopedic Surgeon
+cozy outdoor picnic
+Quaint seaside village
+Photo featuring a vibrant street graffiti
+Illustration of a hidden ethereal portal
+Image of a police car
+Artwork featuring retro TV test patterns
+Artwork featuring retro TV test patterns
+A bamboo
+Whispering facades
+A picture of liechtenstein
+Picture taken in the Spanish Flamenco festivals
+Playful siblings
+An image with bikes
+serene meditation setting
+Caricature of a famous revolutionary
+Aerial view of a cityscape
+Photograph with a green color palette
+Image taken in the Namibian desert
+An image of a Gardener
+Photograph with the artistic style of fisheye lens
+Majestic soaring birds
+Image with a pastel color
+A gazebo
+Image of a motorcycle
+Quaint countryside barn
+Photograph with the artistic style of light leaks
+Artwork with Mondrian-like grids
+colorful spectacle
+Snowy forest trail
+Photograph taken in a misty environment
+A trunk (of a tree or an elephant)
+serene oceanside retreat
+Picture taken in a coastal lighthouse
+A magnolia
+Whirling carousel at a fair
+An irregular heptagon
 ------------------
 V for task MNIST
 ------------------
 Picture taken in the Japanese temples
 Futuristic digital cityscape
-Detailed illustration of a futuristic bioreactor
-A photo with the letter G
-A photo with the letter F
+A shell
+Intertwined tree branches
+Image of a horse-drawn carriage
 Misty forest glade
-A photo with the letter G
-Detailed illustration of a celestial body
-Whispering waterscapes
-A turban
-Picture captured in the Icelandic glaciers
+Aerial view of a serene meadow
+A photo with the letter B
+A umbrella
+Secluded forest cabin
+detailed arachnid close-up
 An image of the number 10
 a picture of illinois
-Photograph with the artistic style of tilt-shift
-Miniature diorama photography
+Reflective and calm lake surface
+Captivating silhouettes
 Vibrant city alley
-Photo taken in Okavango Delta
-The number fifteen
-Photo taken in the Swiss chocolate factories
-Reflective cityscape at twilight
+misty forest path
+Urban rooftop panorama
+Illustration with Roman numerals
+Abandoned spaces
 Desert oasis palm trees
 Image showing prairie grouse
 Picture taken in the Spanish Flamenco festivals
 A spire
 Picture snapped in the Icelandic glaciers
-Detailed illustration of a futuristic computer
-Enchanting forest nymph aesthetic
-A polka dot
-An image of a Welder
+A photo with the letter Q
+A cable
+Swirling aurora borealis
+Quaint countryside lane
 Time-lapse trails
 Intricate ceramic patterns
-mesmerizing fractal design
-Ephemeral soap bubble pattern
-Framing element
-Soft focus
-Image taken in Machu Picchu
+Caricature of an iconic explorer
+A hanger
+Image with a futuristic space station
+serene oceanside retreat
+A prism
 Image snapped in the Swiss chocolate factories
 Ikat design
+intricate kaleidoscope design
+Image of a hot air balloon
+Aerial view of a marketplace
+soothing meditation retreat
+Glistening dew-covered foliage
+Image with a dragonfly
+Picture captured in the Canadian maple forests
+An isosceles triangle
+Detailed charcoal sketch
+Desert oasis palm trees
+A quasar
+Caricature of a sports figure
+Artwork featuring retro TV test patterns
+Picture captured in the Dutch tulip fields
+A pearl
+Asymmetrical arrangement
+A picture of liechtenstein
+A meteor
+Image with gingham patterns
+A network of veins
+Artwork with Mondrian-like grids
+Detailed illustration
+Picture taken in the Indonesian rice fields
+A picture of liechtenstein
+Remote hilltop hut
+Precise mechanical gears
+Image captured in the Patagonian wilderness
+Detailed illustration of a celestial body
+Image with pointillism technique
+Texture of a feather
+Photograph with the artistic style of fisheye lens
+Photo taken in Venice, Italy
+Photo taken in Sydney, Australia
+Image with shattered mosaic tiles
+Aerial landscape photography
+Aerial view of a cityscape
+Quaint seaside village
+Ocean sunset silhouette
+Playful silhouettes
+Photo with sepia-toned vintage style
+Aerial view of a desert oasis
+Dynamic leading lines
+Captivating connections
+A magnolia
+intricate gemstone display
+Enchanting forest nymph aesthetic
+Remote alpine chalet
+Photograph with the artistic style of double exposure
+an image of liechtenstein
+Emotional connections
+intricate pocket watch
+an image of samoa
+Image of a scooter
+Image taken in Machu Picchu
+Detailed illustration of a futuristic vehicle
+emotional dance pose
+Candid city commuter
+Plaid pattern
 ------------------
 V for task RESISC45
 ------------------
 Aerial view of a paradise
-Ocean sunset silhouette
-Vibrant city alley
+Aerial view of an archaeological site
+Tranquil lakeside pier
 Dynamic streetscapes
 Captivating cityscape
-Image with a whirlpool in the ocean
+Picture with trains
 Picture taken in the Icelandic glaciers
 Photo taken in the Thai floating markets
 Quaint countryside barn
 Ephemeral soap bubble play
-cozy countryside cottage
+Aerial view of an urban skyline
 Dramatic cliffside view
-Picture with airplanes
+Lush rainforest canopy
 Whirling carousel at a fair
 Coastal lighthouse beacon
-Close-up of a textured concrete surface
-Bokeh lights
-A picture of a bridge
-Vintage sepia tones
+Towering redwood forest
+Photo taken in Namib Desert
+delicate soap bubble display
+Lush rainforest canopy
 Photo taken in Monument Valley
 Aerial view of a coral reef
 Aerial view of a serene meadow
 Image taken in Great Wall of China
-Photo taken in the Rub' al Khali (Empty Quarter)
-Rural windmill silhouette
+An image of a Arborist
+A picture of Samoa
 Lush rainforest canopy
 awe-inspiring ancient structure
 Impressionist-style digital painting
 Quiet rural farmhouse
-Picture captured in the Dutch tulip fields
-A pearl
-intricate pocket watch
+Abstract artwork with swirls
+Photo taken in Bora Bora
+Reflective and calm lake surface
 An image of Andorra
 Image with a futuristic nanobot swarm
-Image snapped in the Peruvian Andes
+Playful zoo animal interactions
 Remote Arctic tundra
 Cascading waterfall
-Photo taken in Okavango Delta
+Vibrant city alley
+Photo taken in the French lavender fields
+Image snapped in the Japanese tea gardens
+Detailed illustration of a futuristic quantum realm
+Tranquil village pond
+Whirling carousel at a fair
+Picture taken in the Japanese temples
+Intriguing and mysterious alley scene
+ornate cathedral
+Intense macro detail
+Serene lakeside retreat
+Rural windmill silhouette
+A lightning bolt shape
+Rural windmill silhouette
+Enigmatic mist-covered lake
+Picture snapped in the Icelandic glaciers
+Tranquil boating on a lake
+Rural windmill silhouette
+Image of a hot air balloon
+intricate clock mechanism
+Image with holographic digital rain
+Skyscrapers touching clouds
+Intricate stained glass design
+Photo taken in Machu Picchu, Peru
+Colorful hot air balloons
+Snowy forest trail
+Aerial view of a desert oasis
+Image with a whirlpool in the ocean
+Photograph with a green color palette
+A clover
+Impressionist portrait painting
+Photo taken in Santorini, Greece
+Rural windmill silhouette
+Pristine woodland clearing
+A pendulum
+Caricature of a sports figure
+Coastal lighthouse beacon
+Picture taken in the Australian rainforest
+an image of monaco
+Aerial view of a town
+Caricature of an iconic composer
+A picture of liechtenstein
+Enchanting starry night sky
+Cozy living room ambiance
+Graceful wings in motion
+Deserted coastal pier
+Artwork featuring shattered glass patterns
+Image with a single dominant color
+Picture snapped in the Swiss Alps
+Image with a shattered reflection in water
+Illustration of a futuristic transportation system
+Image captured in the Icelandic glaciers
+Picture taken in the French Riviera
+Photograph taken in a antique shop
+An image of a Welder
+Image showing prairie grouse
+Photo taken in Kyoto
+Play of light and shadow
+An image of an interior of a room
 ------------------
 V for task SUN397
 ------------------
 Whimsical conceptual photography
-Close-up of a textured plant leaf
-An image of an interior of a room
-Grand cathedral interior
-Aerial view of an industrial area
+Abandoned spaces
+Weathered architecture
+Quiet rural farmhouse
+cozy home library
 Whirling carousel at a fair
-Photograph taken in a bookstore
+A trampoline
 Aerial view of a promenade
-Grand cathedral interior
+Gritty urban street scene
 serene waterfall scene
-Quirky street performer
+Image showing prairie grouse
 Whirling carousel at a fair
 Abandoned factory space
 Towering redwood forest
-Lively coastal fishing port
+peaceful garden pond
 Coastal lighthouse beacon
-Photo taken in Okavango Delta
-Photo taken in the Rub' al Khali (Empty Quarter)
+intricate clock mechanism
+Rural windmill silhouette
 Tranquil lakeside pier
-Deserted coastal pier
-Photo featuring a bustling food market
+An image of a Astronomer
+Coastal lighthouse beacon
 Cubist still life painting
-A photo of a tranquil garden
-Photo featuring a lively city parade
+Image captured in the Icelandic glaciers
+A gazebo
 Tranquil forest waterfall
 Picture snapped in the Icelandic glaciers
 Playful children's playground
-Photograph taken in a retro diner
+Lively coastal fishing port
 Whispering foliage
-Fast-paced race car blur
+A window
 Picture captured in the Icelandic glaciers
-Skyscrapers touching clouds
+Aerial view of an island
 Photograph taken in a barber shop
-A deck
-Picture captured in the Canadian maple forests
-Image taken in the Egyptian pyramids
+Image with shattered stained glass windows
+Deserted coastal pier
+cozy reading nook
 Photo taken in Bora Bora
-Image captured in the Arabian dunes
+Reflective cityscape at twilight
+Picture captured in the Dutch tulip fields
+Futuristic transportation
+Tranquil forest waterfall
+Image with intricate mehndi designs
+Photo taken in Santorini, Greece
+Meticulously arranged flowerbed
+detailed arachnid close-up
+Towering redwood forest
+Picture taken in the Swiss chocolate factories
+Reflective modern glass facade
+Image snapped in the Peruvian Andes
+An image of a Welder
+misty forest path
+Aerial view of an agricultural field
+Photograph with the artistic style of double exposure
+An image of Andorra
+Picture captured in the Spanish vineyards
+Cascading waterfall
+Photograph with a red color palette
+Photo taken in the Rub' al Khali (Empty Quarter)
+Photograph taken in a barber shop
+Bustling city nightlife
+Photograph taken in a city alleyway
+Vibrant floral arrangement
+Image taken in Maldives
+Miniature diorama photography
+Crumbling and abandoned building
+A joystick
+Aerial view of a snowy landscape
+Image captured in the Japanese tea gardens
+Image with a single road sign
+Photo taken in Grand Canyon
+Play of shadows
+Image taken in Maldives
+Lush rainforest canopy
+Picture taken in Bhutan
+Detailed illustration of a futuristic quantum realm
+Photo featuring a lively beach party
+delicate soap bubble creation
+Close-up of a textured fabric
+Picture taken in the Italian pizzerias
+Photograph with the artistic style of neon glow
+Detailed illustration of a futuristic bioreactor
+atmospheric twilight ambiance
+Close-up of a textured synthetic leather
+Aerial view of a snowy landscape
+Picture taken in the Australian beaches
+A pyramid
+Detailed illustration of a futuristic quantum realm
+Aerial view of an agricultural field
+Picture taken in the Thai temples
+Picture taken in the Indonesian rice fields
+Detailed charcoal sketch
+Artwork featuring geometric tessellation
+A napkin
+Close-up of a textured paper surface
+Image with a penguin
+Image snapped in the Australian coral reef
 ------------------
 V for task SVHN
 ------------------
-A houndstooth texture
+An image of the number 9
 Whimsical conceptual photography
 A palm
 Ocean sunset silhouette
-A photo with the letter Z
-An image of the number 0
-A photo with the letter G
+Close-up of a textured feather
+A photo with the letter A
+Image with a sandstorm
 Image with stardust and galaxies
-Time-lapse trails
+An image of the number 4
 Image with Morse code arrangement
-A photo with the letter B
-An image of the number 10
-A photo with the letter G
+An equilateral triangle
+Black and white candid street photography
+Whirling carousel at a fair
 Image captured in the Icelandic glaciers
 Picture snapped in the Icelandic glaciers
 Rural windmill silhouette
-Photograph with the artistic style of light trails
-Photograph with the artistic style of color splatter
-cozy bedroom atmosphere
+Close-up of a textured bark
+Image with a labyrinth or maze
+Image with a tornado forming in the distance
 A photo with the letter E
-A photo with the letter A
-Picture taken in the southeastern United States
-A clover
-Close-up of a textured seashell
-Image with intricate mehndi designs
-A traffic cone
-Secluded tropical beach
+A picture of liechtenstein
+A helmet
+Close-up of a textured feather
+Meticulously arranged flowerbed
+Tranquil village pond
+Detailed illustration of a futuristic bioreactor
+Artwork featuring retro TV test patterns
 A parallelogram
-A heptagon
-Image with quilted patchwork design
+Miniature diorama photography
+Intriguing and mysterious alley scene
 An image of a Emergency Medical Technician (EMT)
-Photo featuring a vibrant street graffiti
-mesmerizing fractal design
-Rich textures
+captivating starry night
+Inviting reading nook
+Illustration of a hidden enchanted castle
 Modern office workspace
 Minimalist architectural photography
 Tie-dye design
 Image with camouflage print
-------------------
-V for task CIFAR100
-------------------
-A blurry image
-Architectural ink sketch
-Whirling carousel at a fair
-An image of a Waiter/Waitress
-A trunk (of a tree or an elephant)
-Deserted coastal pier
-A seal
-Candid city commuter
-A scorpion
-A trunk (of a tree or an elephant)
-Picture captured in the Dutch tulip fields
-Detailed illustration of a geological formation
-cozy countryside cottage
-intricate mechanical gears
-A blade (of grass or a knife)
-Image snapped in the Japanese tea gardens
-Intricate stained glass design
-A bookmark
-Ethereal city pulse
-Photo taken in Machu Picchu, Peru
-Historic cobblestone streets
-A bamboo
-Caricature of an iconic explorer
-Frozen wilderness
-Photo taken in Namib Desert
-Close-up of a textured wood grain
-An image of a Florist
-clouds
-Detailed charcoal sketch
-A fractal snowflake
-Precise pocket watch
-A handle
-Serene garden pond
-Urban and expressive street mural
-Enigmatic mist-covered lake
-Image with a orange color
-Image with tie-dye patterns
-Picture captured in the Icelandic glaciers
-------------------
-V for task STL10
-------------------
-A blurry image
-Aerial view of a harbor
-Playful zoo animal interactions
-Majestic soaring birds
-An image of a Welder
-Majestic galloping horses
-An image with cats
-Close-up of a textured plant leaf
-Image with a donkey
-Mysterious misty forest
-Picture captured in the Dutch tulip fields
-Image with shattered glass art installation
-A seagull
-Tranquil boating on a lake
-Aerial view of an ocean coastline
-Image of a delivery van
-Intertwined tree branches
-Photo taken in Venice, Italy
-thrilling sports action
-Close-up of a textured feather
-Intrica wood carvingte
-A motor
-Detailed illustration of a prehistoric scene
-Glistening dew-covered foliage
-A platinum silver color
-Close-up of a textured feather
-Quaint countryside barn
-Photo featuring a vibrant street performance
-A trunk (of a tree or an elephant)
-Asymmetrical arrangement
-Image showing prairie grouse
-Impressionist-style digital painting
-Towering redwood forest
-A fractal snowflake
-Picture captured in the Icelandic glaciers
-Aerial view of a coral reef
-Whirling carousel at a fair
-Impressionist-style digital painting
-------------------
-V for task Flowers102
-------------------
-Quiet forest stream
-Whimsical conceptual photography
-Glistening dew-covered foliage
-Picture taken in the Icelandic glaciers
-A coral
-Image with a pink color
-Image with a orange color
-Image with a orange color
-Image snapped in the Australian rainforest
-Surreal photo manipulation
-Photo taken in the French lavender fields
-Aerial view of an island
-Photograph with a purple color palette
-Misty forest glade
-A tulip
-Image with a pink color
-A fractal snowflake
-Close-up of a textured plant leaf
-Picture taken in the Spanish olive groves
-Image with a pink color
-Sunlit meadow path
-Minimalist architectural photography
-Image showing prairie grouse
-Detailed illustration of a futuristic quantum realm
-Close-up of a textured seashell
-Image with a purple color
-Image snapped in the Japanese tea gardens
-Ephemeral soap bubble art
-Photo taken in the Japanese tea gardens
-Photograph with the artistic style of light leaks
-A traffic cone
-Caricature of an iconic actor
-Image with tie-dye patterns
-A photo with the letter K
-Aerial view of an island
-intricate kaleidoscope design
-An image of a Electrician
-Rural windmill silhouette
-------------------
-V for task OxfordIIITPet
-------------------
-Photograph of a rodent
-Minimalist architectural photography
-Picture of a feline
-A cloud
-Picture with cars
-Image with woven basket textures
-Weathered facades
-intricate kaleidoscope pattern
-A magnolia
-Photo taken in Monument Valley
-Breathtaking canyons
-Plaid pattern
-Texture of a feather
-Warm and cozy indoor scene
-A zebra stripe pattern
-Vibrant watercolor painting
-Image with an owl
-A photo with a texture of mammals
-Dynamic interactions
-Image with a donkey
-A seagull
-Image with tie-dye patterns
-cozy home library
-Image showing prairie grouse
-Photo featuring a lively sports match
-Photo taken in Namib Desert
-A seagull
-Ocean sunset silhouette
-Image with a donkey
-Rural windmill silhouette
-Golden hour glow
-An image of Andorra
-serene oceanside retreat
-Urban park greenery
-Close-up of a textured seashell
-Photo taken in Kyoto, Japan
-A puppet
-wheat fields
-------------------
-V for task PCAM
-------------------
-A party hat
-Image with leopard print patterns
-A basket
-Rural windmill silhouette
-Snow-covered mountain peaks
-A polka dot
-Image with a foggy atmosphere
-Photograph with a purple color palette
-Detailed illustration of a landscape
-Photograph with a purple color palette
-intricate mosaic artwork
-Ancient and weathered stone carving
-Image with paisley patterns
-Intertwined tree branches
-An irregular heptagon
-A polka dot
-Picture with multiple domesticated animals
-Close-up of a textured animal fur
-Aerial view of a mountain range
-Photo taken in Okavango Delta
-Image snapped in the Australian coral reef
-Mesmerizing kinetic sculpture
-Photograph with the artistic style of light leaks
-Image showing prairie grouse
-Remote mountain cabin
-Enigmatic mist-covered lake
-A low-resolution image
-Antique religious icon
-Photograph taken in a toy store
-Picture taken in the Peruvian ruins
-Detailed illustration of a futuristic biome
-A thimble
-Nature macro photography
-Image with a shattered reflection in water
-Burst of colorful confetti
-A magnolia
-Ocean sunset silhouette
-Tranquil temple courtyard
-------------------
-V for task FER2013
-------------------
-Portraits in black and white
-Aerial view of a snowy landscape
-Contemplative monochrome portrait
-Caricature of an iconic composer
-Angry facial expression
-An image with seagulls
-Whimsical childhood fantasy
-Photograph showcasing laughter
-Timeless historical artifact
-A photo of Monaco
-Picture taken in the Indonesian rice fields
-Joyful toddlers
-An image of a Dentist
-Candid street photography
-Detailed illustration of a body of water
-an image of monaco
-Picture taken in the Indonesian rice fields
-Photo taken in the Mongolian steppes
-Candid city commuter
-Grayscale urban cityscape
-Image captured in the Patagonian wilderness
-Image showing prairie grouse
-serene oceanside retreat
-Image with intricate mehndi designs
-A cable
-Detailed charcoal sketch
-Photograph displaying courage
-A magnolia
-Image with intricate mehndi designs
-emotional portrait
-Photograph showcasing laughter
-Aerial view of an ocean coastline
-A magnolia
-A hat
-Lush rainforest canopy
-Photo with grainy, old film effect
-Ethereal double exposure photography
-Texture of hair
-------------------
-V for task EMNIST
-------------------
-Image with a white color
-The number fourteen
-An image of the number 4
-Street art-inspired mural painting
-A photo with the letter Z
-A photo with the letter F
-An image of the number 8
-Birds-eye view
-Time-lapse trails
-Atmospheric haze
-An image of the number 10
-Intense motorsport action
-An image of the number 4
-A photo with the letter M
-Aerial view of an archaeological site
-Reflective cityscape at twilight
-Subdued moods
-Picture taken in the Scottish castles
-Photo taken in the Australian coral reef
-Reflective modern glass facade
 intricate mandala artwork
-Rural windmill silhouette
-Precise pocket watch
-Street art-inspired mural painting
-Image with an owl
-Intricate pencil drawing
-Photo taken in the Italian pizzerias
-Intertwined destinies
-Image of a scooter
-A whirlpool
-A scalene quadrilateral
-A shoelace
-A trunk
-intricate watch gears
-intricate mosaic artwork
-An isosceles triangle
-Meticulously arranged flowerbed
-delicate soap bubble creation
-------------------
-V for task CIFAR10
-------------------
-A blurry image
+Image with holographic holograms
 Sunlit meadow path
-Detailed illustration of a futuristic vehicle
-Picture with airplanes
-Quiet forest stream
-Aerial view of a snowy landscape
-Tranquil boating on a lake
-Image with a donkey
-Illustration of a underwater scene
-A trunk (of a tree or an elephant)
-Photograph with a green color palette
-A dog
-Picture captured in the Dutch tulip fields
-Majestic galloping horses
-A gazebo
-Classic black and white cityscape
-Image with a tornado
-Ocean sunset silhouette
-An image of a Emergency Medical Technician (EMT)
+Aerial view of an island
+Towering redwood forest
+Picture taken in rural Australia
 Whirling carousel at a fair
-Image with a donkey
-Colorful hot air balloons
-A prism
-A seagull
-Image with a futuristic skyscraper
-an image of namibia
-A puddle
-Majestic galloping horses
-intricate kaleidoscope pattern
-Photo taken in the Thai street markets
-Image with a donkey
-A plank
-Image snapped in the Japanese tea gardens
-Reflective  ocean view
-Desert sandstorm
+Photograph with the artistic style of fisheye lens
+Precise pocket watch
+Vintage sepia tones
+Photo taken in Grand Canyon
+intricate watch gears
+Image with shattered porcelain patterns
+Reflective modern glass facade
 Urban rooftop panorama
-Aerial view of a coral reef
-Detailed illustration of a futuristic quantum realm
-------------------
-V for task Food101
-------------------
-Image with a white color
-Detailed illustration of a futuristic quantum realm
-Close-up of a textured bark
-An image of a side dish
-A fruit
-Towering redwood forest
-A photo of a tranquil river
-Close-up of a textured plant leaf
-image of a sheep
-Weathered facades
-Close-up of a textured rubber
-Close-up of a textured plant leaf
-A network of veins
-Swirling aurora borealis
-Burst of colorful confetti
-Photograph with a green color palette
-A sphere
-intricate kaleidoscope pattern
-A bamboo
-A wire
-Snowy forest trail
-A traffic cone
-cozy outdoor picnic
-Photograph taken in a retro diner
-Picture taken in the Spanish Flamenco festivals
-An irregular pentagon
-Architectural ink sketch
-Picture taken in the Indonesian rice fields
-Photograph with a green color palette
-Photo featuring a bustling street market
-A burst of rays
-Deserted coastal pier
-Rolling vineyard landscapes
-Bokeh lights
-Picture taken in Bhutan
-Delicate flower petals
-Artwork featuring crossword grid pattern
-Close-up of a textured synthetic rubber
-------------------
-V for task FashionMNIST
-------------------
-Photograph showcasing smiles
-A shirt
-Plaid pattern
-A shirt
-A dress
-A jacket
-A coat
-A jacket
-Surreal digital collage
-A boot
-Desert oasis palm trees
-Aerial view of a vineyard
-Artwork with intricate filigree patterns
-Close-up of a textured bark
-Weather-worn textures
-A skirt
-A shirt
-Glistening dew-covered foliage
-Detailed illustration of a futuristic quantum realm
-Picture taken in the Italian pasta kitchens
-A scarf
-Image with Native American motifs
-Desert oasis palm trees
-A vase
-An image of a Waiter/Waitress
-Aerial view of a snowy landscape
-Meticulously arranged flowerbed
-A whisk
-Picture taken in the Spanish Flamenco festivals
-Picture taken in the Indian spice markets
-Captivating silhouettes
+weathered religious icon
+Tranquil village pond
+misty forest path
+Photo taken in Kyoto
+A concentric circle
 Time-lapse trails
-Minimalist architectural photography
-Image taken in French Polynesia
-A tulip
-Photo taken in Okavango Delta
+Mouth
+Skyscrapers touching clouds
+Detailed illustration of a historical scene
+Cascading waterfall
+intricate mosaic artwork
+Photo featuring a lively sports match
+Photo taken in Bangkok, Thailand
+An image of a Photographer
+Picture with multiple domesticated animals
+cozy countryside cottage
+Image with a orange color
+Close-up of a textured insect
+A photo with the letter F
+A photo with the letter Q
+Image with shattered glass skyscrapers
+Isolated mountain retreat
 Film noir-inspired tones
-Picture taken in Maldives
-------------------
-V for task RenderedSST2
-------------------
-Portraits in black and white
-Futuristic digital cityscape
-Captivating encounters
-Burst of motion
-Subdued vitality
-Aerial view of a coral reef
-Artwork with pointillism technique
-Detailed illustration of a futuristic energy source
-A pentagram
-Nostalgic spectres
-Urban symphony
-Towering redwood forest
-Inviting reading nook
-Intrica wood carvingte
-A thistle
-Rural windmill silhouette
-A picture of liechtenstein
-Precise watch gears
-Striking and vibrant fashion portrait
-A scalene quadrilateral
-A barbed wire design
-A stretcher
-A rug
-Tranquil forest waterfall
 Tranquil mountain refuge
+Image with a printed advertisement
+towering skyscrapers
+A thistle
+Vibrant watercolor painting
+Intertwined tree branches
+Art Nouveau-inspired design
+Enigmatic mist-covered lake
+Photograph with the artistic style of lens flare
+Intense water sports moment
 A whirlpool
-Image of a helicopter
-A pendulum
-A rug
-A needle
-A quadrilateral
-An image of a Welder
-Whispering horizons
-Intrica wood carvingte
-A polygon
-Image with an owl
-A beam
-Illustration of an enchanted forest
-------------------
-V for task KMNIST
-------------------
-A polka dot
-An image of a Gymnast
-A pentagram
-Picture taken in Sumatra
-Quirky street performer
-Intricate pencil drawing
-Image with shattered crystal structures
-Photograph with a yellow color palette
-A spiky texture
-A picture of liechtenstein
-Image taken in French Polynesia
-Dynamic silhouettes
-Busy train station
-A thimble
-Picture taken in the Swiss Alps
-Image with an owl
-Dynamic fluidity
-A photo with the letter Y
-Intricate calligraphy
-Aerial view of a vineyard
+Picture captured in the Dutch tulip fields
 serene oceanside retreat
-Gritty realism
-Dynamic silhouettes
-Surreal digital collage
-Towering redwood forest
-Enchanting forest nymph aesthetic
-Photo taken in the Thai floating markets
-Aerial view of an ocean coastline
-Image taken in the Thai temples
-Intriguing and mysterious alleyway
-Mystical moonlit scenes
-detailed arachnid close-up
-Picture taken in the Arabian desert
-Artwork featuring retro TV test patterns
-an image of monaco
-Inviting reading nook
-Ephemeral soap bubble art
-A seal
+Image with a futuristic terraforming experiment
+Illuminated cityscape
+Aerial view of a desert oasis
+Picture taken in Seychelles
+A trunk (of a tree or an elephant)
+Ocean sunset silhouette
+A charcoal gray color

@@ -41,7 +41,7 @@ task_vectors:
   scaling_coefficient: 1.0
 
   aggregator:
-    _target_: tvp.task_vectors.aggregator.TaskSingularVectorAggregator
+    _target_: mass.task_vectors.aggregator.TaskSingularVectorAggregator
     zeroshot_model: ???
 
     # _target_: tvp.task_vectors.aggregator.SphericalAggregator

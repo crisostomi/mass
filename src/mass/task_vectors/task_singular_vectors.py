@@ -8,7 +8,8 @@ import numpy as np
 from pathlib import Path
 import logging
 
-from mass.utils.utils import is_matrix
+from mass.utils.io_utils import load_model_from_disk
+from mass.utils.utils import compute_task_dict, is_matrix
 
 pylogger = logging.getLogger(__name__)
 
@@ -91,6 +92,109 @@ def sum_svd(ref_state_dict, svd_dicts, device="cuda"):
     datasets = list(svd_dicts.keys())
 
     for layer_name in tqdm(layer_names, desc="Summing SVD"):
+        is_matrix = aggregated_model_dict[layer_name].dim() == 2
+        new_key = layer_name.replace(".transformer", "")
+        offset = 0
+
+        for i, dataset in enumerate(datasets):
+
+            if "text_projection" in layer_name:
+                continue
+
+            if is_matrix:
+
+                delta_layer_svd = svd_dicts[dataset][new_key]
+
+                u, s, v = (
+                    delta_layer_svd["u"],
+                    delta_layer_svd["s"],
+                    delta_layer_svd["v"],
+                )
+                u, s, v = u.to(device), s.to(device), v.to(device)
+
+                if i == 0:
+                    total_rank = sum(
+                        svd_dicts[d][new_key]["s"].shape[0] for d in datasets
+                    )
+                    sum_u = torch.zeros(u.shape[0], total_rank, device=device)
+                    sum_s = torch.zeros(total_rank, device=device)
+                    sum_v = torch.zeros(total_rank, v.shape[1], device=device)
+
+                # reduced_index_s = int(s.shape[0] * sv_reduction)#
+                rank_i = s.shape[0]
+
+                # select only the first reduced_index_s columns of u and place them
+                sum_u[:, offset : offset + rank_i] = u
+                sum_s[offset : offset + rank_i] = s
+                sum_v[offset : offset + rank_i, :] = v
+
+                offset += rank_i
+
+            # layer is not a matrix, compute the mean
+            else:
+                delta_layer = svd_dicts[datasets[i]][new_key]["dim1"].to(device)
+
+                if i == 0:
+                    aggregated_model_dict[layer_name] = delta_layer
+                else:
+                    aggregated_model_dict[layer_name] += (
+                        delta_layer - aggregated_model_dict[layer_name]
+                    ) / (i + 1)
+
+        # aggregation step
+        # text_projection is ignored and vectors were already aggregated
+        if "text_projection" in layer_name or not is_matrix:
+            continue
+
+        u_u, s_u, v_u = torch.linalg.svd(sum_u, full_matrices=False)
+        u_v, s_v, v_v = torch.linalg.svd(sum_v, full_matrices=False)
+
+        aggregated_model_dict[layer_name] = torch.linalg.multi_dot(
+            (
+                u_u,
+                v_u,
+                torch.diag(sum_s),
+                u_v,
+                v_v,
+            )
+        ).to(device)
+
+    return aggregated_model_dict
+
+
+
+@torch.no_grad()
+def sum_svd_modified(ref_state_dict, svd_dicts, layer_to_modify, device="cuda"):
+    """
+    Takes the (SVD) for each vector in the task_vectors, and concatenate the low-rank matrices.
+    If the vector is not a 2D tensor or is "text_projection", it computes the mean of the vectors.
+    Computation of the SVD is performed also for the second operation.
+
+    Args:
+        task_vectors (list): A list of task vector objects, where each object contains a
+                             dictionary of vectors.
+        config (object): Configuration object containing the following attributes:
+                         - DATASETS (list): List of datasets.
+                         - device (torch.device): The device to perform computations on.
+
+    Returns:
+        dict: A dictionary containing the new vectors after SVD computation and merging.
+    """
+
+    aggregated_model_dict = ref_state_dict
+    layer_names = list(aggregated_model_dict.keys())
+
+    datasets = list(svd_dicts.keys())
+
+    for layer_name in tqdm(layer_names, desc="Summing SVD"):
+        if layer_name.replace("transformer.", "") in layer_to_modify:
+        #if layer_name.replace("transformer.", "") == layer_to_modify:
+            print("Modifying layer: ", layer_name)
+            aggregated_model_dict[layer_name] = torch.zeros_like(
+                aggregated_model_dict[layer_name]
+            ).to(device)
+            continue
+
         is_matrix = aggregated_model_dict[layer_name].dim() == 2
         new_key = layer_name.replace(".transformer", "")
         offset = 0
@@ -312,6 +416,70 @@ def get_svd_dict(
     pylogger.info(f"SVD dictionary saved at: {svd_path}")
 
     return svd_dict
+
+def get_or_compute_svd_dict(compression_factor, svd_path, cfg, compress_ratio_per_task=None):
+    """
+    Generate or load a dictionary of SVD-compressed task vectors.
+
+    This function either loads a precomputed SVD dictionary from the specified
+    path or computes task dictionaries from supplied models and compresses them
+    to obtain the SVD dictionary. If a mismatch in datasets is detected or if
+    no precomputed file is found, the function recomputes the dictionary.
+
+    Args:
+        compression_factor (float): Factor by which to compress task vectors.
+            The effective compression ratio is 1 / compression_factor.
+        svd_path (str or Path): File path at which to load or save the
+            SVD dictionary.
+        cfg (object): Configuration object containing the following attributes:
+            - misc.pretrained_checkpoint (str): Path to the pretrained model checkpoint.
+            - misc.ckpt_path (str): Path to the fine-tuned model checkpoints.
+            - task_vectors.to_apply (list): List of datasets to apply the task vectors.
+        compress_ratio_per_task (dict, optional): Optional dictionary of
+            per-task custom compression ratios. Defaults to None.
+
+    Returns:
+        dict: A dictionary mapping dataset names to their compressed task vectors.
+    """
+    compression_ratio = 1 / compression_factor
+    if Path(svd_path).exists():
+        pylogger.info(f"Loading precomputed SVD dictionary from: {svd_path}")
+        svd_dict = torch.load(svd_path, map_location="cuda")
+
+        if set(svd_dict.keys()) == set(cfg.eval_datasets):
+            return svd_dict
+        pylogger.warning("Mismatch in datasets. Recomputing SVD dictionary...")
+    else:
+        pylogger.info("No precomputed SVD dictionary found. Computing from scratch...")
+
+        zeroshot_encoder_statedict = load_model_from_disk(
+            cfg.misc.pretrained_checkpoint
+        )
+
+        finetuned_name = (
+            lambda name: Path(cfg.misc.ckpt_path)
+            / f"{name}Val"
+            / "nonlinear_finetuned.pt"
+        )
+        finetuned_models = {
+            dataset: load_model_from_disk(finetuned_name(dataset))
+            for dataset in cfg.task_vectors.to_apply
+        }
+
+        task_dicts = {}
+        for dataset in cfg.task_vectors.to_apply:
+            task_dicts[dataset] = compute_task_dict(
+                zeroshot_encoder_statedict, finetuned_models[dataset]
+            )
+            del finetuned_models[dataset]  # Delete one model at a time
+            torch.cuda.empty_cache()
+        pylogger.info("Task dictionaries for  computed.")
+
+        svd_dict = compress_tv(task_dicts, compression_ratio, compress_ratio_per_task)
+        torch.save(svd_dict, svd_path)
+        pylogger.info(f"SVD dictionary saved at: {svd_path}")
+
+        return svd_dict
 
 
 def whiten(x):
