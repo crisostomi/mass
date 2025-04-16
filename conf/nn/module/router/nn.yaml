@@ -1,5 +1,5 @@
 
-_target_: tvp.modules.nn_router.NNRouter
+_target_: mass.modules.nn_router.NNRouter
 name: nn
 model_name: ${nn.module.encoder.model_name}
 routing_mode: 'top1' # top1 or weighted 

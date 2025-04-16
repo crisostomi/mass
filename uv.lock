@@ -1155,6 +1155,26 @@ wheels = [
 ]
 
 [[package]]
+name = "geoopt"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/61/26/0c3376c2a96b2a4be6e6f018ebf809e4e4f368d47218f74a8bfa07d80cd2/geoopt-0.5.0.tar.gz", hash = "sha256:b22694662ecf21b25e183e3daeb27c0139d6a90e1d566100f6e64d1b7d99d53d", size = 63639 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/86/acd9dfcbba44e3e95216939dab3e9a32f586f94086885bca997126809dae/geoopt-0.5.0-py3-none-any.whl", hash = "sha256:9b5cf729d54f43de5085be14f20cc37050c42e75d09cc7bc3abdddbffddb7209", size = 90057 },
+]
+
+[[package]]
+name = "geopt"
+version = "0.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/44/09/b122be376674b5b79cad8721702e1d57c68300d6369af539c230a845e571/geopt-0.0.2.tar.gz", hash = "sha256:1b0c2ffc381b36be074a645ab3d2b050568470e17fb5d601ad90713fe2206a5c", size = 998 }
+
+[[package]]
 name = "ghp-import"
 version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1865,6 +1885,8 @@ dependencies = [
     { name = "fsspec" },
     { name = "ftfy" },
     { name = "funcy" },
+    { name = "geoopt" },
+    { name = "geopt" },
     { name = "ghp-import" },
     { name = "gitdb" },
     { name = "gitpython" },
@@ -2026,6 +2048,8 @@ requires-dist = [
     { name = "fsspec", specifier = "==2023.12.2" },
     { name = "ftfy", specifier = "==6.2.0" },
     { name = "funcy", specifier = "==2.0" },
+    { name = "geoopt", specifier = ">=0.5.0" },
+    { name = "geopt", specifier = ">=0.0.2" },
     { name = "ghp-import", specifier = "==2.1.0" },
     { name = "gitdb", specifier = "==4.0.11" },
     { name = "gitpython", specifier = "==3.1.43" },

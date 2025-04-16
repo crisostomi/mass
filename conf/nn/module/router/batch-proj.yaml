@@ -1,4 +1,4 @@
-_target_: tvp.modules.projection_router.BatchedProjectionRouter
+_target_: mass.modules.projection_router.BatchedProjectionRouter
 
 name: batched-proj
 

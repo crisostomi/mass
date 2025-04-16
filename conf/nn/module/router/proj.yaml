@@ -1,4 +1,4 @@
-_target_: tvp.modules.projection_router.ProjectionRouter
+_target_: mass.modules.projection_router.ProjectionRouter
 
 name: proj
 

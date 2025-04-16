@@ -1,4 +1,4 @@
-_target_: tvp.modules.encoder.ImageEncoder
+_target_: mass.modules.encoder.ImageEncoder
 model_name: ViT-L-14 # ViT-B-32, ViT-L-14
 openclip_cachedir: ${misc.openclip_cachedir}
 cache_dir: ${misc.cache_dir}

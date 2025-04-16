@@ -1,4 +1,4 @@
-_target_: tvp.modules.linear_router.LinearRouter
+_target_: mass.modules.linear_router.LinearRouter
 
 name: linear
 
