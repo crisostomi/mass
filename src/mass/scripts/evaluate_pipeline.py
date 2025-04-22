@@ -99,7 +99,7 @@ def get_merged_base(
 
     elif merging_method == "tsvm":
 
-        multi_task_vector = sum_svd(
+        multi_task_vector = sum_svd( # TODO: restore no redundancy for proj
             ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
             svd_dicts=svd_dicts,
             #similarity_threshold=cfg.similarity_threshold,
@@ -229,6 +229,13 @@ def run(cfg: DictConfig) -> str:
         cfg=cfg,
         _recursive_=False,
     )
+
+    if (
+        cfg.nn.module.router.name == "linear"
+    ):
+        linear_path = os.path.join(os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename), "checkpoint.ckpt")
+        state_dict = torch.load(linear_path)['state_dict']['router']
+        router.load_state_dict(state_dict, True)
 
     classification_heads: List[ClassificationHead] = get_classification_heads(cfg)
 

@@ -53,9 +53,6 @@ class LinearRouter(AbstractRouter):
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout_prob),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_prob),
             nn.Linear(hidden_dim, len(dataset_names)),
         )
 

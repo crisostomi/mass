@@ -177,8 +177,8 @@ def run(cfg: DictConfig) -> str:
         plugins=[NNCheckpointIO(jailing_dir=logger.run_dir)],
         logger=logger,
         callbacks=callbacks,
-        limit_train_batches=cfg.number_of_train_batches,
-        limit_val_batches=cfg.number_of_val_batches,
+        limit_train_batches=cfg.number_of_train_batches * len(cfg.eval_datasets),
+        limit_val_batches=cfg.number_of_val_batches * len(cfg.eval_datasets) // 5,
         **cfg.train.trainer,
     )
 
