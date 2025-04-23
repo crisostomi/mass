@@ -1,0 +1,57 @@
+core:
+  project_name: task-vectors-playground
+  storage_dir: ${oc.env:PROJECT_ROOT}/storage
+  entity: gladia
+  version: 0.0.1
+  tags: 
+    - optimisation problem
+
+defaults:
+  - hydra: default
+  - nn: default
+  - train: default
+  - optim: sgd
+  - override hydra/launcher: basic
+  - override hydra/job_logging: none
+  - override hydra/hydra_logging: none
+  - _self_ # as last argument to allow the override of parameters via this main config
+
+seed_index: 0
+number_of_train_batches: 10 
+device: 'cuda'
+
+conventions:
+  x_key: 'x'
+  y_key: 'y'
+
+eval_datasets: ${nn.benchmark.tasks}
+
+task_vectors:
+  to_apply: ${eval_datasets}
+  scaling_coefficient: 1.0
+
+misc:
+  ckpt_path: ${oc.env:MODELS_PATH}/${nn.module.encoder.model_name}
+  pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
+  openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
+  checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
+  svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.module.encoder.model_name}.pt"
+  merged_vector_path: "${oc.env:MODELS_PATH}/tv_merged_${nn.module.encoder.model_name}.pt"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/single/${nn.module.encoder.model_name}/nonlinear_ft_accuracies.json"
+  cache_dir: null
+  results_path: "${oc.env:PROJECT_ROOT}/results/${nn.module.router.name}/${nn.module.encoder.model_name}/"
+
+
+optimal_alphas:
+  ViT-B-32:
+    8: 1.00
+    14: 1.00
+    20: 0.90
+  ViT-B-16:
+    8: 1.40
+    14: 1.20
+    20: 1.00
+  ViT-L-14:
+    8: 1.50
+    14: 1.30
+    20: 1.00
