@@ -10,13 +10,14 @@ class RenderedSST2:
         preprocess,
         location=os.path.expanduser("~/data"),
         batch_size=128,
-        num_workers=6
+        num_workers=6,
     ):
 
         # location = os.path.join(location, "rendered-sst2")
-        self.train_dataset = datasets.RenderedSST2(root=location, download=True, split="train", transform=preprocess)
+        self.train_dataset = datasets.RenderedSST2(
+            root=location, download=True, split="train", transform=preprocess
+        )
         self.classnames = self.train_dataset.classes
-
 
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,
@@ -25,7 +26,9 @@ class RenderedSST2:
             num_workers=num_workers,
         )
 
-        self.test_dataset = datasets.RenderedSST2(root=location, download=True, split="test", transform=preprocess)
+        self.test_dataset = datasets.RenderedSST2(
+            root=location, download=True, split="test", transform=preprocess
+        )
 
         self.test_loader = torch.utils.data.DataLoader(
             self.test_dataset,
@@ -33,4 +36,3 @@ class RenderedSST2:
             shuffle=False,
             num_workers=num_workers,
         )
-

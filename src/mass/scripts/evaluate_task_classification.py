@@ -158,7 +158,12 @@ def run(cfg: DictConfig) -> str:
     )
 
     if cfg.nn.module.router.name == "linear":
-        model.new_load_from_checkpoint(os.path.join(os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename), "checkpoint.ckpt"))
+        model.new_load_from_checkpoint(
+            os.path.join(
+                os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename),
+                "checkpoint.ckpt",
+            )
+        )
 
     model.set_metrics(len(cfg.eval_datasets))
 

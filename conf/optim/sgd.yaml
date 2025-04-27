@@ -1,5 +1,4 @@
 _target_: torch.optim.SGD
-params: ??
 lr: 1e-5
 # weight_decay: 0.1
 # _target_: torch.optim.SGD

@@ -51,6 +51,7 @@ class GenericDataset(object):
         self.test_dataset = None
         self.test_loader = None
         self.classnames = None
+
     def __len__(self):
         return len(self.train_dataset)
 

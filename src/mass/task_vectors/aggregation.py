@@ -6,7 +6,9 @@ import numpy as np
 
 
 def inner_product(point, tangent_vector_a, tangent_vector_b):
-    return torch.tensordot(tangent_vector_a, tangent_vector_b, dims=tangent_vector_a.ndim)
+    return torch.tensordot(
+        tangent_vector_a, tangent_vector_b, dims=tangent_vector_a.ndim
+    )
 
 
 def dist(point_a, point_b):
@@ -32,10 +34,14 @@ def ell_q(q, p):
 
 def exp_q(point, tangent_vector):
     norm_value = norm(point, tangent_vector)
-    return point * torch.cos(norm_value) + tangent_vector * torch.sinc(norm_value / np.pi)
+    return point * torch.cos(norm_value) + tangent_vector * torch.sinc(
+        norm_value / np.pi
+    )
 
 
-def spherical_weighted_average(points, weights, tol=1e-8, max_iter=1000, dim=2, verbose=False):
+def spherical_weighted_average(
+    points, weights, tol=1e-8, max_iter=1000, dim=2, verbose=False
+):
     """
     Compute the spherical weighted average of points on a sphere with given weights using PyTorch.
 
@@ -100,16 +106,22 @@ def spherical_weighted_average(points, weights, tol=1e-8, max_iter=1000, dim=2, 
             (points.shape[0],), fill_value=constraint_weight, device=points.device
         ).unsqueeze(1)
         points_with_constraint = torch.cat([points, weights_sum_to_one], dim=1)
-        q_with_constraint = torch.cat([q, torch.tensor([constraint_weight], device=points.device)])
+        q_with_constraint = torch.cat(
+            [q, torch.tensor([constraint_weight], device=points.device)]
+        )
 
         # solve the system of linear equations Ax = B, where A ~ (num_eqs, num_variables), x ~ (num_variables), B ~ (num_eqs)
         # for us, each row of A is a point and the last row is the constraint
         # this means that for each param in the models, we have an equation that
-        alphas = torch.linalg.lstsq(points_with_constraint.T, q_with_constraint).solution
+        alphas = torch.linalg.lstsq(
+            points_with_constraint.T, q_with_constraint
+        ).solution
 
         interpolated_vector = (alphas[:, None] * points_copy).sum(dim=0)
 
-        print(f"Found spherical interpolation coefficients: {alphas}, summing to {alphas.sum()}")
+        print(
+            f"Found spherical interpolation coefficients: {alphas}, summing to {alphas.sum()}"
+        )
         print(f"Reconstruction error: {(interpolated_vector - q).sum()}")
 
         return interpolated_vector

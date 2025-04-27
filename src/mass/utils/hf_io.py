@@ -9,7 +9,9 @@ from omegaconf import DictConfig
 
 from nn_core.common import PROJECT_ROOT
 
-DatasetParams = namedtuple("DatasetParams", ["name", "fine_grained", "train_split", "test_split", "hf_key"])
+DatasetParams = namedtuple(
+    "DatasetParams", ["name", "fine_grained", "train_split", "test_split", "hf_key"]
+)
 
 
 class HFTransform:
@@ -113,7 +115,11 @@ def load_hf_dataset(**cfg: DictConfig) -> MetadataDatasetDict:
     DATASET_KEY = "_".join(
         map(
             str,
-            [v for k, v in dataset_params._asdict().items() if k != "hf_key" and v is not None],
+            [
+                v
+                for k, v in dataset_params._asdict().items()
+                if k != "hf_key" and v is not None
+            ],
         )
     )
     DATASET_DIR: Path = PROJECT_ROOT / "data" / "datasets" / DATASET_KEY
@@ -125,7 +131,9 @@ def load_hf_dataset(**cfg: DictConfig) -> MetadataDatasetDict:
             token=True,
         )
         if "val_percentage" in cfg:
-            train_val_dataset = train_dataset.train_test_split(test_size=cfg["val_percentage"], shuffle=True)
+            train_val_dataset = train_dataset.train_test_split(
+                test_size=cfg["val_percentage"], shuffle=True
+            )
             train_dataset = train_val_dataset["train"]
             val_dataset = train_val_dataset["test"]
         elif "val_split" in cfg:
@@ -135,7 +143,9 @@ def load_hf_dataset(**cfg: DictConfig) -> MetadataDatasetDict:
                 token=True,
             )
         else:
-            raise RuntimeError("Either val_percentage or val_split must be specified in the config.")
+            raise RuntimeError(
+                "Either val_percentage or val_split must be specified in the config."
+            )
 
         test_dataset = load_dataset(
             dataset_params.name,

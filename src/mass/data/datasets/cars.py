@@ -5,7 +5,11 @@ from typing import Any, Callable, Optional, Tuple
 import torch
 import torchvision.datasets as datasets
 from PIL import Image
-from torchvision.datasets.utils import download_and_extract_archive, download_url, verify_str_arg
+from torchvision.datasets.utils import (
+    download_and_extract_archive,
+    download_url,
+    verify_str_arg,
+)
 from torchvision.datasets.vision import VisionDataset
 from torch.utils.data import Subset
 
@@ -43,7 +47,9 @@ class PytorchStanfordCars(VisionDataset):
         try:
             import scipy.io as sio
         except ImportError:
-            raise RuntimeError("Scipy is not found. This dataset needs to have scipy installed: pip install scipy")
+            raise RuntimeError(
+                "Scipy is not found. This dataset needs to have scipy installed: pip install scipy"
+            )
 
         super().__init__(root, transform=transform, target_transform=target_transform)
 
@@ -55,7 +61,9 @@ class PytorchStanfordCars(VisionDataset):
             self._annotations_mat_path = devkit / "cars_train_annos.mat"
             self._images_base_path = self._base_folder / "cars_train"
         else:
-            self._annotations_mat_path = self._base_folder / "cars_test_annos_withlabels.mat"
+            self._annotations_mat_path = (
+                self._base_folder / "cars_test_annos_withlabels.mat"
+            )
             self._images_base_path = self._base_folder / "cars_test"
 
         if download:
@@ -63,17 +71,24 @@ class PytorchStanfordCars(VisionDataset):
 
         if not self._check_exists():
 
-            raise RuntimeError("Dataset not found. You can use download=True to download it")
+            raise RuntimeError(
+                "Dataset not found. You can use download=True to download it"
+            )
 
         self._samples = [
             (
                 str(self._images_base_path / annotation["fname"]),
-                annotation["class"] - 1,  # Original target mapping  starts from 1, hence -1
+                annotation["class"]
+                - 1,  # Original target mapping  starts from 1, hence -1
             )
-            for annotation in sio.loadmat(self._annotations_mat_path, squeeze_me=True)["annotations"]
+            for annotation in sio.loadmat(self._annotations_mat_path, squeeze_me=True)[
+                "annotations"
+            ]
         ]
 
-        self.classes = sio.loadmat(str(devkit / "cars_meta.mat"), squeeze_me=True)["class_names"].tolist()
+        self.classes = sio.loadmat(str(devkit / "cars_meta.mat"), squeeze_me=True)[
+            "class_names"
+        ].tolist()
         self.class_to_idx = {cls: i for i, cls in enumerate(self.classes)}
 
     def __len__(self) -> int:
@@ -126,10 +141,18 @@ class PytorchStanfordCars(VisionDataset):
 
 
 class Cars:
-    def __init__(self, preprocess, location=os.path.expanduser("~/data"), batch_size=32, num_workers=8):
+    def __init__(
+        self,
+        preprocess,
+        location=os.path.expanduser("~/data"),
+        batch_size=32,
+        num_workers=8,
+    ):
         # Data loading code
 
-        self.train_dataset = PytorchStanfordCars(location, "train", preprocess, download=False)
+        self.train_dataset = PytorchStanfordCars(
+            location, "train", preprocess, download=False
+        )
         self.class_to_idx = self.train_dataset.class_to_idx
 
         self.train_loader = torch.utils.data.DataLoader(
@@ -139,9 +162,13 @@ class Cars:
             num_workers=num_workers,
         )
 
-        self.test_dataset = PytorchStanfordCars(location, "test", preprocess, download=False)
+        self.test_dataset = PytorchStanfordCars(
+            location, "test", preprocess, download=False
+        )
         self.test_loader = torch.utils.data.DataLoader(
             self.test_dataset, batch_size=batch_size, num_workers=num_workers
         )
         idx_to_class = dict((v, k) for k, v in self.class_to_idx.items())
-        self.classnames = [idx_to_class[i].replace("_", " ") for i in range(len(idx_to_class))]
+        self.classnames = [
+            idx_to_class[i].replace("_", " ") for i in range(len(idx_to_class))
+        ]

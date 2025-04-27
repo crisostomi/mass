@@ -59,7 +59,6 @@ class EncoderWrapper(pl.LightningModule):
 
         return {"logits": logits.detach()}
 
-
     def training_step(self, batch: Any, batch_idx: int) -> Mapping[str, Any]:
         return self._step(batch=batch, split="train")
 

@@ -7,6 +7,7 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data import Subset
 
+
 class PCAMDataset(Dataset):
     """Custom PCAM Dataset Loader (based on torchvision.datasets.PCAM)
 
@@ -46,7 +47,9 @@ class PCAMDataset(Dataset):
 
         # Validate split argument
         if split not in self._FILES:
-            raise ValueError(f"Invalid split '{split}'. Choose from 'train', 'test', 'val'.")
+            raise ValueError(
+                f"Invalid split '{split}'. Choose from 'train', 'test', 'val'."
+            )
 
         # Define file paths
         self.images_path = self.root / self._FILES[split]["images"]
@@ -58,9 +61,14 @@ class PCAMDataset(Dataset):
     def _load_h5_files(self):
         """Loads images and labels from HDF5 files."""
         if not self.images_path.exists() or not self.targets_path.exists():
-            raise RuntimeError(f"Dataset files not found in {self.root}. Please check the dataset location.")
+            raise RuntimeError(
+                f"Dataset files not found in {self.root}. Please check the dataset location."
+            )
 
-        with h5py.File(self.images_path, "r") as images_data, h5py.File(self.targets_path, "r") as targets_data:
+        with (
+            h5py.File(self.images_path, "r") as images_data,
+            h5py.File(self.targets_path, "r") as targets_data,
+        ):
             self.data = images_data["x"][:]  # Image data
             self.labels = targets_data["y"][:]  # Labels
 
@@ -95,7 +103,7 @@ class PCAM:
         preprocess: Optional[Callable] = None,
         location: str = os.path.expanduser("~/data"),
         batch_size: int = 128,
-        num_workers: int = 6
+        num_workers: int = 6,
     ):
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -107,11 +115,17 @@ class PCAM:
 
         # Data loaders
         self.train_loader = DataLoader(
-            self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
         )
 
         self.test_loader = DataLoader(
-            self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers
+            self.test_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
         )
 
         self.classnames = [

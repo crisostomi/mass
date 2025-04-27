@@ -399,6 +399,7 @@ def is_supported_layer(layer_key: str) -> bool:
         and not ("c_fc" in layer_key)
     )
 
+
 def router_key_from_layer(key, index):
     return f"encoder.model.visual.transformer.resblocks.{index}.{key}"
 
@@ -417,7 +418,7 @@ def from_router_to_svd_dict_key(key):
         return key + ".in_proj_weight"
     if "mlp" in key:
         return key + ".c_fc.weight"
-    
+
 
 @torch.no_grad()
 def compute_task_dict(pretrained, finetuned):
@@ -432,6 +433,7 @@ def compute_task_dict(pretrained, finetuned):
         new_state_dict[key] = difference
 
     return new_state_dict
+
 
 def unzip_all_in_folder(folder_path):
     """
@@ -452,10 +454,10 @@ def unzip_all_in_folder(folder_path):
             zip_path = os.path.join(folder_path, file)
 
             # Remove all extensions from the filename
-            folder_name = file.split(".")[0]  
+            folder_name = file.split(".")[0]
             extract_path = os.path.join(folder_path, folder_name)
 
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 zip_ref.extractall(extract_path)  # Extract files
 
             print(f"Extracted: {zip_path} → {extract_path}")
