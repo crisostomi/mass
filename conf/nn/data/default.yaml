@@ -14,6 +14,6 @@ num_workers:
   test: 0
 
 batch_size:
-  train: 32 #128 by ilharco et al
+  train: 16 #128 by ilharco et al
   val: 32
   test: 32
