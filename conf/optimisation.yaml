@@ -1,10 +1,10 @@
 core:
-  project_name: task-vectors-playground
+  project_name: tsv-mass-merging
   storage_dir: ${oc.env:PROJECT_ROOT}/storage
   entity: gladia
   version: 0.0.1
   tags: 
-    - optimisation problem
+    - dev
 
 defaults:
   - hydra: default
