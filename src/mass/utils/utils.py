@@ -399,6 +399,20 @@ def is_supported_layer(layer_key: str) -> bool:
         and not ("c_fc" in layer_key)
     )
 
+def is_supported_layer_svd(layer_key: str) -> bool:
+    """
+    Keep layers inside resblocks, attn or mlp, but exclude only biases and layer norms.
+    """
+    return (
+        ("resblocks." in layer_key)
+        and (("attn" in layer_key) or ("mlp" in layer_key))
+        and not ("ln" in layer_key)
+        and not ("gelu" in layer_key)
+        and not ("bias" in layer_key)
+        and not ("c_proj" in layer_key)
+        and not ("out_proj" in layer_key)
+    )
+
 
 def router_key_from_layer(key, index):
     return f"encoder.model.visual.transformer.resblocks.{index}.{key}"
@@ -418,6 +432,23 @@ def from_router_to_svd_dict_key(key):
         return key + ".in_proj_weight"
     if "mlp" in key:
         return key + ".c_fc.weight"
+
+def svd_key_to_router_key(svd_key: str) -> str:
+    if svd_key.endswith(".in_proj_weight"):
+        base = svd_key[:-len(".in_proj_weight")]
+    elif svd_key.endswith(".c_fc.weight"):
+        base = svd_key[:-len(".c_fc.weight")]
+    else:
+        raise ValueError(f"Invalid SVD format {svd_key!r}")
+
+    if not base.startswith("model.visual."):
+        raise ValueError(f"Not a valid prefix {base!r}")
+    return base.replace("model.visual.", "model.visual.transformer.", 1)
+
+def add_transformer_key(layer: str):
+    if not layer.startswith("model.visual."):
+        raise ValueError(f"Not a valid prefix {base!r}")
+    return layer.replace("model.visual.", "model.visual.transformer.", 1)
 
 
 @torch.no_grad()
