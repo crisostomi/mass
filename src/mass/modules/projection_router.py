@@ -1,5 +1,4 @@
 from collections import defaultdict
-import copy
 import torch
 import numpy as np
 import wandb
@@ -9,11 +8,9 @@ from mass.utils.routing_methods import (
     compute_residual_norm,
 )
 from mass.utils.utils import (
-    apply_dict_to_model,
     get_hook_fn,
     get_hook_fn_impact,
     get_routing_weights,
-    print_memory,
     is_supported_layer,
     router_key_from_layer,
     svd_key_from_layer,

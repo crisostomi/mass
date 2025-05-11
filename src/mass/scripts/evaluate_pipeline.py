@@ -184,6 +184,9 @@ def run(cfg: DictConfig) -> str:
 
     pylogger.info(f"Number of tasks: {len(cfg.eval_datasets)}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
+    
+    if cfg.nn.module.oracle_mode:
+        pylogger.warning(f"You are using the oracle mode, if this is not intended, please set oracle_mode to False")
 
     task_dicts = {}
     for dataset in cfg.task_vectors.to_apply:

@@ -1,21 +1,15 @@
 ## Imports
 import copy
 import logging
-import os
-from pathlib import Path
-from typing import Dict, List, Optional
-
-import open_clip
+from typing import List
 
 import hydra
 import omegaconf
 import pytorch_lightning as pl
 import torch
-from hydra import compose, initialize
 from hydra.utils import instantiate
 from lightning.pytorch import Callback
-from omegaconf import DictConfig, ListConfig
-from torch.nn.utils import parameters_to_vector, vector_to_parameters
+from omegaconf import DictConfig
 
 from nn_core.callbacks import NNTemplateCore
 from nn_core.common import PROJECT_ROOT
@@ -34,15 +28,9 @@ from mass.utils.utils import (
     compute_task_dict,
     apply_dict_to_model,
     build_callbacks,
-    get_finetuning_accuracies,
-    add_normalized_accuracy,
-    compute_avg_accuracy,
     print_memory,
-    get_routing_weights,
 )
 from mass.task_vectors.task_singular_vectors import *
-import json
-import os
 
 pylogger = logging.getLogger(__name__)
 

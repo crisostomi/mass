@@ -1,7 +1,5 @@
-import copy
 import numpy as np
 from hydra.utils import instantiate
-import pytorch_lightning as pl
 import wandb
 import torch
 
@@ -16,11 +14,9 @@ from mass.task_vectors.aggregator import (
 )
 from mass.utils.plots import (
     plot_interactive_coefficients_barchart,
-    plot_interactive_curve,
     plot_interactive_coefficients_std,
 )
 from mass.utils.utils import (
-    apply_dict_to_model,
     reconstruct_tv_from_svddict,
     pad_output,
 )
@@ -97,6 +93,32 @@ class MASS(MultiHeadImageClassifier):
     @torch.no_grad()
     def forward_oracle(self, images: torch.Tensor, dataset_name: str):
         _, dataset_coeffs, dataset_group_to_samples = self.router(images)
+        
+        self.coeffs_to_log.append(dataset_coeffs.mean(dim=0).cpu().numpy())
+        
+        pred_tasks = torch.max(dataset_coeffs, dim=1)[1]
+        gt_tasks = torch.full_like(pred_tasks, self.dataset_name_to_idx[self.task_name])
+
+        task_acc = self.task_accuracy(pred_tasks, gt_tasks)
+        self.log_fn(f"task_accuracy/{self.task_name}", task_acc)
+
+        # log task activation
+        active_tasks = torch.sum(dataset_coeffs > self.router.threshold, dim=1)
+
+        for active_num in active_tasks:
+            active = int(active_num.item())
+            if active not in self.task_act_to_log:
+                self.task_act_to_log[active] = 0
+            self.task_act_to_log[active] += 1
+
+        # task survival
+        correct_task_coeffs = dataset_coeffs[
+            :, self.dataset_name_to_idx[self.task_name]
+        ]
+        task_survival_count = torch.mean(
+            (correct_task_coeffs > self.router.threshold).float()
+        ).item()
+        self.log_fn(f"task_survival/{self.task_name}", task_survival_count)
 
         batch_size = images.size(0)
         sample_embeddings = [None] * batch_size

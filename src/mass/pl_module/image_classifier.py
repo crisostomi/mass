@@ -2,15 +2,12 @@ import logging
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
 
 import hydra
-import omegaconf
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-import torch.nn.utils.prune as prune
 import torchmetrics
 from torch.optim import Optimizer
 
-from nn_core.common import PROJECT_ROOT
 from nn_core.model_logging import NNLogger
 
 from mass.data.datamodule import MetaData

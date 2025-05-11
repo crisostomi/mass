@@ -5,13 +5,10 @@ import open_clip
 import torch
 from tqdm import tqdm
 
-from mass.data.datasets.common import maybe_dictionarize
 from mass.data.datasets.registry import get_dataset
 from mass.data.datasets.templates import (
-    get_dataset_to_label,
     get_templates,
     dataset_descriptions,
-    DATASET_TO_LABEL,
 )
 from mass.modules.encoder import ClassificationHead, ImageEncoder
 

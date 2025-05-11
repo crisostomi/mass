@@ -1,5 +1,3 @@
-import copy
-
 from tqdm import tqdm
 
 from torch import Tensor
@@ -10,7 +8,6 @@ from mass.data.datasets.common import maybe_dictionarize
 from mass.data.datasets.registry import get_dataset
 from mass.data.datasets.templates import get_dataset_to_label
 from mass.modules.router import AbstractRouter
-from mass.utils.utils import apply_dict_to_model
 
 pylogger = logging.getLogger(__name__)
 

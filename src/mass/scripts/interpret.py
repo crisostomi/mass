@@ -1,7 +1,6 @@
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import logging
-import wandb
 import os
 
 # Import boilerplate dependencies from your training framework

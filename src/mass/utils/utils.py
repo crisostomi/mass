@@ -402,9 +402,12 @@ def is_supported_layer(layer_key: str) -> bool:
 def router_key_from_layer(key, index):
     return f"encoder.model.visual.transformer.resblocks.{index}.{key}"
 
+def _router_key_from_layer(key, index):
+    return f"encoder.model.visual.resblocks.{index}.{key}"
+
 
 def svd_key_from_layer(key, index):
-    base = router_key_from_layer(key, index)
+    base = _router_key_from_layer(key, index)
     if "attn" in key:
         return base + ".in_proj_weight"
     elif "mlp" in key:
