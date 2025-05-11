@@ -38,7 +38,7 @@ num_of_tasks_to_scaling_coeff = {
 
 class MASS(MultiHeadImageClassifier):
     def __init__(
-        self, router, encoder, zeroshot_model, classification_heads, svd_dicts, **kwargs
+        self, router, encoder, zeroshot_model, classification_heads, svd_dicts, oracle_mode, **kwargs
     ):
         """
 
@@ -54,6 +54,7 @@ class MASS(MultiHeadImageClassifier):
         self.router = router
         self.svd_dicts = svd_dicts
         self.output_classes = None
+        self.oracle_mode = oracle_mode 
 
         self.aggregator = instantiate(
             self.hparams.aggregator, zeroshot_model=zeroshot_model.cuda()
@@ -92,6 +93,36 @@ class MASS(MultiHeadImageClassifier):
         self.train_acc = metric.clone()
         self.val_acc = metric.clone()
         self.test_acc = metric.clone()
+     
+    @torch.no_grad()
+    def forward_oracle(self, images: torch.Tensor, dataset_name: str):
+        _, dataset_coeffs, dataset_group_to_samples = self.router(images)
+
+        batch_size = images.size(0)
+        sample_embeddings = [None] * batch_size
+
+        for dataset_group, idxs in dataset_group_to_samples.items():
+            idxs = torch.tensor(idxs, device=images.device)
+            group_idxs = torch.tensor(
+                [self.dataset_name_to_idx[n] for n in dataset_group],
+                device=images.device
+            )
+            coeffs = dataset_coeffs[idxs[:, None], group_idxs].mean(dim=0)
+            merged_model = self._apply_tv(list(dataset_group), coefficients=coeffs)
+            group_out = merged_model(images[idxs])
+            for j, i in enumerate(idxs):
+                sample_embeddings[i] = group_out[j : j + 1]
+
+        sample_embeddings = torch.cat(sample_embeddings, dim=0)  # (B, D)
+
+        head = self.classification_heads[self.dataset_name_to_idx[dataset_name]]
+        logits = head(sample_embeddings)
+
+        assert self.output_classes is not None, \
+            "Output classes not set. Use set_metrics() first."
+
+        outputs = [logits[i : i + 1] for i in range(batch_size)]
+        return pad_output(outputs, self.output_classes)
 
     @torch.no_grad()
     def forward(self, images: torch.Tensor):
@@ -193,6 +224,7 @@ class MASS(MultiHeadImageClassifier):
         ), "Output classes not set. Use set_metrics() method to set them."
 
         return pad_output(outputs, self.output_classes)
+    
 
     @torch.no_grad()
     def _apply_tv(self, dataset_names, coefficients):
@@ -249,6 +281,8 @@ class MASS(MultiHeadImageClassifier):
             raise NotImplementedError
 
     def __call__(self, images):
+        if self.oracle_mode:
+            return self.forward_oracle(images, self.task_name)
         return self.forward(images)
 
     def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):

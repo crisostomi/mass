@@ -13,6 +13,7 @@ y_key: ${conventions.y_key}
 dataset_names: {eval_dataset}
 base_merging_method: tsvm # isotropic, tsvm, zeroshot
 heads_selection_method: max # avg, max 
+oracle_mode: true
 
 image_encoder: ??  
 classification_heads: ??
