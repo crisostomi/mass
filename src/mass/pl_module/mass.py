@@ -92,10 +92,15 @@ class MASS(MultiHeadImageClassifier):
      
     @torch.no_grad()
     def forward_oracle(self, images: torch.Tensor, dataset_name: str):
-        _, dataset_coeffs, dataset_group_to_samples = self.router(images)
         
+        _, dataset_coeffs, dataset_group_to_samples = self.router(
+            images
+        )
+
+        # log coefficients
         self.coeffs_to_log.append(dataset_coeffs.mean(dim=0).cpu().numpy())
-        
+        # log task accuracy
+
         pred_tasks = torch.max(dataset_coeffs, dim=1)[1]
         gt_tasks = torch.full_like(pred_tasks, self.dataset_name_to_idx[self.task_name])
 
@@ -120,22 +125,38 @@ class MASS(MultiHeadImageClassifier):
         ).item()
         self.log_fn(f"task_survival/{self.task_name}", task_survival_count)
 
-        batch_size = images.size(0)
+        batch_size = images.shape[0]
         sample_embeddings = [None] * batch_size
 
-        for dataset_group, idxs in dataset_group_to_samples.items():
-            idxs = torch.tensor(idxs, device=images.device)
-            group_idxs = torch.tensor(
-                [self.dataset_name_to_idx[n] for n in dataset_group],
-                device=images.device
-            )
-            coeffs = dataset_coeffs[idxs[:, None], group_idxs].mean(dim=0)
-            merged_model = self._apply_tv(list(dataset_group), coefficients=coeffs)
-            group_out = merged_model(images[idxs])
-            for j, i in enumerate(idxs):
-                sample_embeddings[i] = group_out[j : j + 1]
+        for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
+            dataset_group_idxs = torch.tensor(
+                [
+                    self.dataset_name_to_idx[dataset_name]
+                    for dataset_name in dataset_group
+                ]
+            )  # Convert to a PyTorch tensor
 
-        sample_embeddings = torch.cat(sample_embeddings, dim=0)  # (B, D)
+            assigned_sample_idxs = torch.tensor(
+                assigned_sample_idxs
+            )  # Ensure assigned_sample_idxs is also a tensor
+
+            merged_model = self._apply_tv(
+                list(dataset_group),
+                coefficients=dataset_coeffs[
+                    assigned_sample_idxs[:, None], dataset_group_idxs
+                ].mean(dim=0),
+            )
+
+            # (num_samples_in_group, C, H, W)
+            group_images = images[assigned_sample_idxs]
+
+            # (num_samples_in_group, embedding_dim)
+            group_output = merged_model(group_images)
+
+            for j, idx in enumerate(assigned_sample_idxs):
+                sample_embeddings[idx] = group_output[j : j + 1]
+
+        sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
         head = self.classification_heads[self.dataset_name_to_idx[dataset_name]]
         logits = head(sample_embeddings)
