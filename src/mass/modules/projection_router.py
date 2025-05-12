@@ -76,19 +76,47 @@ class ProjectionRouter(AbstractRouter):
         self.layer_num = layer_num_to_hook
         self.hook = hook_type
 
-        self.svd_key = svd_key_from_layer(layer_to_hook, layer_num_to_hook)
-        self.feature_key = router_key_from_layer(layer_to_hook, layer_num_to_hook)
+        if self.layer == "all":
+            self.layer = ["attn", "mlp"]
+        if self.layer_num == "all":
+            self.layer_num = list(range(24)) if model_name == "ViT-L-14" else list(range(12))
+        if isinstance(self.layer, str):
+            self.layer = [self.layer]
+        if isinstance(self.layer_num, int):
+            self.layer_num = [self.layer_num]
 
-        if routing_weights is None:
-            routing_weights, sigma, u = get_routing_weights(
-                svd_dict, self.svd_key, get_sigma=True, get_u=True
+        self.svd_key = [
+            svd_key_from_layer(layer_to_hook, layer_num_to_hook)
+            for layer_to_hook in self.layer
+            for layer_num_to_hook in self.layer_num
+        ]
+        self.feature_key = [
+            router_key_from_layer(layer_to_hook, layer_num_to_hook)
+            for layer_to_hook in self.layer
+            for layer_num_to_hook in self.layer_num
+        ]
+
+        for svd_key in self.svd_key:
+            if routing_weights is None:
+                routing_weights, sigma, u = get_routing_weights(
+                    svd_dict, svd_key, get_sigma=True, get_u=True
+                )
+            # TODO: fix this whe use the use_fixed_compress_bl_bla
+            # else:
+            #     routing_weights, sigma, u = routing_weights
+
+            self.register_buffer(
+                f"routing_weights_{svd_key.replace('in_proj_weight', '').replace('c_fc.weight', '').replace('.', '')}",
+                routing_weights,
             )
-        else:
-            routing_weights, sigma, u = routing_weights
-
-        self.register_buffer("routing_weights", routing_weights)
-        self.register_buffer("routing_singular_values", sigma)
-        self.register_buffer("routing_left_weights", u)
+            self.register_buffer(
+                f"routing_singular_values_{svd_key.replace('in_proj_weight', '').replace('c_fc.weight', '').replace('.', '')}",
+                sigma,
+            )
+            self.register_buffer(
+                f"routing_left_weights_{svd_key.replace('in_proj_weight', '').replace('c_fc.weight', '').replace('.', '')}",
+                u,
+            )
 
         self.debug_residuals = debug_residuals
         self.debug_layer_impact = debug_layer_impact
@@ -113,7 +141,7 @@ class ProjectionRouter(AbstractRouter):
             if not is_supported_layer(name):
                 continue
 
-            if name == self.feature_key or self.debug_residuals:
+            if name in self.feature_key or self.debug_residuals:
                 hooked = True
                 pylogger.info(f"Registering hook for {name}")
                 module.register_forward_hook(get_hook_fn(self, name, self.hook))
@@ -128,12 +156,35 @@ class ProjectionRouter(AbstractRouter):
         with torch.no_grad():
             _ = self.encoder(images)
         # (L, B, D)
-        x = self.middle_features[self.feature_key].to(self.device)
-        x = self.select_token(x)
 
-        norms = compute_residual_norm(
-            x, v=self.routing_weights, s=self.routing_singular_values, norm=self.norm
-        )
+        norms = None
+        for feature_key in self.feature_key:
+            x = self.middle_features[feature_key].to(self.device)
+            x = self.select_token(x)
+
+            # dynamically grab the buffers you registered in __init__
+            # print("*" * 20)
+            # print(f"routing_weights_{feature_key.replace('.', '')}")
+            # print("*" * 20)
+            v = getattr(
+                self, f"routing_weights_{feature_key.replace('transformer','').replace('.', '')}"
+            )
+            s = getattr(
+                self,
+                f"routing_singular_values_{feature_key.replace('transformer','').replace('.', '')}",
+            )
+
+            # compute this layer’s residual norm
+            this_norm = compute_residual_norm(x, v=v, s=s, norm=self.norm)
+            # on first iter, create norms tensor of same shape as this_norm
+            if norms is None:
+                norms = this_norm
+            else:
+                norms = norms + this_norm
+
+        #     norms += compute_residual_norm(
+        #     x, v=self.routing_weights, s=self.routing_singular_values, norm=self.norm
+        # )
 
         # logging stuff
         if self.debug_residuals:
@@ -163,9 +214,7 @@ class ProjectionRouter(AbstractRouter):
                 self.layer_accuracy_to_log[layer_key].append(layer_pred_task)
 
             except Exception as e:
-                pylogger.warning(
-                    f"Skipping logging for layer {layer_key} due to error: {e}"
-                )
+                pylogger.warning(f"Skipping logging for layer {layer_key} due to error: {e}")
 
     def logging(self, logger, current_task):
         self.norms_to_log = np.array(self.norms_to_log)
@@ -175,9 +224,7 @@ class ProjectionRouter(AbstractRouter):
 
         dataset_names = list(self.dataset_names)
 
-        fig_std = plot_interactive_coefficients_std(
-            mean_coeffs, std_coeffs, dataset_names
-        )
+        fig_std = plot_interactive_coefficients_std(mean_coeffs, std_coeffs, dataset_names)
 
         logger.experiment.log(
             {
@@ -190,9 +237,7 @@ class ProjectionRouter(AbstractRouter):
                 self.layer_residuals_to_log, dataset_names
             )
 
-            logger.experiment.log(
-                {f"average_residuals/{current_task}": wandb.Plotly(fig)}
-            )
+            logger.experiment.log({f"average_residuals/{current_task}": wandb.Plotly(fig)})
 
             fig = create_interactive_layer_task_accuracy_plot(
                 self.layer_accuracy_to_log,
@@ -200,9 +245,7 @@ class ProjectionRouter(AbstractRouter):
                 dataset_names,
             )
 
-            logger.experiment.log(
-                {f"layer_task_accuracy/{current_task}": wandb.Plotly(fig)}
-            )
+            logger.experiment.log({f"layer_task_accuracy/{current_task}": wandb.Plotly(fig)})
 
         if self.debug_layer_impact:
 
