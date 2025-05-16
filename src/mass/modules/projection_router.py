@@ -9,6 +9,7 @@ from mass.utils.routing_methods import (
     compute_residual_norm,
 )
 from mass.utils.utils import (
+    _router_key_from_layer,
     apply_dict_to_model,
     get_hook_fn,
     get_hook_fn_impact,

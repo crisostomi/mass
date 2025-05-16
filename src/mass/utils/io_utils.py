@@ -31,9 +31,20 @@ def load_model_from_artifact(run, artifact_path):
     return model
 
 
-def load_model_from_disk(model_path):
+def load_model_from_disk(model_path, model_name=None) -> ImageEncoder:
 
-    return torch.load(model_path)
+    loaded = torch.load(model_path)
+
+    # if it's a statedict, we need to create the model first
+    if not isinstance(loaded, ImageEncoder):
+
+        state_dict = loaded
+
+        model = ImageEncoder(model_name)
+        model.load_state_dict(state_dict)
+        return model
+
+    return loaded
 
 
 def get_class(model):

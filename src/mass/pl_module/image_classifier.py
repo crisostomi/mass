@@ -46,6 +46,40 @@ class ImageClassifier(pl.LightningModule):
         self.encoder = encoder
         self.classification_head = classifier
 
+        self.log_fn = lambda metric, val: self.log(
+            metric, val, on_step=False, on_epoch=True
+        )
+
+        self.finetuning_accuracy = None
+
+    def set_encoder(self, encoder: torch.nn.Module):
+        """Set the encoder of the model.
+
+        Args:
+            encoder (torch.nn.Module): The new encoder to set.
+        """
+        self.encoder = encoder
+
+    def set_head(self, head: torch.nn.Module):
+        """Set the classification head of the model.
+
+        Args:
+            head (torch.nn.Module): The new classification head to set.
+        """
+        self.classification_head = head
+
+    def set_metrics(self, num_classes):
+
+        self.num_classes = num_classes
+
+        metric = torchmetrics.Accuracy(
+            task="multiclass", num_classes=num_classes, top_k=1
+        )
+
+        self.train_acc = metric.clone()
+        self.val_acc = metric.clone()
+        self.test_acc = metric.clone()
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Method for the forward pass.
 
@@ -75,13 +109,8 @@ class ImageClassifier(pl.LightningModule):
         metrics = getattr(self, f"{split}_acc")
         metrics.update(preds, gt_y)
 
-        self.log_dict(
-            {
-                f"acc/{split}": metrics,
-                f"loss/{split}": loss,
-            },
-            on_epoch=True,
-        )
+        self.log_fn(f"acc/{split}/{self.task_name}", metrics)
+        self.log_fn(f"loss/{split}/{self.task_name}", loss)
 
         return {"logits": logits.detach(), "loss": loss}
 
@@ -132,3 +161,20 @@ class ImageClassifier(pl.LightningModule):
     def load(cls, filename):
         print(f"Loading image classifier from {filename}")
         return torch_load(filename)
+
+    def set_task(self, task_name):
+        self.task_name = task_name
+
+    def set_finetuning_accuracy(self, finetuning_accuracy):
+        self.finetuning_accuracy = finetuning_accuracy
+
+    def on_test_epoch_end(self):
+
+        if self.finetuning_accuracy is not None:
+            accuracy = (
+                self.trainer.callback_metrics[f"acc/test/{self.task_name}"].cpu().item()
+            )
+
+            normalized_acc = accuracy / self.finetuning_accuracy
+
+            self.log_fn(f"normalized_acc/test/{self.task_name}", normalized_acc)
