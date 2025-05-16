@@ -1,7 +1,8 @@
-from tsv import PROJECT_ROOT
 import os
 import shutil
-from pathlib import Path
+
+from mass import PROJECT_ROOT
+
 
 base_dir = PROJECT_ROOT / "data"
 

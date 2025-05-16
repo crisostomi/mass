@@ -403,6 +403,13 @@ def is_supported_layer(layer_key: str) -> bool:
 def router_key_from_layer(key, index):
     return f"encoder.model.visual.transformer.resblocks.{index}.{key}"
 
+def _router_key_from_layer(key, index):
+    return f"encoder.model.visual.resblocks.{index}.{key}"
+
+
+def _router_key_from_layer(key, index):
+    return f"encoder.model.visual.resblocks.{index}.{key}"
+
 
 def _router_key_from_layer(key, index):
     return f"encoder.model.visual.resblocks.{index}.{key}"

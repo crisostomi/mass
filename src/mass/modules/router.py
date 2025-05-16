@@ -1,22 +1,6 @@
 from typing import List, Tuple, Any
-import wandb
 import torch
-import numpy as np
 import abc
-import copy
-import open_clip
-
-import hydra
-from omegaconf import DictConfig
-
-from mass.utils.utils import (
-    get_hook_fn,
-    reconstruct_tv_from_svddict,
-    apply_dict_to_model,
-)
-from mass.task_vectors.aggregator import WeightedAggregator
-from mass.utils.routing_methods import compute_residual_norm
-
 
 import logging
 
@@ -129,7 +113,7 @@ class AbstractRouter(torch.nn.Module, abc.ABC):
 
         return tv_coefficients
 
-    def predict_task_train(self, images) -> torch.Tensor:
+    def predict_task_train(self, images):
         yield NotImplementedError(f"{self.name} router is not trainable")
 
     def predict_task(self, images) -> torch.Tensor:

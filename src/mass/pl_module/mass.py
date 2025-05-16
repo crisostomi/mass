@@ -1,7 +1,5 @@
-import copy
 import numpy as np
 from hydra.utils import instantiate
-import pytorch_lightning as pl
 import wandb
 import torch
 
@@ -16,11 +14,9 @@ from mass.task_vectors.aggregator import (
 )
 from mass.utils.plots import (
     plot_interactive_coefficients_barchart,
-    plot_interactive_curve,
     plot_interactive_coefficients_std,
 )
 from mass.utils.utils import (
-    apply_dict_to_model,
     reconstruct_tv_from_svddict,
     pad_output,
 )
@@ -38,7 +34,7 @@ num_of_tasks_to_scaling_coeff = {
 
 class MASS(MultiHeadImageClassifier):
     def __init__(
-        self, router, encoder, zeroshot_model, classification_heads, svd_dicts, **kwargs
+        self, router, encoder, zeroshot_model, classification_heads, svd_dicts, oracle_mode, **kwargs
     ):
         """
 
@@ -54,6 +50,7 @@ class MASS(MultiHeadImageClassifier):
         self.router = router
         self.svd_dicts = svd_dicts
         self.output_classes = None
+        self.oracle_mode = oracle_mode 
 
         self.aggregator = instantiate(
             self.hparams.aggregator, zeroshot_model=zeroshot_model.cuda()
@@ -92,6 +89,83 @@ class MASS(MultiHeadImageClassifier):
         self.train_acc = metric.clone()
         self.val_acc = metric.clone()
         self.test_acc = metric.clone()
+     
+    @torch.no_grad()
+    def forward_oracle(self, images: torch.Tensor, dataset_name: str):
+        
+        _, dataset_coeffs, dataset_group_to_samples = self.router(
+            images
+        )
+
+        # log coefficients
+        self.coeffs_to_log.append(dataset_coeffs.mean(dim=0).cpu().numpy())
+        # log task accuracy
+
+        pred_tasks = torch.max(dataset_coeffs, dim=1)[1]
+        gt_tasks = torch.full_like(pred_tasks, self.dataset_name_to_idx[self.task_name])
+
+        task_acc = self.task_accuracy(pred_tasks, gt_tasks)
+        self.log_fn(f"task_accuracy/{self.task_name}", task_acc)
+
+        # log task activation
+        active_tasks = torch.sum(dataset_coeffs > self.router.threshold, dim=1)
+
+        for active_num in active_tasks:
+            active = int(active_num.item())
+            if active not in self.task_act_to_log:
+                self.task_act_to_log[active] = 0
+            self.task_act_to_log[active] += 1
+
+        # task survival
+        correct_task_coeffs = dataset_coeffs[
+            :, self.dataset_name_to_idx[self.task_name]
+        ]
+        task_survival_count = torch.mean(
+            (correct_task_coeffs > self.router.threshold).float()
+        ).item()
+        self.log_fn(f"task_survival/{self.task_name}", task_survival_count)
+
+        batch_size = images.shape[0]
+        sample_embeddings = [None] * batch_size
+
+        for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
+            dataset_group_idxs = torch.tensor(
+                [
+                    self.dataset_name_to_idx[dataset_name]
+                    for dataset_name in dataset_group
+                ]
+            )  # Convert to a PyTorch tensor
+
+            assigned_sample_idxs = torch.tensor(
+                assigned_sample_idxs
+            )  # Ensure assigned_sample_idxs is also a tensor
+
+            merged_model = self._apply_tv(
+                list(dataset_group),
+                coefficients=dataset_coeffs[
+                    assigned_sample_idxs[:, None], dataset_group_idxs
+                ].mean(dim=0),
+            )
+
+            # (num_samples_in_group, C, H, W)
+            group_images = images[assigned_sample_idxs]
+
+            # (num_samples_in_group, embedding_dim)
+            group_output = merged_model(group_images)
+
+            for j, idx in enumerate(assigned_sample_idxs):
+                sample_embeddings[idx] = group_output[j : j + 1]
+
+        sample_embeddings = torch.cat(sample_embeddings, dim=0)
+
+        head = self.classification_heads[self.dataset_name_to_idx[dataset_name]]
+        logits = head(sample_embeddings)
+
+        assert self.output_classes is not None, \
+            "Output classes not set. Use set_metrics() first."
+
+        outputs = [logits[i : i + 1] for i in range(batch_size)]
+        return pad_output(outputs, self.output_classes)
 
     @torch.no_grad()
     def forward(self, images: torch.Tensor):
@@ -193,6 +267,7 @@ class MASS(MultiHeadImageClassifier):
         ), "Output classes not set. Use set_metrics() method to set them."
 
         return pad_output(outputs, self.output_classes)
+    
 
     @torch.no_grad()
     def _apply_tv(self, dataset_names, coefficients):
@@ -249,6 +324,8 @@ class MASS(MultiHeadImageClassifier):
             raise NotImplementedError
 
     def __call__(self, images):
+        if self.oracle_mode:
+            return self.forward_oracle(images, self.task_name)
         return self.forward(images)
 
     def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):

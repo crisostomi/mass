@@ -20,8 +20,8 @@ defaults:
 seed_index: 0
 ntasks: 0
 similarity_threshold: 0.3
-eval_on_train: false
-number_of_train_batches: none # number of batches of the val set, used for grid search
+eval_on_train: true
+number_of_train_batches: 10 # number of batches of the val set, used for grid search
 device: 'cuda'
 
 conventions:

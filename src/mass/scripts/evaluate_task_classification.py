@@ -76,6 +76,13 @@ def run(cfg: DictConfig) -> str:
 
     logger, template_core = boilerplate(cfg)
 
+    ntasks = len(cfg.eval_datasets)
+
+    # Temporarily disable struct mode to allow dynamic update
+    omegaconf.OmegaConf.set_struct(cfg, False)
+    cfg.ntasks = ntasks  # Now we can safely update it
+    omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
+
     # only has vision encoder, no text transformer
     zeroshot_encoder_statedict = load_model_from_disk(cfg.misc.pretrained_checkpoint)
 
@@ -151,7 +158,7 @@ def run(cfg: DictConfig) -> str:
     )
 
     if cfg.nn.module.router.name == "linear":
-        model.new_load_from_checkpoint(cfg.misc.checkpoint_dir + "/checkpoint.ckpt")
+        model.new_load_from_checkpoint(os.path.join(os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename), "checkpoint.ckpt"))
 
     model.set_metrics(len(cfg.eval_datasets))
 

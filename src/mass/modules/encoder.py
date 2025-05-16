@@ -1,6 +1,5 @@
 import open_clip
 import torch
-from torch.nn.utils import prune
 
 from mass import utils
 from mass.utils.utils import torch_load, torch_save

@@ -1,4 +1,3 @@
-import copy
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -48,9 +47,6 @@ class LinearRouter(AbstractRouter):
 
         self.mlp_router = torch.nn.Sequential(
             nn.Linear(embedding_dims, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_prob),
-            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout_prob),
             nn.Linear(hidden_dim, hidden_dim),
