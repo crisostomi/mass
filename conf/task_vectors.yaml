@@ -4,10 +4,8 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - mlp
-  - vit-32
-  - final
-
+  - dev
+  - smile
 
 
 defaults:
@@ -44,19 +42,16 @@ task_vectors:
     _target_: mass.task_vectors.aggregator.TaskSingularVectorAggregator
     zeroshot_model: ???
 
-    # _target_: mass.task_vectors.aggregator.SphericalAggregator
-    # _target_: mass.task_vectors.aggregator.SumAggregator
-    # mean: false
-    # rescaling: 0.3
 
 misc:
   ckpt_path: ${oc.env:MODELS_PATH}/${nn.module.encoder.model_name}
-  pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
+  pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot_TA.pt
   openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
   checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
   svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.module.encoder.model_name}.pt"
   merged_vector_path: "${oc.env:MODELS_PATH}/tv_merged_${nn.module.encoder.model_name}.pt"
-  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/single/${nn.module.encoder.model_name}/nonlinear_ft_accuracies.json"
+  # finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/single/${nn.module.encoder.model_name}/nonlinear_ft_accuracies.json"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/ft_accs/${nn.module.encoder.model_name}/TA_8.json"
   cache_dir: null
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.module.router.name}/${nn.module.encoder.model_name}/"
 

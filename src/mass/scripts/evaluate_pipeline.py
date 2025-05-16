@@ -102,7 +102,7 @@ def get_merged_base(
         multi_task_vector = sum_svd( # TODO: restore no redundancy for proj
             ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
             svd_dicts=svd_dicts,
-            #similarity_threshold=cfg.similarity_threshold,
+            # similarity_threshold=cfg.similarity_threshold,
         )
     elif merging_method == "zeroshot":
         return zeroshot_encoder
@@ -164,16 +164,14 @@ def run(cfg: DictConfig) -> str:
     finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)
 
     # only has vision encoder, no text transformer
-    zeroshot_encoder_statedict = load_model_from_disk(cfg.misc.pretrained_checkpoint)
-
-    zeroshot_encoder: ImageEncoder = instantiate(
-        cfg.nn.module.encoder
-    )  # the second pass backbone
-
-    zeroshot_encoder.load_state_dict(zeroshot_encoder_statedict, strict=False)
+    zeroshot_encoder: ImageEncoder = load_model_from_disk(
+        cfg.misc.pretrained_checkpoint
+    )
 
     finetuned_name = (
-        lambda name: Path(cfg.misc.ckpt_path) / f"{name}Val" / "nonlinear_finetuned.pt"
+        lambda name: Path(cfg.misc.ckpt_path)
+        / f"{name}Val"
+        / "nonlinear_finetuned_TA.pt"
     )
     finetuned_models = {
         dataset: load_model_from_disk(finetuned_name(dataset))
@@ -191,7 +189,7 @@ def run(cfg: DictConfig) -> str:
     task_dicts = {}
     for dataset in cfg.task_vectors.to_apply:
         task_dicts[dataset] = compute_task_dict(
-            zeroshot_encoder_statedict, finetuned_models[dataset]
+            zeroshot_encoder.state_dict(), finetuned_models[dataset].state_dict()
         )
         del finetuned_models[dataset]  # Delete one model at a time
         torch.cuda.empty_cache()
