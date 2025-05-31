@@ -79,7 +79,7 @@ class ProjectionRouter(AbstractRouter):
         if self.layer == "all":
             self.layer = ["attn", "mlp"]
         if self.layer_num == "all":
-            self.layer_num = list(range(24)) if model_name == "ViT-L-14" else list(range(12))
+            self.layer_num = list(range(20, 24)) if model_name == "ViT-L-14" else list(range(6, 12))
         if isinstance(self.layer, str):
             self.layer = [self.layer]
         if isinstance(self.layer_num, int):
@@ -162,10 +162,7 @@ class ProjectionRouter(AbstractRouter):
             x = self.middle_features[feature_key].to(self.device)
             x = self.select_token(x)
 
-            # dynamically grab the buffers you registered in __init__
-            # print("*" * 20)
-            # print(f"routing_weights_{feature_key.replace('.', '')}")
-            # print("*" * 20)
+            # dynamically grab the buffers registered in __init__
             v = getattr(
                 self, f"routing_weights_{feature_key.replace('transformer','').replace('.', '')}"
             )
@@ -191,7 +188,7 @@ class ProjectionRouter(AbstractRouter):
             self.log_layer_residuals()
 
         self.norms_to_log.append((norms.mean(dim=0)).cpu().numpy())
-
+        # print(f"norms: {norms}")
         return -norms
 
     def log_layer_residuals(self):
