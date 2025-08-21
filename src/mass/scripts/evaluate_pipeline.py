@@ -99,10 +99,12 @@ def get_merged_base(
 
     elif merging_method == "tsvm":
 
-        multi_task_vector = sum_svd( # TODO: restore no redundancy for proj
-            ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
-            svd_dicts=svd_dicts,
-            # similarity_threshold=cfg.similarity_threshold,
+        multi_task_vector = (
+            sum_svd_no_redundant_tasks_simple(  # TODO: restore no redundancy for proj
+                ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
+                svd_dict=svd_dicts,
+                similarity_threshold=cfg.similarity_threshold,
+            )
         )
     elif merging_method == "zeroshot":
         return zeroshot_encoder
@@ -165,16 +167,16 @@ def run(cfg: DictConfig) -> str:
 
     # only has vision encoder, no text transformer
     zeroshot_encoder: ImageEncoder = load_model_from_disk(
-        cfg.misc.pretrained_checkpoint
+        cfg.misc.pretrained_checkpoint, model_name=cfg.nn.module.encoder.model_name
     )
 
     finetuned_name = (
-        lambda name: Path(cfg.misc.ckpt_path)
-        / f"{name}Val"
-        / "nonlinear_finetuned_TA.pt"
+        lambda name: Path(cfg.misc.ckpt_path) / f"{name}Val" / "nonlinear_finetuned.pt"
     )
     finetuned_models = {
-        dataset: load_model_from_disk(finetuned_name(dataset))
+        dataset: load_model_from_disk(
+            finetuned_name(dataset), model_name=cfg.nn.module.encoder.model_name
+        ).state_dict()
         for dataset in cfg.task_vectors.to_apply
     }
 
@@ -182,14 +184,16 @@ def run(cfg: DictConfig) -> str:
 
     pylogger.info(f"Number of tasks: {len(cfg.eval_datasets)}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
-    
+
     if cfg.nn.module.oracle_mode:
-        pylogger.warning(f"You are using the oracle mode, if this is not intended, please set oracle_mode to False")
+        pylogger.warning(
+            f"You are using the oracle mode, if this is not intended, please set oracle_mode to False"
+        )
 
     task_dicts = {}
     for dataset in cfg.task_vectors.to_apply:
         task_dicts[dataset] = compute_task_dict(
-            zeroshot_encoder.state_dict(), finetuned_models[dataset].state_dict()
+            zeroshot_encoder.state_dict(), finetuned_models[dataset]
         )
         del finetuned_models[dataset]  # Delete one model at a time
         torch.cuda.empty_cache()
@@ -231,11 +235,12 @@ def run(cfg: DictConfig) -> str:
         _recursive_=False,
     )
 
-    if (
-        cfg.nn.module.router.name == "linear"
-    ):
-        linear_path = os.path.join(os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename), "checkpoint.ckpt")
-        state_dict = torch.load(linear_path)['state_dict']['router']
+    if cfg.nn.module.router.name == "linear":
+        linear_path = os.path.join(
+            os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename),
+            "checkpoint.ckpt",
+        )
+        state_dict = torch.load(linear_path)["state_dict"]["router"]
         router.load_state_dict(state_dict, True)
 
     classification_heads: List[ClassificationHead] = get_classification_heads(cfg)

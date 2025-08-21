@@ -131,7 +131,7 @@ class TaskSingularVectorAggregator(Aggregator):
         new_state_dict = copy.deepcopy(self.zeroshot_model.state_dict())
 
         delta_aggregated_state_dict = sum_svd(
-            copy.deepcopy(self.zeroshot_model.state_dict()), svd_dicts
+            copy.deepcopy(self.zeroshot_model.state_dict()), svd_dicts, device="cuda"
         )
 
         for key in delta_aggregated_state_dict:

@@ -34,7 +34,14 @@ num_of_tasks_to_scaling_coeff = {
 
 class MASS(MultiHeadImageClassifier):
     def __init__(
-        self, router, encoder, zeroshot_model, classification_heads, svd_dicts, oracle_mode, **kwargs
+        self,
+        router,
+        encoder,
+        zeroshot_model,
+        classification_heads,
+        svd_dicts,
+        oracle_mode,
+        **kwargs,
     ):
         """
 
@@ -50,7 +57,7 @@ class MASS(MultiHeadImageClassifier):
         self.router = router
         self.svd_dicts = svd_dicts
         self.output_classes = None
-        self.oracle_mode = oracle_mode 
+        self.oracle_mode = oracle_mode
 
         self.aggregator = instantiate(
             self.hparams.aggregator, zeroshot_model=zeroshot_model.cuda()
@@ -76,7 +83,7 @@ class MASS(MultiHeadImageClassifier):
         self.coeffs_to_log = []
         self.task_act_to_log = {}
 
-        self.max_num_tvs_to_keep = 6
+        self.max_num_tvs_to_keep = 8
 
     def set_metrics(self, num_classes):
 
@@ -89,13 +96,11 @@ class MASS(MultiHeadImageClassifier):
         self.train_acc = metric.clone()
         self.val_acc = metric.clone()
         self.test_acc = metric.clone()
-     
+
     @torch.no_grad()
     def forward_oracle(self, images: torch.Tensor, dataset_name: str):
-        
-        _, dataset_coeffs, dataset_group_to_samples = self.router(
-            images
-        )
+
+        _, dataset_coeffs, dataset_group_to_samples = self.router(images)
 
         # log coefficients
         self.coeffs_to_log.append(dataset_coeffs.mean(dim=0).cpu().numpy())
@@ -161,8 +166,9 @@ class MASS(MultiHeadImageClassifier):
         head = self.classification_heads[self.dataset_name_to_idx[dataset_name]]
         logits = head(sample_embeddings)
 
-        assert self.output_classes is not None, \
-            "Output classes not set. Use set_metrics() first."
+        assert (
+            self.output_classes is not None
+        ), "Output classes not set. Use set_metrics() first."
 
         outputs = [logits[i : i + 1] for i in range(batch_size)]
         return pad_output(outputs, self.output_classes)
@@ -267,7 +273,6 @@ class MASS(MultiHeadImageClassifier):
         ), "Output classes not set. Use set_metrics() method to set them."
 
         return pad_output(outputs, self.output_classes)
-    
 
     @torch.no_grad()
     def _apply_tv(self, dataset_names, coefficients):
