@@ -204,7 +204,7 @@ def run(cfg: DictConfig) -> str:
         logger.experiment.finish()
 
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="task_vectors.yaml")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="static_merging.yaml")
 def main(cfg: omegaconf.DictConfig):
     run(cfg)
 
