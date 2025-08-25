@@ -74,21 +74,19 @@ def isotropic_sum(ref_state_dict, svd_dict, device="cuda"):
 
 
 @torch.no_grad()
-def sum_svd(ref_state_dict, svd_dicts, device="cuda"):
+def sum_svd(
+    ref_state_dict, svd_dicts, device="cuda", non_matrix_params_aggregation="base_model"
+):
     """
     Takes the (SVD) for each vector in the task_vectors, and concatenate the low-rank matrices.
     If the vector is not a 2D tensor or is "text_projection", it computes the mean of the vectors.
     Computation of the SVD is performed also for the second operation.
 
-    Args:
-        task_vectors (list): A list of task vector objects, where each object contains a
-                             dictionary of vectors.
-        config (object): Configuration object containing the following attributes:
-                         - DATASETS (list): List of datasets.
-                         - device (torch.device): The device to perform computations on.
+    :param ref_state_dict: The reference state dictionary of the model.
+    :param svd_dicts: A dictionary containing the SVD decompositions for each dataset.
+    :param non_matrix_params_aggregation: The aggregation method for non-matrix parameters. Valid values are 'mean' or 'base_model'.
 
-    Returns:
-        dict: A dictionary containing the new vectors after SVD computation and merging.
+    :return: The aggregated model state dictionary.
     """
 
     aggregated_model_dict = ref_state_dict
@@ -139,12 +137,18 @@ def sum_svd(ref_state_dict, svd_dicts, device="cuda"):
             else:
                 delta_layer = svd_dicts[datasets[i]][new_key]["dim1"].to(device)
 
-                if i == 0:
-                    aggregated_model_dict[layer_name] = delta_layer
-                else:
-                    aggregated_model_dict[layer_name] += (
-                        delta_layer - aggregated_model_dict[layer_name]
-                    ) / (i + 1)
+                if non_matrix_params_aggregation == "mean":
+
+                    if i == 0:
+                        aggregated_model_dict[layer_name] = delta_layer
+                    else:
+                        aggregated_model_dict[layer_name] += (
+                            delta_layer - aggregated_model_dict[layer_name]
+                        ) / (i + 1)
+
+                else:  # keep the weights of the base model
+
+                    aggregated_model_dict[layer_name] = torch.zeros_like(delta_layer)
 
         # aggregation step
         # text_projection is ignored and vectors were already aggregated
