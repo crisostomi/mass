@@ -7,6 +7,12 @@ from tqdm import tqdm
 import numpy as np
 from pathlib import Path
 import logging
+import copy
+import os
+import torch
+import logging
+from tqdm import tqdm
+from typing import Tuple
 
 from mass.utils.utils import is_matrix
 
@@ -337,16 +343,6 @@ def whiten(x):
     whitened_x = x @ whitening_matrix  # Apply whitening transformation
 
     return whitened_x
-
-
-import copy
-import os
-import torch
-import logging
-from tqdm import tqdm
-from typing import Tuple
-
-pylogger = logging.getLogger(__name__)
 
 
 def measure_cosine_similarity(delta1: torch.Tensor, delta2: torch.Tensor) -> float:

@@ -32,7 +32,11 @@ from mass.modules.projection_router import ProjectionRouter
 from mass.modules.nn_router import NNRouter
 from mass.modules.heads import get_classification_head
 from mass.modules.router import AbstractRouter
-from mass.utils.io_utils import load_model_from_disk
+from mass.utils.io_utils import (
+    boilerplate,
+    get_classification_heads,
+    load_model_from_disk,
+)
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
     compute_task_dict,
@@ -52,25 +56,6 @@ import os
 pylogger = logging.getLogger(__name__)
 
 torch.set_float32_matmul_precision("high")
-
-
-def boilerplate(cfg):
-    cfg.core.tags = enforce_tags(cfg.core.get("tags", None))
-
-    num_tasks = len(cfg.eval_datasets)
-    cfg.core.tags.append(f"n{num_tasks}")
-    cfg.core.tags.append(f"{cfg.nn.module.encoder.model_name}")
-
-    template_core = NNTemplateCore(
-        restore_cfg=cfg.train.get("restore", None),
-    )
-    logger: NNLogger = NNLogger(
-        logging_cfg=cfg.train.logging, cfg=cfg, resume_id=template_core.resume_id
-    )
-
-    logger.upload_source()
-
-    return logger, template_core
 
 
 def get_merged_base(
@@ -122,25 +107,6 @@ def get_merged_base(
     return merged_encoder  # , svd_dicts
 
 
-def get_classification_heads(cfg: DictConfig):
-    classification_heads = []
-
-    for dataset_name in cfg.eval_datasets:
-
-        classification_head = get_classification_head(
-            cfg.nn.module.encoder.model_name,
-            dataset_name,
-            cfg.nn.data.data_path,
-            cfg.misc.ckpt_path,
-            cache_dir=cfg.misc.cache_dir,
-            openclip_cachedir=cfg.misc.openclip_cachedir,
-        )
-
-        classification_heads.append(classification_head)
-
-    return classification_heads
-
-
 def run(cfg: DictConfig) -> str:
     """Generic train loop.
 
@@ -155,15 +121,17 @@ def run(cfg: DictConfig) -> str:
 
     logger, template_core = boilerplate(cfg)
 
-    ntasks = len(cfg.eval_datasets)
+    num_tasks = len(cfg.eval_datasets)
 
     # Temporarily disable struct mode to allow dynamic update
     omegaconf.OmegaConf.set_struct(cfg, False)
-    cfg.ntasks = ntasks  # Now we can safely update it
+    cfg.num_tasks = num_tasks  # Now we can safely update it
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
 
     # upperbound accuracies, used for logging the normalized accuracy
-    finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)
+    finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
+        cfg.misc.finetuned_accuracy_path
+    )
 
     # only has vision encoder, no text transformer
     zeroshot_encoder: ImageEncoder = load_model_from_disk(
@@ -180,9 +148,7 @@ def run(cfg: DictConfig) -> str:
         for dataset in cfg.task_vectors.to_apply
     }
 
-    num_tasks = len(cfg.eval_datasets)
-
-    pylogger.info(f"Number of tasks: {len(cfg.eval_datasets)}")
+    pylogger.info(f"Number of tasks: {cfg.num_tasks}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
 
     if cfg.nn.module.oracle_mode:

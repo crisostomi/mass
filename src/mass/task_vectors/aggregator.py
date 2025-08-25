@@ -4,8 +4,6 @@ from typing import Dict, List, OrderedDict, Union
 import torch
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
-from mass.task_vectors.aggregation import slerp, spherical_weighted_average
-
 import logging
 
 from mass.task_vectors.task_singular_vectors import isotropic_sum, sum_svd
@@ -100,16 +98,6 @@ class WeightedAggregator(Aggregator):
         )  # Allow missing keys
 
         return self.tmp_model.cuda()
-
-
-# class WeightedAggregatorWithSVD(Aggregator):
-
-#     def __init__(self, target_model=None, **kwargs):
-#         super(WeightedAggregatorWithSVD, self).__init__(**kwargs)
-
-#     def aggregate(self, svd_dict):
-
-#         return sum_svd(svd_dict)
 
 
 class TaskSingularVectorAggregator(Aggregator):

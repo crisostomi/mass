@@ -1,0 +1,3 @@
+fer2013:
+  _target_: tvp.utils.io_utils.load_fer2013
+  split: train

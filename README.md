@@ -14,22 +14,20 @@
 Setup the development environment:
 
 ```bash
-git clone git@github.com:crisostomi/task-vectors-playground.git
-cd task-vectors-playground
-conda env create -f env.yaml
-conda activate tvp
+    git clone git@github.com:crisostomi/mass.git
+    cd mass
+    uv sync
 ```
 
 ## Fine-tuning
-First, choose a vision encoder in `{"ViT-B-16", "ViT-B-32", "ViT-L-14"}`. Check that the corresponding WandB artifact is present online (at the time of writing, only `ViT-B-16` is available).
+First, choose a vision encoder in `{"ViT-B-16", "ViT-B-32", "ViT-L-14"}`. Check that the corresponding WandB artifact is present online.
 
-Now choose one or more datasets for which you want to compute the task vectors, and set it in `conf/nn/data/default.yaml` under the `dataset` voice in the defaults. Currently available datasets are `{'svhn', 'mnist', 'cifar100', 'resisc45'}`, but any dataset in `tvp/data/datasets/*` can be used. It is enough to create the corresponding configuration file in `conf/nn/data/dataset/`.
+Now choose one or more datasets for which you want to compute the task vectors, and set it in `conf/nn/data/default.yaml` under the `dataset` voice in the defaults. Currently available datasets are `{'svhn', 'mnist', 'cifar100', 'resisc45'}`, but any dataset in `mass/data/datasets/*` can be used. It is enough to create the corresponding configuration file in `conf/nn/data/dataset/`.
 
 Before fine-tuning the model on the dataset, check if the fine-tuned version is already among the artifacts in WandB. It should be named `<model_name>_<dataset_name>_<seed_index>`. If it is not, use `src/scripts/finetune.py` to fine-tune the pretrained model over the chosen dataset. The corresponding configuration is `conf/finetune.yaml`.
 
 ## Applying task-vectors
 Now the script is `src/scripts/use_task_vectors.py` and the configuration is `conf/task_vectors.yaml`. Task vectors to apply can be chosen in the `task_vectors.to_apply` voice in the config, which expects a list of dataset names.
-
 
 ## Notation
 

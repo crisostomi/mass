@@ -51,6 +51,7 @@ class GenericDataset(object):
         self.test_dataset = None
         self.test_loader = None
         self.classnames = None
+
     def __len__(self):
         return len(self.train_dataset)
 
@@ -143,6 +144,7 @@ def get_dataset(
             batch_size=batch_size,
             num_workers=num_workers,
         )
+
     return dataset
 
 
