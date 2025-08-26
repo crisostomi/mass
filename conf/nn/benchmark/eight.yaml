@@ -5,5 +5,5 @@ tasks:
   - "GTSRB"
   - "MNIST"
   - "RESISC45"
-  - "SUN397"
+  # - "SUN397"
   - "SVHN"

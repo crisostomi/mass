@@ -1,22 +1,22 @@
 {
-    "CIFAR10": [
+    "EuroSAT": [
         {
-            "acc/test/CIFAR10": 0.9912499785423279,
-            "loss/test/CIFAR10": 0.05635450780391693,
-            "normalized_acc/test/CIFAR10": 1.0127196311950684
+            "acc/test/EuroSAT": 0.9862962961196899,
+            "loss/test/EuroSAT": 0.05463648959994316,
+            "normalized_acc/test/EuroSAT": 0.9970048666000366
         }
     ],
     "MNIST": [
         {
-            "acc/test/MNIST": 1.0,
-            "loss/test/MNIST": 0.006159148644655943,
-            "normalized_acc/test/MNIST": 1.0044194459915161
+            "acc/test/MNIST": 0.9962000250816345,
+            "loss/test/MNIST": 0.018547939136624336,
+            "normalized_acc/test/MNIST": 0.9992978572845459
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.9956249892711639,
-            "normalized_acc/test/avg": 1.0085695385932922
+            "acc/test/avg": 0.9912481606006622,
+            "normalized_acc/test/avg": 0.9981513619422913
         }
     ]
 }

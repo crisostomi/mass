@@ -4,13 +4,13 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - dev
+  - circuits
   
 defaults:
   - hydra: default
   - nn: default
   - train: default
-  - merger: tsv
+  - merger: circuits
   - override hydra/launcher: basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none
