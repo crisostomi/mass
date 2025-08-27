@@ -40,7 +40,7 @@ from mass.modules.router import AbstractRouter
 from mass.utils.io_utils import (
     boilerplate,
     get_classification_heads,
-    load_model_from_disk,
+    load_model_from_disk,load_model_from_artifact
 )
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
@@ -125,7 +125,7 @@ def run(cfg: DictConfig) -> str:
         )
 
         classification_head = get_classification_head(
-            merged_encoder,
+            cfg.nn.module.encoder.model_name,
             dataset_name,
             data_path=cfg.nn.data.data_path,
             ckpt_path=cfg.misc.ckpt_path,

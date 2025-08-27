@@ -7,7 +7,6 @@ _version.py
 
 # .gitignore defaults for python and pycharm
 .idea
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -244,3 +243,4 @@ submitit/*
 notebooks/lightning_logs/*
 notebooks/media/*
 */notebooks/media/*
+*.pt
