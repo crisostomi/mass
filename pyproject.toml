@@ -183,9 +183,9 @@ mass = { workspace = true }
 [project.scripts]
 evaluate = "mass.scripts.evaluate_pipeline:main"
 get_ft_accs = "mass.scripts.get_finetuned_accs:main"
-smile = "mass.scripts.evaluate_smile:main"
 train = "mass.scripts.train_router:main"
 interpret = "mass.scripts.interpret:main"
+smile = "mass.scripts.evaluate_smile:main"
 
 [dependency-groups]
 dev = [

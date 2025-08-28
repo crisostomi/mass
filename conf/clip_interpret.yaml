@@ -13,7 +13,7 @@ defaults:
   - _self_
 
 seed_index: 0
-num_tasks: 0
+ntasks: 0
 batch_size: 2048
 device: "cuda"
 model: "ViT-B-16"

@@ -17,11 +17,11 @@ trainer:
 
 restore:
   ckpt_or_run_path: null
-  mode: null # null, finetune, hotstart, continue
+  mode: finetune # null, finetune, hotstart, continue
 
 monitor:
-  metric: 'loss/train'
-  mode: 'min'
+  metric: 'acc/val'
+  mode: 'max'
 
 callbacks:
   - _target_: pytorch_lightning.callbacks.EarlyStopping
@@ -32,7 +32,7 @@ callbacks:
 
   - _target_: pytorch_lightning.callbacks.ModelCheckpoint
     dirpath: ${misc.checkpoint_dir} 
-    filename: "${nn.module.encoder.model_name}_${num_tasks}tasks"
+    filename: "${nn.module.encoder.model_name}_${ntasks}tasks"
     save_top_k: 1 
     save_last: False  
     verbose: False

@@ -1,0 +1,19 @@
+defaults:
+  - dataset: mnist
+  - _self_
+
+data_path: "${oc.env:DATA_PATH}"
+
+train_dataset: "${nn.data.dataset.dataset_name}Val" # TODO: why val?
+
+accelerator: ${train.trainer.accelerator}
+
+num_workers:
+  train: 4
+  val: 2
+  test: 0
+
+batch_size:
+  train: 32 #128 by ilharco et al
+  val: 32
+  test: 32

@@ -1,0 +1,32 @@
+defaults:
+  - _self_
+  - encoder: b32 #b16, b32, l14
+
+_target_: mass.pl_module.smile.SmileUpscalingAlgorithm
+
+x_key: ${conventions.x_key}
+y_key: ${conventions.y_key}
+dataset_names: {eval_dataset}
+
+image_encoder: ??  
+finetuned_models: ??
+classification_heads: ??
+
+device: cuda
+full_matrices: true
+gate_k: 16                     
+k: 32                          
+top_k: 1                      
+routing_use_diff: true        
+average_experts: false         
+upscaling_accelerator: cuda    
+model_path: null             
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 1e-5
+  weight_decay: 0.1
+
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  T_max: 10

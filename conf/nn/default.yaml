@@ -1,5 +1,5 @@
 defaults:
   - _self_
   - data: default
-  - module: default
-  - benchmark: eight
+  - module: smile
+  - benchmark: three

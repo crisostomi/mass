@@ -2,18 +2,19 @@
 defaults:
   - _self_
   - encoder: b32 #b16, b32, l14
-  - router: proj # linear, nn, proj
+  - router: linear # linear, nn, proj
   - aggregator: tsvm
 
 # _target_: mass.pl_module.router_task_classifier.RouterTaskClassifier
 # _target_: mass.pl_module.mass.MASS
-_target_: mass.pl_module.image_classifier.ImageClassifier
+# _target_: mass.pl_module.image_classifier.ImageClassifier
+_target_: mass.pl_module.encoder.EncoderWrapper
+
 x_key: ${conventions.x_key}
 y_key: ${conventions.y_key}
 dataset_names: {eval_dataset}
 base_merging_method: tsvm # isotropic, tsvm, zeroshot
 heads_selection_method: max # avg, max 
-oracle_mode: false
 
 image_encoder: ??  
 classification_heads: ??

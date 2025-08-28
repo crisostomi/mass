@@ -3,6 +3,7 @@ from hmac import new
 import logging
 from pathlib import Path
 from typing import List
+from mass.pl_module.smile import SmileUpscalingAlgorithm
 import wandb
 
 import hydra
@@ -103,9 +104,9 @@ def run(cfg: DictConfig) -> str:
     # upperbound accuracies, used for logging the normalized accuracy
     finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)
 
+    pylogger.info(cfg.nn.module.encoder)
     # only has vision encoder, no text transformer
     zeroshot_encoder_statedict = load_model_from_disk(cfg.misc.pretrained_checkpoint)
-
     zeroshot_encoder: ImageEncoder = instantiate(
         cfg.nn.module.encoder
     )  
@@ -133,7 +134,7 @@ def run(cfg: DictConfig) -> str:
     # Convert finetuned_models dict to list of model objects
     finetuned_models_list = list(finetuned_models.values())
     
-    model = instantiate(
+    model: SmileUpscalingAlgorithm = instantiate(
         cfg.nn.module,
         pretrained_model=zeroshot_encoder,
         finetuned_models=finetuned_models_list,

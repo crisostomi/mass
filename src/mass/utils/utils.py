@@ -206,6 +206,37 @@ def build_callbacks(cfg: ListConfig, *args: Callback, verbose=False) -> List[Cal
 
     return callbacks
 
+def     pad_unbatched_output(outputs, output_classes):
+    """
+    Trims a list of unbatched output tensors to match the specified number of output classes,
+    then stacks them into a batch.
+
+    Args:
+        outputs (list of torch.Tensor): List of tensors with shape (num_classes,) - one per sample.
+        output_classes (int): The fixed number of classes to retain in each tensor.
+
+    Returns:
+        torch.Tensor: Stacked tensor with shape (batch_size, output_classes).
+    """
+    trimmed_outputs = []
+
+    for out in outputs:
+        num_classes = out.shape[0]
+
+        if num_classes > output_classes:
+            out = out[:output_classes]  
+
+        elif num_classes < output_classes:
+            pad_size = output_classes - num_classes
+            pad = torch.zeros(
+                pad_size, device=out.device, dtype=out.dtype
+            )
+            out = torch.cat([out, pad], dim=0)  
+
+        trimmed_outputs.append(out)
+
+    return torch.stack(trimmed_outputs, dim=0)  
+
 
 def pad_output(outputs, output_classes):
     """
@@ -362,6 +393,10 @@ def is_matrix(layer):
     return len(layer.shape) == 2
 
 
+def is_matrix_dict(layer):
+    return isinstance(layer, dict) and "u" in layer
+
+
 def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
     """
     Returns the right singular vectors
@@ -385,6 +420,31 @@ def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
     )
 
 
+def is_layer_to_merge(layer_key: str) -> bool:
+    """
+    Check if layer_key contains 'mlp' or 'attn' and 'resblocks.'
+    """
+
+    return (
+        layer_key.endswith(".attn")
+        or layer_key.endswith(".c_fc")
+        or layer_key.endswith(".c_proj")
+    )
+
+
+def align_layer_key(layer_key: str) -> str:
+    if layer_key.startswith(
+        "model.visual.transformer.resblocks."
+    ) and layer_key.endswith(".attn"):
+        return layer_key + ".in_proj_weight"
+    elif layer_key.startswith(
+        "model.visual.transformer.resblocks."
+    ) and layer_key.endswith(".out_proj"):
+        return layer_key + ".weight"
+    else:
+        return layer_key
+
+
 def is_supported_layer(layer_key: str) -> bool:
     """
     Check if layer_key contains 'mlp' or 'attn' and 'resblocks.'
@@ -400,23 +460,27 @@ def is_supported_layer(layer_key: str) -> bool:
     )
 
 
+def is_supported_layer_svd(layer_key: str) -> bool:
+    """
+    Keep layers inside resblocks, attn or mlp, but exclude only biases and layer norms.
+    """
+    return (
+        ("resblocks." in layer_key)
+        and (("attn" in layer_key) or ("mlp" in layer_key))
+        and not ("ln" in layer_key)
+        and not ("gelu" in layer_key)
+        and not ("bias" in layer_key)
+        and not ("c_proj" in layer_key)
+        and not ("out_proj" in layer_key)
+    )
+
+
 def router_key_from_layer(key, index):
     return f"encoder.model.visual.transformer.resblocks.{index}.{key}"
 
-def _router_key_from_layer(key, index):
-    return f"encoder.model.visual.resblocks.{index}.{key}"
-
-
-def _router_key_from_layer(key, index):
-    return f"encoder.model.visual.resblocks.{index}.{key}"
-
-
-def _router_key_from_layer(key, index):
-    return f"encoder.model.visual.resblocks.{index}.{key}"
-
 
 def svd_key_from_layer(key, index):
-    base = _router_key_from_layer(key, index)
+    base = router_key_from_layer(key, index)
     if "attn" in key:
         return base + ".in_proj_weight"
     elif "mlp" in key:
@@ -431,6 +495,61 @@ def from_router_to_svd_dict_key(key):
         return key + ".c_fc.weight"
 
 
+def layer_weights_key_to_module_key(layer_key: str) -> str:
+    if layer_key.endswith(".weight"):
+        return layer_key[: -len(".weight")]
+
+
+def svd_key_to_layer_key(svd_key: str) -> str:
+    if svd_key.endswith(".in_proj_weight"):
+        return svd_key[: -len(".in_proj_weight")]
+    elif svd_key.endswith(".c_fc.weight"):
+        return svd_key[: -len(".weight")]
+    elif svd_key.endswith(".c_proj.weight"):
+        return svd_key[: -len(".weight")]
+    elif svd_key.endswith(".out_proj.weight"):
+        return svd_key[: -len(".out_proj.weight")]
+    else:
+        return svd_key
+
+
+def is_layer_to_merge_parameters(layer_key: str) -> bool:
+    """
+    Check if layer_key contains 'mlp' or 'attn' and 'resblocks.'
+    """
+    # TODO: maybe we want also to add visual_proj? or other layers? Maybe all the matrix layers are a good idea?
+    return (
+        layer_key.endswith(".attn.in_proj_weight")
+        or layer_key.endswith(".c_fc.weight")
+        or layer_key.endswith(".c_proj.weight")
+        or layer_key.endswith(".out_proj.weight")
+    )
+
+
+def svd_key_to_router_key(svd_key: str) -> str:
+    if svd_key.endswith(".in_proj_weight"):
+        base = svd_key[: -len(".in_proj_weight")]
+    elif svd_key.endswith(".c_fc.weight"):
+        base = svd_key[: -len(".c_fc.weight")]
+    else:
+        raise ValueError(f"Invalid SVD format {svd_key!r}")
+
+    if not base.startswith("model.visual."):
+        raise ValueError(f"Not a valid prefix {base!r}")
+    return base.replace("model.visual.", "model.visual.transformer.", 1)
+
+
+def add_transformer_key(layer: str):
+    return layer.replace("model.visual.", "model.visual.transformer.", 1)
+
+
+def remove_transformer_key(layer: str):
+    if layer.startswith("model.visual.transformer."):
+        return layer.replace("model.visual.transformer.", "model.visual.", 1)
+    else:
+        return layer
+
+
 @torch.no_grad()
 def compute_task_dict(pretrained, finetuned):
     new_state_dict = OrderedDict()
@@ -440,7 +559,7 @@ def compute_task_dict(pretrained, finetuned):
             pylogger.info(f"Skipping key {key}")
             continue
 
-        difference = finetuned[key].cuda() - pretrained[key].cuda()
+        difference = finetuned[key] - pretrained[key].cuda()
         new_state_dict[key] = difference
 
     return new_state_dict
@@ -472,3 +591,19 @@ def unzip_all_in_folder(folder_path):
                 zip_ref.extractall(extract_path)  # Extract files
 
             print(f"Extracted: {zip_path} → {extract_path}")
+
+
+def is_all_zeros(tensor: torch.Tensor | List[torch.Tensor]) -> bool:
+    """
+    Check if a tensor or a list of tensors are all zeros.
+
+    Args:
+        tensor (Tensor | List[Tensor]): A tensor or a list of tensors.
+
+    Returns:
+        bool: True if all elements are zeros, False otherwise.
+    """
+    if isinstance(tensor, torch.Tensor):
+        return torch.allclose(tensor, torch.zeros_like(tensor))
+    else:
+        return all(is_all_zeros(t) for t in tensor)

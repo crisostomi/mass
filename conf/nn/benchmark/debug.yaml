@@ -1,3 +1,4 @@
 tasks:
-  - "CIFAR10"
+  - "FER2013"
+  - "RESISC45"
   - "MNIST"
