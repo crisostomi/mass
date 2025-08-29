@@ -5,7 +5,6 @@ import torchvision.datasets as datasets
 from torch.utils.data import Subset
 
 
-
 class KMNIST:
     def __init__(
         self,
@@ -39,5 +38,3 @@ class KMNIST:
             shuffle=False,
             num_workers=num_workers,
         )
-
-    

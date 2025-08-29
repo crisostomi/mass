@@ -81,7 +81,9 @@ class MetaData:
         )
 
     def __repr__(self) -> str:
-        attributes = ",\n    ".join([f"{key}={value}" for key, value in self.__dict__.items()])
+        attributes = ",\n    ".join(
+            [f"{key}={value}" for key, value in self.__dict__.items()]
+        )
         return f"{self.__class__.__name__}(\n    {attributes}\n)"
 
 
@@ -136,7 +138,11 @@ class MyDataModule(pl.LightningDataModule):
         if self.train_dataset is None:
             self.setup(stage="fit")
 
-        return MetaData(class_vocab={i: name for i, name in enumerate(self.train_dataset.features["y"].names)})
+        return MetaData(
+            class_vocab={
+                i: name for i, name in enumerate(self.train_dataset.features["y"].names)
+            }
+        )
 
     def prepare_data(self) -> None:
         # download only
@@ -149,7 +155,9 @@ class MyDataModule(pl.LightningDataModule):
         self.hf_datasets.set_transform(self.transform)
 
         # Here you should instantiate your dataset, you may also split the train into train and validation if needed.
-        if (stage is None or stage == "fit") and (self.train_dataset is None and self.val_dataset is None):
+        if (stage is None or stage == "fit") and (
+            self.train_dataset is None and self.val_dataset is None
+        ):
             self.train_dataset = self.hf_datasets["train"]
             self.val_dataset = self.hf_datasets["val"]
 
@@ -187,7 +195,12 @@ class MyDataModule(pl.LightningDataModule):
         )
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(" f"{self.dataset=}, " f"{self.num_workers=}, " f"{self.batch_size=})"
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.dataset=}, "
+            f"{self.num_workers=}, "
+            f"{self.batch_size=})"
+        )
 
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")

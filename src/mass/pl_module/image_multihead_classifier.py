@@ -101,5 +101,8 @@ class MultiHeadImageClassifier(pl.LightningModule):
     def set_task(self, task_name):
         self.task_name = task_name
 
+    def set_head(self, head_idx):
+        self.head_idx = head_idx
+
     def set_finetuning_accuracy(self, finetuning_accuracy):
         self.finetuning_accuracy = finetuning_accuracy

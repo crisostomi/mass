@@ -16,14 +16,20 @@ def pretify_classname(classname):
 
 
 class EuroSATBase:
-    def __init__(self, preprocess, test_split, location="~/datasets", batch_size=32, num_workers=8):
+    def __init__(
+        self,
+        preprocess,
+        test_split,
+        location="~/datasets",
+        batch_size=32,
+        num_workers=8,
+    ):
         # Data loading code
         traindir = os.path.join(location, "EuroSAT_splits", "train")
         testdir = os.path.join(location, "EuroSAT_splits", test_split)
 
         self.train_dataset = datasets.ImageFolder(traindir, transform=preprocess)
         self.class_to_idx = self.train_dataset.class_to_idx
-
 
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,
@@ -37,29 +43,35 @@ class EuroSATBase:
             self.test_dataset, batch_size=batch_size, num_workers=num_workers
         )
         idx_to_class = dict((v, k) for k, v in self.class_to_idx.items())
-        self.classnames = [idx_to_class[i].replace("_", " ") for i in range(len(idx_to_class))]
+        self.classnames = [
+            idx_to_class[i].replace("_", " ") for i in range(len(idx_to_class))
+        ]
         self.classnames = [pretify_classname(c) for c in self.classnames]
         ours_to_open_ai = {
-            "annual crop": "annual crop land", # 0
-            "forest": "forest", # 1
-            "herbaceous vegetation": "brushland or shrubland", # 2
-            "highway": "highway or road", # 3
-            "industrial area": "industrial buildings or commercial buildings", # 4
-            "pasture": "pasture land", # 5
-            "permanent crop": "permanent crop land", # 6
-            "residential area": "residential buildings or homes or apartments", # 7
-            "river": "river", # 8
-            "sea lake": "lake or sea", # 9
+            "annual crop": "annual crop land",  # 0
+            "forest": "forest",  # 1
+            "herbaceous vegetation": "brushland or shrubland",  # 2
+            "highway": "highway or road",  # 3
+            "industrial area": "industrial buildings or commercial buildings",  # 4
+            "pasture": "pasture land",  # 5
+            "permanent crop": "permanent crop land",  # 6
+            "residential area": "residential buildings or homes or apartments",  # 7
+            "river": "river",  # 8
+            "sea lake": "lake or sea",  # 9
         }
         for i in range(len(self.classnames)):
             self.classnames[i] = ours_to_open_ai[self.classnames[i]]
 
 
 class EuroSAT(EuroSATBase):
-    def __init__(self, preprocess, location="~/datasets", batch_size=32, num_workers=16):
+    def __init__(
+        self, preprocess, location="~/datasets", batch_size=32, num_workers=16
+    ):
         super().__init__(preprocess, "test", location, batch_size, num_workers)
 
 
 class EuroSATVal(EuroSATBase):
-    def __init__(self, preprocess, location="~/datasets", batch_size=32, num_workers=16):
+    def __init__(
+        self, preprocess, location="~/datasets", batch_size=32, num_workers=16
+    ):
         super().__init__(preprocess, "val", location, batch_size, num_workers)

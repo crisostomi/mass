@@ -57,7 +57,9 @@ def get_features_helper(image_encoder, dataloader, device):
     all_data = collections.defaultdict(list)
 
     image_encoder = image_encoder.to(device)
-    image_encoder = torch.nn.DataParallel(image_encoder, device_ids=[x for x in range(torch.cuda.device_count())])
+    image_encoder = torch.nn.DataParallel(
+        image_encoder, device_ids=[x for x in range(torch.cuda.device_count())]
+    )
     image_encoder.eval()
 
     with torch.no_grad():
@@ -121,13 +123,17 @@ class FeatureDataset(Dataset):
         data["features"] = torch.from_numpy(data["features"]).float()
         return data
 
+
 def get_dataloader(dataset, is_train, args, image_encoder=None):
     if image_encoder is not None:
         feature_dataset = FeatureDataset(is_train, image_encoder, dataset, args.device)
-        dataloader = DataLoader(feature_dataset, batch_size=args.batch_size, shuffle=is_train)
+        dataloader = DataLoader(
+            feature_dataset, batch_size=args.batch_size, shuffle=is_train
+        )
     else:
         dataloader = dataset.train_loader if is_train else dataset.test_loader
     return dataloader
+
 
 class TaskDataset(Dataset):
     """Wraps a dataset to replace labels with a dataset-specific task index."""
@@ -137,9 +143,8 @@ class TaskDataset(Dataset):
         self.task_index = task_index
 
     def __getitem__(self, index):
-        img, _ = self.dataset[index] 
-        return img, self.task_index 
+        img, _ = self.dataset[index]
+        return img, self.task_index
 
     def __len__(self):
         return len(self.dataset)
-

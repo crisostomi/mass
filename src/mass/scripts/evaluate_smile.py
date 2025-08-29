@@ -107,16 +107,14 @@ def run(cfg: DictConfig) -> str:
     pylogger.info(cfg.nn.module.encoder)
     # only has vision encoder, no text transformer
     zeroshot_encoder_statedict = load_model_from_disk(cfg.misc.pretrained_checkpoint)
-    zeroshot_encoder: ImageEncoder = instantiate(
-        cfg.nn.module.encoder
-    )  
+    zeroshot_encoder: ImageEncoder = instantiate(cfg.nn.module.encoder)
 
     zeroshot_encoder.load_state_dict(zeroshot_encoder_statedict, strict=False)
 
     finetuned_name = (
         lambda name: Path(cfg.misc.ckpt_path) / f"{name}Val" / "nonlinear_finetuned.pt"
     )
-    
+
     finetuned_models = {}
     for dataset in cfg.task_vectors.to_apply:
         weights = load_model_from_disk(finetuned_name(dataset))
@@ -133,7 +131,7 @@ def run(cfg: DictConfig) -> str:
 
     # Convert finetuned_models dict to list of model objects
     finetuned_models_list = list(finetuned_models.values())
-    
+
     model: SmileUpscalingAlgorithm = instantiate(
         cfg.nn.module,
         pretrained_model=zeroshot_encoder,
@@ -157,6 +155,7 @@ def run(cfg: DictConfig) -> str:
 
         model.set_metrics(len(dataset.classnames))
         model.set_task(dataset_name)
+        model.set_head(cfg.eval_datasets.index(dataset_name))
         model.set_finetuning_accuracy(
             finetuned_accuracies[
                 dataset_name + "Val" if cfg.eval_on_train else dataset_name

@@ -1010,7 +1010,13 @@ imagenet_classnames = [
 
 
 class ImageNet:
-    def __init__(self, preprocess, location=os.path.expanduser("~/data"), batch_size=32, num_workers=8):
+    def __init__(
+        self,
+        preprocess,
+        location=os.path.expanduser("~/data"),
+        batch_size=32,
+        num_workers=8,
+    ):
         self.preprocess = preprocess
         self.location = location
         self.batch_size = batch_size
@@ -1036,7 +1042,10 @@ class ImageNet:
     def populate_test(self):
         self.test_dataset = self.get_test_dataset()
         self.test_loader = torch.utils.data.DataLoader(
-            self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, sampler=self.get_test_sampler()
+            self.test_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            sampler=self.get_test_sampler(),
         )
 
     def get_test_path(self):

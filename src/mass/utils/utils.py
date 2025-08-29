@@ -206,7 +206,8 @@ def build_callbacks(cfg: ListConfig, *args: Callback, verbose=False) -> List[Cal
 
     return callbacks
 
-def     pad_unbatched_output(outputs, output_classes):
+
+def pad_unbatched_output(outputs, output_classes):
     """
     Trims a list of unbatched output tensors to match the specified number of output classes,
     then stacks them into a batch.
@@ -224,18 +225,16 @@ def     pad_unbatched_output(outputs, output_classes):
         num_classes = out.shape[0]
 
         if num_classes > output_classes:
-            out = out[:output_classes]  
+            out = out[:output_classes]
 
         elif num_classes < output_classes:
             pad_size = output_classes - num_classes
-            pad = torch.zeros(
-                pad_size, device=out.device, dtype=out.dtype
-            )
-            out = torch.cat([out, pad], dim=0)  
+            pad = torch.zeros(pad_size, device=out.device, dtype=out.dtype)
+            out = torch.cat([out, pad], dim=0)
 
         trimmed_outputs.append(out)
 
-    return torch.stack(trimmed_outputs, dim=0)  
+    return torch.stack(trimmed_outputs, dim=0)
 
 
 def pad_output(outputs, output_classes):

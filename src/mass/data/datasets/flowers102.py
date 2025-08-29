@@ -10,14 +10,13 @@ class Flowers102:
         preprocess,
         location=os.path.expanduser("~/data"),
         batch_size=128,
-        num_workers=6
+        num_workers=6,
     ):
 
         location = os.path.join(location, "flowers102")
         self.train_dataset = datasets.Flowers102(
             root=location, download=True, split="train", transform=preprocess
         )
-
 
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,

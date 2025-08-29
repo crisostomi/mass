@@ -419,7 +419,7 @@ def create_interactive_layer_task_residual_plot(
                 y=y_values,
                 mode="lines+markers",
                 name=f"{datasets[task_idx]}",
-                error_y=dict(type="data", array=y_std_values), 
+                error_y=dict(type="data", array=y_std_values),
             )
         )
 

@@ -2,6 +2,7 @@ import glob
 import torch
 import os
 
+
 def load_and_print_parameters():
     # Find all files matching the pattern heads_*.pt in the current directory.
     path = os.getcwd()
@@ -19,7 +20,9 @@ def load_and_print_parameters():
 
             try:
                 # Load the file; map_location ensures the checkpoint is loaded on the CPU.
-                checkpoint = torch.load(file_path, map_location="cpu", weights_only=False)
+                checkpoint = torch.load(
+                    file_path, map_location="cpu", weights_only=False
+                )
             except Exception as e:
                 output_file.write(f"Error loading {file_path}: {e}\n")
                 continue
@@ -33,5 +36,6 @@ def load_and_print_parameters():
                 # If the checkpoint is not a dict, just write it.
                 output_file.write(f"{checkpoint.weight.shape}\n")
                 output_file.write(f"{checkpoint.weight}\n")
+
 
 load_and_print_parameters()

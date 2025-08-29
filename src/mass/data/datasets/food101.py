@@ -20,7 +20,6 @@ class Food101:
 
         self.classnames = self.train_dataset.classes
 
-
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,
             batch_size=batch_size,
@@ -38,5 +37,3 @@ class Food101:
             shuffle=False,
             num_workers=num_workers,
         )
-
-    

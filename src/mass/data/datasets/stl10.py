@@ -51,7 +51,7 @@ class STL10:
         preprocess,
         location=os.path.expanduser("~/data"),
         batch_size=128,
-        num_workers=8
+        num_workers=8,
     ):
 
         # STL10         ->  CANONICAL INDEX:

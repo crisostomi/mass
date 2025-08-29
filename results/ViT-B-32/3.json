@@ -1,0 +1,29 @@
+{
+    "MNIST": [
+        {
+            "acc/test/MNIST": 0.43281251192092896,
+            "loss/test/MNIST": 1.9928920269012451,
+            "normalized_acc/test/MNIST": 0.4347253143787384
+        }
+    ],
+    "RenderedSST2": [
+        {
+            "acc/test/RenderedSST2": 0.561718761920929,
+            "loss/test/RenderedSST2": 0.6885156631469727,
+            "normalized_acc/test/RenderedSST2": 0.7868611216545105
+        }
+    ],
+    "Food101": [
+        {
+            "acc/test/Food101": 0.12812499701976776,
+            "loss/test/Food101": 18.122379302978516,
+            "normalized_acc/test/Food101": 0.15141218900680542
+        }
+    ],
+    "avg": [
+        {
+            "acc/test/avg": 0.37421875695387524,
+            "normalized_acc/test/avg": 0.45766620834668476
+        }
+    ]
+}
