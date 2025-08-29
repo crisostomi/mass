@@ -3,14 +3,7 @@ import os
 from copy import deepcopy
 from typing import (
     Any,
-    Dict,
     List,
-    Mapping,
-    Optional,
-    OrderedDict,
-    Tuple,
-    TypeAlias,
-    Union,
 )  # noqa: F401
 
 import torch
@@ -23,7 +16,7 @@ from tqdm.auto import tqdm
 from mass.modules.smile_gates import (
     ExpertNotTrainedError,
     SmileMoELinear,
-    SmileMultiHeadAttention,
+    SmileMultiheadAttention,
 )
 from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
 from mass.utils.smile_utils import get_attr, get_device, set_attr, simple_average
@@ -38,6 +31,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
     # _linear_layer_cls = (nn.Linear,) avoid hard coding
     _linear_layer_cls = (nn.Linear,)
     _attn_layer_cls = (nn.MultiheadAttention,)
+    _upscaled_layer_cls = (SmileMoELinear,)
 
     def __init__(
         self,
@@ -148,7 +142,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             for m in finetuned_models
         ]
         try:
-            moe_attn = SmileMultiHeadAttention(
+            moe_attn = SmileMultiheadAttention(
                 module,
                 experts,
                 gate_k=self.gate_k,
@@ -195,6 +189,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             module = get_attr(pretrained_model, name_list)
         except AttributeError as e:
             pylogger.warning(f"Failed to get attribute {name} from pretrained model: {e}")
+            set_attr(pretrained_model, name_list, None)
             self.upscaled_layers.discard(name)  # Remove from upscaled layers set
             return
 
@@ -267,22 +262,26 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             tqdm_desc,
             leave=False,
             dynamic_ncols=True,
-        ):
-            pylogger.info(f"Upscaling module: {name} for type {type(module)}")
-            # TODO: separate upscale linear and upscale attn
+        ):  
+            if name.endswith("out_proj"):
+                pylogger.info(f"Skipping output projection layer: {name}")
+                continue
             if isinstance(module, self._linear_layer_cls):
+                pylogger.info(f"Upscaling linear layer: {name}")
                 self._upscale_linear_layer(
                     pretrained_model=pretrained_model,
                     finetuned_models=finetuned_models,
                     name=name,
                 )
             elif isinstance(module, self._attn_layer_cls):
+                pylogger.info(f"Upscaling attention layer: {name}")
                 self._upscale_attn_layer(
                     pretrained_model=pretrained_model,
                     finetuned_models=finetuned_models,
                     name=name,
                 )
             elif self.average_experts and len(tuple(module.named_modules())) == 1:
+                pylogger.info(f"Averaging experts for leaf module: {name}")
                 # if the module is a leaf module, we perform a parameter average
                 self._average_experts(pretrained_model, finetuned_models, name)
 
@@ -313,23 +312,20 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
                 module, "last_selected_experts"
             ):
                 collected_layers.add(name)
-                votes.append(module.last_selected_experts)
-
-        # pylogger.info(
-        #     f"Difference between upscaled layers and collected layers: {self.upscaled_layers - collected_layers}"
-        # )
-
+                if module.last_selected_experts is None:
+                    pylogger.warning(
+                        f"Module {name} has no last selected experts"
+                    )
+                else:
+                    votes.append(module.last_selected_experts)
+                    
         if votes:
             votes = torch.stack(votes)
             majority_vote = torch.mode(votes, dim=0).values
-            # pylogger.info(
-            #     f"Votes collected: {votes[:10]}, majority vote: {majority_vote}"
-            # )
         else:
             majority_vote = torch.zeros(
                 inputs.size(0), dtype=torch.long, device=inputs.device
             )
-            # pylogger.info("No votes collected, using head 0")
 
         head_groups = self.group_samples_by_selected_head(majority_vote)
 
@@ -363,3 +359,4 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             head_group_to_samples.setdefault(head_idx, []).append(sample_idx)
 
         return head_group_to_samples
+
