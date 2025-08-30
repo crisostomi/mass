@@ -1,6 +1,17 @@
 from copy import deepcopy
 import math
-from typing import Dict, List, Mapping, Optional, OrderedDict, Tuple, TypeAlias, Union, TYPE_CHECKING
+from typing import (
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    OrderedDict,
+    Tuple,
+    TypeAlias,
+    TypeVar,
+    Union,
+    TYPE_CHECKING,
+)
 
 import torch
 import torch.nn.functional as F
@@ -9,6 +20,7 @@ from torch import Tensor, nn
 scaled_dot_product_attention = torch._C._nn.scaled_dot_product_attention
 
 StateDictType: TypeAlias = Dict[str, Tensor]
+TorchModelType = TypeVar("TorchModelType", bound=nn.Module)
 
 
 def state_dict_avg(state_dicts: List[StateDictType]):
@@ -145,11 +157,7 @@ def get_attr(obj, names: List[str]):
     else:
         return get_attr(getattr(obj, names[0]), names[1:])
 
-
         q, k, v, attn_mask, dropout_p, is_causal
-
-
-
 
 
 def mha_shape_check(
@@ -203,16 +211,15 @@ def mha_shape_check(
             )
             if attn_mask.dim() == 3:
                 expected_shape = (num_heads, query.shape[0], key.shape[0])
-                assert attn_mask.shape == expected_shape, (
-                    f"Expected `attn_mask` shape to be {expected_shape} but got {attn_mask.shape}"
-                )
+                assert (
+                    attn_mask.shape == expected_shape
+                ), f"Expected `attn_mask` shape to be {expected_shape} but got {attn_mask.shape}"
     else:
         raise AssertionError(
             f"query should be unbatched 2D or batched 3D tensor but received {query.dim()}-D query tensor"
         )
 
     return is_batched
-
 
 
 def _svd(w: Tensor, full_matrices: bool = True) -> Tuple[Tensor, Tensor, Tensor]:
@@ -255,14 +262,3 @@ def svd(
     w = w.to(accelerator)
     u, s, v = _svd(w)
     return u.to(original_device), s.to(original_device), v.to(original_device)
-
-
-
-
-
-
-
-
-
-
-    

@@ -2,22 +2,26 @@
 defaults:
   - _self_
   - encoder: b32 #b16, b32, l14
-  - router: linear # linear, nn, proj
   - aggregator: tsvm
 
-# _target_: mass.pl_module.router_task_classifier.RouterTaskClassifier
-# _target_: mass.pl_module.mass.MASS
-# _target_: mass.pl_module.image_classifier.ImageClassifier
-_target_: mass.pl_module.encoder.EncoderWrapper
+_target_: mass.pl_module.smile.WeightEnsemblingMoEAlgorithm
 
 x_key: ${conventions.x_key}
 y_key: ${conventions.y_key}
 dataset_names: {eval_dataset}
-base_merging_method: tsvm # isotropic, tsvm, zeroshot
-heads_selection_method: max # avg, max 
 
 image_encoder: ??  
+finetuned_models: ??
 classification_heads: ??
+
+
+checkpoint: False
+save_checkpoint: False
+router_hidden_layers: 2
+init_lambda: 0.3
+batch_reduce: true
+use_grad_accumulate: true
+model_path: null
 
 
 optimizer:
@@ -32,3 +36,14 @@ optimizer:
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.CosineAnnealingLR
   T_max: 10
+
+
+
+# TODO: check for these parameters, they should be in other configs on our codebase
+# lr: 1e-4
+# optimizer: adam
+# devices: 1
+# batch_size: 16
+# num_workers: 16
+# max_steps: 1000
+

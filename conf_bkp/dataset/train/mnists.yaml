@@ -1,4 +1,0 @@
-defaults:
-  # - mnist
-  - emnist_letters
-  # - kmnist

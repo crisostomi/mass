@@ -1,3 +1,0 @@
-_target_: mass.merger.tsv.TaskSingularVectorsMerger
-svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.module.encoder.model_name}.pt"
-svd_compress_factor: null 

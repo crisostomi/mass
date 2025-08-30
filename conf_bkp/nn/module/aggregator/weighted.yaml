@@ -1,3 +1,0 @@
-_target_: mass.task_vectors.aggregator.WeightedAggregator # WeightedAggregator, IsotropicAggregator, TaskSingularVectorAggregator
-zeroshot_model: ???
-normalize_coefficients: False

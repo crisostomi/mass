@@ -1,7 +1,6 @@
 import open_clip
 import torch
 
-from mass import utils
 from mass.utils.utils import torch_load, torch_save
 
 import logging
@@ -63,7 +62,7 @@ class ImageEncoder(torch.nn.Module):
 
     def save(self, filename):
         print(f"Saving image encoder to {filename}")
-        utils.torch_save(self, filename)
+        torch_save(self, filename)
 
     @classmethod
     def load(cls, model_name, filename):

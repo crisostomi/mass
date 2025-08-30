@@ -19,12 +19,11 @@ from mass.modules.smile_gates import (
     SmileMultiheadAttention,
 )
 from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
-from mass.utils.smile_utils import get_attr, get_device, set_attr, simple_average
-from mass.utils.utils import pad_output, pad_unbatched_output
+from mass.utils.fusion_bench_utils import get_attr, get_device, set_attr, simple_average
+from mass.utils.utils import pad_unbatched_output
 
 
 pylogger = logging.getLogger(__name__)
-
 
 
 class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
@@ -127,14 +126,12 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
 
         self._upscale_submodules(model, finetuned_models)
         return model
-    
+
     def _upscale_attn_layer(self, pretrained_model, finetuned_models, name):
         name_list = name.split(".")
         pylogger.info(f"Layer name {name}")
         module = get_attr(pretrained_model, name_list)
-        pylogger.info(
-            f"Upscaling layer {name} of type {type(module)}"
-        )
+        pylogger.info(f"Upscaling layer {name} of type {type(module)}")
         original_device = get_device(module)
         module = module.to(self.merge_device, non_blocking=True)
         experts = [
@@ -188,14 +185,14 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         try:
             module = get_attr(pretrained_model, name_list)
         except AttributeError as e:
-            pylogger.warning(f"Failed to get attribute {name} from pretrained model: {e}")
+            pylogger.warning(
+                f"Failed to get attribute {name} from pretrained model: {e}"
+            )
             set_attr(pretrained_model, name_list, None)
             self.upscaled_layers.discard(name)  # Remove from upscaled layers set
             return
 
-        pylogger.info(
-            f"Upscaling layer {name} of type {type(module)}"
-        )
+        pylogger.info(f"Upscaling layer {name} of type {type(module)}")
         original_device = get_device(module)
         module = module.to(self.merge_device, non_blocking=True)
         experts = [
@@ -262,7 +259,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             tqdm_desc,
             leave=False,
             dynamic_ncols=True,
-        ):  
+        ):
             if name.endswith("out_proj"):
                 pylogger.info(f"Skipping output projection layer: {name}")
                 continue
@@ -313,12 +310,10 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             ):
                 collected_layers.add(name)
                 if module.last_selected_experts is None:
-                    pylogger.warning(
-                        f"Module {name} has no last selected experts"
-                    )
+                    pylogger.warning(f"Module {name} has no last selected experts")
                 else:
                     votes.append(module.last_selected_experts)
-                    
+
         if votes:
             votes = torch.stack(votes)
             majority_vote = torch.mode(votes, dim=0).values
@@ -359,4 +354,3 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             head_group_to_samples.setdefault(head_idx, []).append(sample_idx)
 
         return head_group_to_samples
-

@@ -7,14 +7,11 @@ import warnings
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
-from mass.utils.smile_utils import svd
+from mass.utils.fusion_bench_utils import svd
 from mass.utils.utils import is_all_zeros
 from torch.nn.functional import softmax, dropout, pad
 
-from torch.overrides import (
-    handle_torch_function,
-    has_torch_function
-)
+from torch.overrides import handle_torch_function, has_torch_function
 
 
 if TYPE_CHECKING:
@@ -165,7 +162,8 @@ class SmileCompressedLinear(nn.Module):
         x = F.linear(x, self.svh)
         x = F.linear(x, self.u, self.bias)
         return x
-    
+
+
 class SmileMoELinear(nn.Module):
     __constants__ = [
         "in_features",
@@ -332,18 +330,15 @@ class SmileMoELinear(nn.Module):
         # handles different inputs shapes. E.g. out_proj gets bsz*patches, embed_dim inputs
         if len(input_shape) == 3:
             self.last_selected_experts = (
-            selected_experts.view(input_shape[0], input_shape[1])
-            .cpu()
-            .mode(dim=0)
-            .values
+                selected_experts.view(input_shape[0], input_shape[1])
+                .cpu()
+                .mode(dim=0)
+                .values
             )
         elif len(input_shape) == 2 and batch_size:
             patches = input_shape[0] // batch_size
             self.last_selected_experts = (
-            selected_experts.view(patches, batch_size)
-            .cpu()
-            .mode(dim=0)
-            .values
+                selected_experts.view(patches, batch_size).cpu().mode(dim=0).values
             )
 
         return final_hidden_states
@@ -370,6 +365,7 @@ class SmileMoELinear(nn.Module):
             f"k={self.k}"
             f")"
         )
+
 
 # Needed to reimplement Attention separately
 def _check_arg_device(x: Optional[torch.Tensor]) -> bool:
@@ -401,13 +397,11 @@ def _is_make_fx_tracing():
         return False
 
 
-
 class SmileMultiheadAttention(nn.Module):
 
     __constants__ = ["batch_first"]
     bias_k: Optional[torch.Tensor]
     bias_v: Optional[torch.Tensor]
-    
 
     def __init__(
         self,
@@ -420,7 +414,6 @@ class SmileMultiheadAttention(nn.Module):
         upscaling_accelerator=None,
         routing_use_diff=True,
         name="",
-    
     ) -> None:
         self.num_experts = len(finetuned_models)
         self.top_k = top_k
@@ -432,21 +425,25 @@ class SmileMultiheadAttention(nn.Module):
         self.dropout = pretrained_model.dropout
         self.add_bias_kv = pretrained_model.bias_k is not None
         self.add_zero_attn = pretrained_model.add_zero_attn
-        
+
         self._qkv_same_embed_dim = pretrained_model._qkv_same_embed_dim
         if not self._qkv_same_embed_dim:
             raise NotImplementedError("Not implemented for different qkv embed dim")
-        
+
         self.kdim = pretrained_model.kdim
         self.vdim = pretrained_model.vdim
         self.batch_first = pretrained_model.batch_first
-        
-        factory_kwargs = {"device": pretrained_model.in_proj_weight.device, "dtype": pretrained_model.in_proj_weight.dtype}
+
+        factory_kwargs = {
+            "device": pretrained_model.in_proj_weight.device,
+            "dtype": pretrained_model.in_proj_weight.dtype,
+        }
         super().__init__()
-        
-        
+
         self.head_dim = self.embed_dim // self.num_heads
-        assert self.head_dim * self.num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
+        assert (
+            self.head_dim * self.num_heads == self.embed_dim
+        ), "embed_dim must be divisible by num_heads"
 
         q_weight, k_weight, v_weight = pretrained_model.in_proj_weight.chunk(3)
 
@@ -456,48 +453,89 @@ class SmileMultiheadAttention(nn.Module):
             q_bias, k_bias, v_bias = None, None, None
 
         # annoying but allows us to use the existing SMILE MoE layer
-        pretrained_q = nn.Linear(self.embed_dim, self.embed_dim, bias=q_bias is not None, **factory_kwargs)
-        pretrained_k = nn.Linear(self.embed_dim, self.embed_dim, bias=k_bias is not None, **factory_kwargs)
-        pretrained_v = nn.Linear(self.embed_dim, self.embed_dim, bias=v_bias is not None, **factory_kwargs)
+        pretrained_q = nn.Linear(
+            self.embed_dim, self.embed_dim, bias=q_bias is not None, **factory_kwargs
+        )
+        pretrained_k = nn.Linear(
+            self.embed_dim, self.embed_dim, bias=k_bias is not None, **factory_kwargs
+        )
+        pretrained_v = nn.Linear(
+            self.embed_dim, self.embed_dim, bias=v_bias is not None, **factory_kwargs
+        )
 
-        pretrained_q.weight.data, pretrained_k.weight.data, pretrained_v.weight.data = q_weight, k_weight, v_weight
+        pretrained_q.weight.data, pretrained_k.weight.data, pretrained_v.weight.data = (
+            q_weight,
+            k_weight,
+            v_weight,
+        )
 
         if q_bias is not None:
-            pretrained_q.bias.data, pretrained_k.bias.data, pretrained_v.bias.data = q_bias, k_bias, v_bias
+            pretrained_q.bias.data, pretrained_k.bias.data, pretrained_v.bias.data = (
+                q_bias,
+                k_bias,
+                v_bias,
+            )
         else:
-            pretrained_q.bias.data, pretrained_k.bias.data, pretrained_v.bias.data = None, None, None
+            pretrained_q.bias.data, pretrained_k.bias.data, pretrained_v.bias.data = (
+                None,
+                None,
+                None,
+            )
 
         # Extract Q, K, V weights and biases from finetuned models
         finetuned_q_linears = []
         finetuned_k_linears = []
         finetuned_v_linears = []
-        
+
         for ft_model in finetuned_models:
             ft_in_proj_weight = ft_model.in_proj_weight
             ft_in_proj_bias = ft_model.in_proj_bias
 
-            ft_q_weight, ft_k_weight,ft_v_weight = ft_in_proj_weight.chunk(3)
-            
+            ft_q_weight, ft_k_weight, ft_v_weight = ft_in_proj_weight.chunk(3)
+
             if ft_in_proj_bias is not None:
                 ft_q_bias, ft_k_bias, ft_v_bias = ft_in_proj_bias.chunk(3)
             else:
                 ft_q_bias, ft_k_bias, ft_v_bias = None, None, None
 
-            ft_q = nn.Linear(self.embed_dim, self.embed_dim, bias=ft_q_bias is not None, **factory_kwargs)
-            ft_k = nn.Linear(self.embed_dim, self.embed_dim, bias=ft_k_bias is not None, **factory_kwargs)
-            ft_v = nn.Linear(self.embed_dim, self.embed_dim, bias=ft_v_bias is not None, **factory_kwargs)
+            ft_q = nn.Linear(
+                self.embed_dim,
+                self.embed_dim,
+                bias=ft_q_bias is not None,
+                **factory_kwargs,
+            )
+            ft_k = nn.Linear(
+                self.embed_dim,
+                self.embed_dim,
+                bias=ft_k_bias is not None,
+                **factory_kwargs,
+            )
+            ft_v = nn.Linear(
+                self.embed_dim,
+                self.embed_dim,
+                bias=ft_v_bias is not None,
+                **factory_kwargs,
+            )
 
-            ft_q.weight.data, ft_k.weight.data, ft_v.weight.data = ft_q_weight, ft_k_weight, ft_v_weight
+            ft_q.weight.data, ft_k.weight.data, ft_v.weight.data = (
+                ft_q_weight,
+                ft_k_weight,
+                ft_v_weight,
+            )
 
             if ft_q_bias is not None:
-                ft_q.bias.data, ft_k.bias.data, ft_v.bias.data = ft_q_bias, ft_k_bias, ft_v_bias
+                ft_q.bias.data, ft_k.bias.data, ft_v.bias.data = (
+                    ft_q_bias,
+                    ft_k_bias,
+                    ft_v_bias,
+                )
             else:
                 ft_q.bias.data, ft_k.bias.data, ft_v.bias.data = None, None, None
 
             finetuned_q_linears.append(ft_q)
             finetuned_k_linears.append(ft_k)
             finetuned_v_linears.append(ft_v)
-        
+
         # Create SmileMoELinear layers for Q, K, V projections
         self.in_proj_q = SmileMoELinear(
             pretrained_model=pretrained_q,
@@ -508,9 +546,9 @@ class SmileMultiheadAttention(nn.Module):
             full_matrices=full_matrices,
             upscaling_accelerator=upscaling_accelerator,
             routing_use_diff=routing_use_diff,
-            name=f"{name}_q_proj"
+            name=f"{name}_q_proj",
         )
-        
+
         self.in_proj_k = SmileMoELinear(
             pretrained_model=pretrained_k,
             finetuned_models=finetuned_k_linears,
@@ -520,9 +558,9 @@ class SmileMultiheadAttention(nn.Module):
             full_matrices=full_matrices,
             upscaling_accelerator=upscaling_accelerator,
             routing_use_diff=routing_use_diff,
-            name=f"{name}_k_proj"
+            name=f"{name}_k_proj",
         )
-        
+
         self.in_proj_v = SmileMoELinear(
             pretrained_model=pretrained_v,
             finetuned_models=finetuned_v_linears,
@@ -532,7 +570,7 @@ class SmileMultiheadAttention(nn.Module):
             full_matrices=full_matrices,
             upscaling_accelerator=upscaling_accelerator,
             routing_use_diff=routing_use_diff,
-            name=f"{name}_v_proj"
+            name=f"{name}_v_proj",
         )
 
         self.out_proj = SmileMoELinear(
@@ -544,7 +582,7 @@ class SmileMultiheadAttention(nn.Module):
             full_matrices=full_matrices,
             upscaling_accelerator=upscaling_accelerator,
             routing_use_diff=routing_use_diff,
-            name=f"{name}_out_proj"
+            name=f"{name}_out_proj",
         )
 
         if self.add_bias_kv:
@@ -613,8 +651,6 @@ class SmileMultiheadAttention(nn.Module):
                     value = key
             else:
                 query, key, value = (x.transpose(1, 0) for x in (query, key, value))
-
-
 
         attn_output, attn_output_weights = multi_head_attention_forward(
             query,
@@ -691,8 +727,8 @@ class SmileMultiheadAttention(nn.Module):
 
         # no attn_mask and no key_padding_mask, returns None, None
         return merged_mask, mask_type
-    
-    
+
+
 def _mha_shape_check(
     query: Tensor,
     key: Tensor,
@@ -744,9 +780,9 @@ def _mha_shape_check(
             )
             if attn_mask.dim() == 3:
                 expected_shape = (num_heads, query.shape[0], key.shape[0])
-                assert attn_mask.shape == expected_shape, (
-                    f"Expected `attn_mask` shape to be {expected_shape} but got {attn_mask.shape}"
-                )
+                assert (
+                    attn_mask.shape == expected_shape
+                ), f"Expected `attn_mask` shape to be {expected_shape} but got {attn_mask.shape}"
     else:
         raise AssertionError(
             f"query should be unbatched 2D or batched 3D tensor but received {query.dim()}-D query tensor"
@@ -804,7 +840,8 @@ def _check_key_padding_mask(
         key_padding_mask.shape[1] == src_len,
         lambda: f"Expected key_padded_mask.shape[1] to be {src_len}, but got {key_padding_mask.shape[1]}",
     )
-    
+
+
 def multi_head_attention_forward(
     query: Tensor,
     key: Tensor,
@@ -924,36 +961,36 @@ def multi_head_attention_forward(
             # longer causal.
             is_causal = False
 
-    assert embed_dim == embed_dim_to_check, (
-        f"was expecting embedding dimension of {embed_dim_to_check}, but got {embed_dim}"
-    )
+    assert (
+        embed_dim == embed_dim_to_check
+    ), f"was expecting embedding dimension of {embed_dim_to_check}, but got {embed_dim}"
     if isinstance(embed_dim, torch.Tensor):
         # embed_dim can be a tensor when JIT tracing
         head_dim = embed_dim.div(num_heads, rounding_mode="trunc")
     else:
         head_dim = embed_dim // num_heads
-    assert head_dim * num_heads == embed_dim, (
-        f"embed_dim {embed_dim} not divisible by num_heads {num_heads}"
-    )
+    assert (
+        head_dim * num_heads == embed_dim
+    ), f"embed_dim {embed_dim} not divisible by num_heads {num_heads}"
     if use_separate_proj_weight:
         # allow MHA to have different embedding dimensions when separate projection weights are used
-        assert key.shape[:2] == value.shape[:2], (
-            f"key's sequence and batch dims {key.shape[:2]} do not match value's {value.shape[:2]}"
-        )
+        assert (
+            key.shape[:2] == value.shape[:2]
+        ), f"key's sequence and batch dims {key.shape[:2]} do not match value's {value.shape[:2]}"
     else:
-        assert key.shape == value.shape, (
-            f"key shape {key.shape} does not match value shape {value.shape}"
-        )
+        assert (
+            key.shape == value.shape
+        ), f"key shape {key.shape} does not match value shape {value.shape}"
 
-    assert in_proj_q.weight is not None, (
-        "use_separate_proj_weight is True but q_proj_weight is None"
-    )
-    assert in_proj_k.weight is not None, (
-        "use_separate_proj_weight is True but k_proj_weight is None"
-    )
-    assert in_proj_v.weight is not None, (
-        "use_separate_proj_weight is True but v_proj_weight is None"
-    )
+    assert (
+        in_proj_q.weight is not None
+    ), "use_separate_proj_weight is True but q_proj_weight is None"
+    assert (
+        in_proj_k.weight is not None
+    ), "use_separate_proj_weight is True but k_proj_weight is None"
+    assert (
+        in_proj_v.weight is not None
+    ), "use_separate_proj_weight is True but v_proj_weight is None"
 
     q, k, v = in_proj_q(query), in_proj_k(key), in_proj_v(value)
 
@@ -1001,23 +1038,23 @@ def multi_head_attention_forward(
         k = k.view(k.shape[0], bsz * num_heads, head_dim).transpose(0, 1)
     else:
         # TODO finish disentangling control flow so we don't do in-projections when statics are passed
-        assert static_k.size(0) == bsz * num_heads, (
-            f"expecting static_k.size(0) of {bsz * num_heads}, but got {static_k.size(0)}"
-        )
-        assert static_k.size(2) == head_dim, (
-            f"expecting static_k.size(2) of {head_dim}, but got {static_k.size(2)}"
-        )
+        assert (
+            static_k.size(0) == bsz * num_heads
+        ), f"expecting static_k.size(0) of {bsz * num_heads}, but got {static_k.size(0)}"
+        assert (
+            static_k.size(2) == head_dim
+        ), f"expecting static_k.size(2) of {head_dim}, but got {static_k.size(2)}"
         k = static_k
     if static_v is None:
         v = v.view(v.shape[0], bsz * num_heads, head_dim).transpose(0, 1)
     else:
         # TODO finish disentangling control flow so we don't do in-projections when statics are passed
-        assert static_v.size(0) == bsz * num_heads, (
-            f"expecting static_v.size(0) of {bsz * num_heads}, but got {static_v.size(0)}"
-        )
-        assert static_v.size(2) == head_dim, (
-            f"expecting static_v.size(2) of {head_dim}, but got {static_v.size(2)}"
-        )
+        assert (
+            static_v.size(0) == bsz * num_heads
+        ), f"expecting static_v.size(0) of {bsz * num_heads}, but got {static_v.size(0)}"
+        assert (
+            static_v.size(2) == head_dim
+        ), f"expecting static_v.size(2) of {head_dim}, but got {static_v.size(2)}"
         v = static_v
 
     # add zero attention along batch dimension (now first)
@@ -1060,9 +1097,9 @@ def multi_head_attention_forward(
         _B, _Nt, E = q.shape
         q_scaled = q * math.sqrt(1.0 / float(E))
 
-        assert not (is_causal and attn_mask is None), (
-            "FIXME: is_causal not implemented for need_weights"
-        )
+        assert not (
+            is_causal and attn_mask is None
+        ), "FIXME: is_causal not implemented for need_weights"
 
         if attn_mask is not None:
             attn_output_weights = torch.baddbmm(
@@ -1079,7 +1116,7 @@ def multi_head_attention_forward(
         attn_output = (
             attn_output.transpose(0, 1).contiguous().view(tgt_len * bsz, embed_dim)
         )
-        
+
         attn_output = out_proj(attn_output, bsz)
         attn_output = attn_output.view(tgt_len, bsz, attn_output.size(1))
 

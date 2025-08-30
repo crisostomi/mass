@@ -1,3 +1,0 @@
-dataset_name: STL10
-ft_epochs: 6
-num_classes: 10
