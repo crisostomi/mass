@@ -186,6 +186,7 @@ get_ft_accs = "mass.scripts.get_finetuned_accs:main"
 train = "mass.scripts.train_router:main"
 interpret = "mass.scripts.interpret:main"
 smile = "mass.scripts.evaluate_smile:main"
+wemoe = "mass.scripts.evaluate_we_moe:main"
 
 [dependency-groups]
 dev = [

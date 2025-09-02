@@ -1,4 +1,5 @@
 from copy import deepcopy
+import logging
 import math
 from typing import (
     Dict,
@@ -15,12 +16,19 @@ from typing import (
 
 import torch
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
 from torch import Tensor, nn
+import tqdm
+
+from mass.modules.encoder import ImageEncoder
+
 
 scaled_dot_product_attention = torch._C._nn.scaled_dot_product_attention
 
 StateDictType: TypeAlias = Dict[str, Tensor]
 TorchModelType = TypeVar("TorchModelType", bound=nn.Module)
+
+pylogger = logging.getLogger(__name__)
 
 
 def state_dict_avg(state_dicts: List[StateDictType]):
@@ -160,68 +168,6 @@ def get_attr(obj, names: List[str]):
         q, k, v, attn_mask, dropout_p, is_causal
 
 
-def mha_shape_check(
-    query: Tensor,
-    key: Tensor,
-    value: Tensor,
-    key_padding_mask: Optional[Tensor],
-    attn_mask: Optional[Tensor],
-    num_heads: int,
-):
-    # Verifies the expected shape for `query, `key`, `value`, `key_padding_mask` and `attn_mask`
-    # and returns if the input is batched or not.
-    # Raises an error if `query` is not 2-D (unbatched) or 3-D (batched) tensor.
-
-    # Shape check.
-    if query.dim() == 3:
-        # Batched Inputs
-        is_batched = True
-        assert key.dim() == 3 and value.dim() == 3, (
-            "For batched (3-D) `query`, expected `key` and `value` to be 3-D"
-            f" but found {key.dim()}-D and {value.dim()}-D tensors respectively"
-        )
-        if key_padding_mask is not None:
-            assert key_padding_mask.dim() == 2, (
-                "For batched (3-D) `query`, expected `key_padding_mask` to be `None` or 2-D"
-                f" but found {key_padding_mask.dim()}-D tensor instead"
-            )
-        if attn_mask is not None:
-            assert attn_mask.dim() in (2, 3), (
-                "For batched (3-D) `query`, expected `attn_mask` to be `None`, 2-D or 3-D"
-                f" but found {attn_mask.dim()}-D tensor instead"
-            )
-    elif query.dim() == 2:
-        # Unbatched Inputs
-        is_batched = False
-        assert key.dim() == 2 and value.dim() == 2, (
-            "For unbatched (2-D) `query`, expected `key` and `value` to be 2-D"
-            f" but found {key.dim()}-D and {value.dim()}-D tensors respectively"
-        )
-
-        if key_padding_mask is not None:
-            assert key_padding_mask.dim() == 1, (
-                "For unbatched (2-D) `query`, expected `key_padding_mask` to be `None` or 1-D"
-                f" but found {key_padding_mask.dim()}-D tensor instead"
-            )
-
-        if attn_mask is not None:
-            assert attn_mask.dim() in (2, 3), (
-                "For unbatched (2-D) `query`, expected `attn_mask` to be `None`, 2-D or 3-D"
-                f" but found {attn_mask.dim()}-D tensor instead"
-            )
-            if attn_mask.dim() == 3:
-                expected_shape = (num_heads, query.shape[0], key.shape[0])
-                assert (
-                    attn_mask.shape == expected_shape
-                ), f"Expected `attn_mask` shape to be {expected_shape} but got {attn_mask.shape}"
-    else:
-        raise AssertionError(
-            f"query should be unbatched 2D or batched 3D tensor but received {query.dim()}-D query tensor"
-        )
-
-    return is_batched
-
-
 def _svd(w: Tensor, full_matrices: bool = True) -> Tuple[Tensor, Tensor, Tensor]:
     """
     Perform Singular Value Decomposition (SVD) on a tensor.
@@ -262,3 +208,72 @@ def svd(
     w = w.to(accelerator)
     u, s, v = _svd(w)
     return u.to(original_device), s.to(original_device), v.to(original_device)
+
+
+def replace_attention_with_linear(
+    pretrained_model: ImageEncoder,
+    finetuned_models,
+    tqdm_desc: str = "Replacing Attention Layers",
+    device: str = "cuda",
+):
+    # Import here to avoid circular import
+    from mass.modules.linear_attention import LinearMultiheadAttention
+    
+    _attn_layer_cls = (nn.MultiheadAttention,)
+
+    for name, module in tqdm.tqdm(
+        tuple(pretrained_model.named_modules()),
+        tqdm_desc,
+        leave=False,
+        dynamic_ncols=True,
+    ):
+        if isinstance(module, _attn_layer_cls):
+            pylogger.info(f"Replacing attention layer: {name}")
+            name_list = name.split(".")
+            try:
+                module = get_attr(pretrained_model, name_list)
+            except AttributeError as e:
+                pylogger.warning(
+                    f"Failed to get attribute {name} from pretrained model: {e}"
+                )
+                set_attr(pretrained_model, name_list, None)
+                return
+
+            module = module.to(get_device(pretrained_model), non_blocking=True)
+            experts = [
+                get_attr(m, name_list).to(get_device(m), non_blocking=True)
+                for m in finetuned_models
+            ]
+
+            set_attr(pretrained_model, name_list, LinearMultiheadAttention(module))
+            # remove the original module from fine-tuned models to save memory
+            for m, expert in zip(finetuned_models, experts):
+                set_attr(m, name_list, LinearMultiheadAttention(expert))
+                
+class InfiniteDataLoader:
+    """
+    A wrapper class for DataLoader to create an infinite data loader.
+    This is useful in case we are only interested in the number of steps and not the number of epochs.
+
+    This class wraps a DataLoader and provides an iterator that resets
+    when the end of the dataset is reached, creating an infinite loop.
+
+    Attributes:
+        data_loader (DataLoader): The DataLoader to wrap.
+        data_iter (iterator): An iterator over the DataLoader.
+    """
+
+    def __init__(self, data_loader: DataLoader):
+        self.data_loader = data_loader
+        self.data_iter = iter(data_loader)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            data = next(self.data_iter)
+        except StopIteration:
+            self.data_iter = iter(self.data_loader)  # Reset the data loader
+            data = next(self.data_iter)
+        return data

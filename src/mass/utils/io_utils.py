@@ -2,11 +2,15 @@ import logging
 from pathlib import Path
 from pydoc import locate
 
+from nn_core.callbacks import NNTemplateCore
+from nn_core.common.utils import enforce_tags
+from nn_core.model_logging import NNLogger
+
+from omegaconf import DictConfig
 import torch
 
-from nn_core.serialization import load_model
-
 from mass.modules.encoder import ClassificationHead, ImageEncoder
+from mass.modules.heads import get_classification_head
 
 pylogger = logging.getLogger(__name__)
 
@@ -38,3 +42,41 @@ def load_model_from_disk(model_path):
 
 def get_class(model):
     return model.__class__.__module__ + "." + model.__class__.__qualname__
+
+
+def get_classification_heads(cfg: DictConfig):
+    classification_heads = []
+
+    for dataset_name in cfg.eval_datasets:
+
+        classification_head = get_classification_head(
+            cfg.nn.module.encoder.model_name,
+            dataset_name,
+            cfg.nn.data.data_path,
+            cfg.misc.ckpt_path,
+            cache_dir=cfg.misc.cache_dir,
+            openclip_cachedir=cfg.misc.openclip_cachedir,
+        )
+
+        classification_heads.append(classification_head)
+
+    return classification_heads
+
+
+def boilerplate(cfg):
+    cfg.core.tags = enforce_tags(cfg.core.get("tags", None))
+
+    num_tasks = len(cfg.eval_datasets)
+    cfg.core.tags.append(f"n{num_tasks}")
+    cfg.core.tags.append(f"{cfg.nn.module.encoder.model_name}")
+
+    template_core = NNTemplateCore(
+        restore_cfg=None,  # Disable checkpoint restoration for evaluation
+    )
+    logger: NNLogger = NNLogger(
+        logging_cfg=cfg.train.logging, cfg=cfg, resume_id=template_core.resume_id
+    )
+
+    logger.upload_source()
+
+    return logger, template_core

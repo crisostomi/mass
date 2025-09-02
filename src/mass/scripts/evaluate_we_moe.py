@@ -25,7 +25,8 @@ import mass  # noqa
 from mass.data.datasets.registry import get_dataset
 from mass.modules.encoder import ClassificationHead, ImageEncoder
 from mass.modules.heads import get_classification_head
-from mass.utils.io_utils import load_model_from_disk
+from mass.scripts.evaluate_pipeline import boilerplate
+from mass.utils.io_utils import get_classification_heads, load_model_from_disk
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
     build_callbacks,
@@ -41,43 +42,12 @@ pylogger = logging.getLogger(__name__)
 
 torch.set_float32_matmul_precision("high")
 
-
-def boilerplate(cfg):
-    cfg.core.tags = enforce_tags(cfg.core.get("tags", None))
-
-    num_tasks = len(cfg.eval_datasets)
-    cfg.core.tags.append(f"n{num_tasks}")
-    cfg.core.tags.append(f"{cfg.nn.module.encoder.model_name}")
-
-    template_core = NNTemplateCore(
-        restore_cfg=None,  # Disable checkpoint restoration for evaluation
-    )
-    logger: NNLogger = NNLogger(
-        logging_cfg=cfg.train.logging, cfg=cfg, resume_id=template_core.resume_id
-    )
-
-    logger.upload_source()
-
-    return logger, template_core
-
-
-def get_classification_heads(cfg: DictConfig):
-    classification_heads = []
-
-    for dataset_name in cfg.eval_datasets:
-
-        classification_head = get_classification_head(
-            cfg.nn.module.encoder.model_name,
-            dataset_name,
-            cfg.nn.data.data_path,
-            cfg.misc.ckpt_path,
-            cache_dir=cfg.misc.cache_dir,
-            openclip_cachedir=cfg.misc.openclip_cachedir,
-        )
-
-        classification_heads.append(classification_head)
-
-    return classification_heads
+def get_optimal_alpha(cfg):
+    try:
+        cfg.nn.module.aggregator.optimal_alpha = cfg.optimal_alphas[cfg.nn.module.encoder.model_name][len(cfg.eval_datasets)]
+    except:
+        pylogger.warning("Optimal alpha not found, using default value")
+        cfg.nn.module.aggregator.optimal_alpha = 1.0
 
 
 def run(cfg: DictConfig) -> str:
@@ -131,12 +101,17 @@ def run(cfg: DictConfig) -> str:
 
     # Convert finetuned_models dict to list of model objects
     finetuned_models_list = list(finetuned_models.values())
+    
+    get_optimal_alpha(cfg)
 
     model: WeightEnsemblingMoEAlgorithm = instantiate(
         cfg.nn.module,
         pretrained_model=zeroshot_encoder,
         finetuned_models=finetuned_models_list,
         classification_heads=classification_heads,
+        tasks=cfg.eval_datasets,
+        save_checkpoint_path=cfg.misc.ckpt_path + "/we_moe.ckpt",
+        data_path=cfg.nn.data.data_path,
         _recursive_=False,
     )
 

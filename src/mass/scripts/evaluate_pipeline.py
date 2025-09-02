@@ -12,10 +12,8 @@ import hydra
 import omegaconf
 import pytorch_lightning as pl
 import torch
-from hydra import compose, initialize
 from hydra.utils import instantiate
 from lightning.pytorch import Callback
-from omegaconf import DictConfig, ListConfig, OmegaConf
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 from nn_core.callbacks import NNTemplateCore
@@ -28,13 +26,9 @@ from nn_core.serialization import NNCheckpointIO
 import mass  # noqa
 from mass.data.datasets.registry import get_dataset
 from mass.modules.encoder import ClassificationHead, ImageEncoder
-from mass.modules.projection_router import ProjectionRouter
-from mass.modules.nn_router import NNRouter
-from mass.modules.heads import get_classification_head
 from mass.modules.router import AbstractRouter
 from mass.utils.io_utils import (
     boilerplate,
-    get_classification_heads,
     load_model_from_disk,
 )
 from mass.utils.plots import plot_interactive_radar_chart
@@ -43,10 +37,8 @@ from mass.utils.utils import (
     apply_dict_to_model,
     build_callbacks,
     get_finetuning_accuracies,
-    add_normalized_accuracy,
     compute_avg_accuracy,
     print_memory,
-    get_routing_weights,
     svd_key_from_layer,
 )
 from mass.task_vectors.task_singular_vectors import *
@@ -107,7 +99,7 @@ def get_merged_base(
     return merged_encoder  # , svd_dicts
 
 
-def run(cfg: DictConfig) -> str:
+def run(cfg: omegaconf.DictConfig) -> str:
     """Generic train loop.
 
     Args:

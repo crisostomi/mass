@@ -1,5 +1,5 @@
 defaults:
   - _self_
   - data: default
-  - module: smile
+  - module: wemoe
   - benchmark: three

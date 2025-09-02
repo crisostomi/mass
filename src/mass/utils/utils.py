@@ -388,6 +388,18 @@ def apply_dict_to_model(task_vector_dict, model, coefficient: float = 1.0):
     return model.cuda()
 
 
+def sum_task_dict(task_vector_dict_1, task_vector_dict_2):
+    """
+    Sums two task vector dictionaries. It sums task_vector_dict_2 into task_vector_dict_1.
+    """
+    for key, value in task_vector_dict_2.items():
+        if key in task_vector_dict_1:
+            task_vector_dict_1[key] += value
+        else:
+            task_vector_dict_1[key] = value
+    return task_vector_dict_1
+
+
 def is_matrix(layer):
     return len(layer.shape) == 2
 

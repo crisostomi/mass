@@ -13,13 +13,19 @@ from torch import Tensor, nn
 import torchmetrics
 from tqdm.auto import tqdm
 
+from mass.modules.linear_attention import LinearMultiheadAttention
 from mass.modules.smile_gates import (
     ExpertNotTrainedError,
     SmileMoELinear,
-    SmileMultiheadAttention,
 )
 from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
-from mass.utils.fusion_bench_utils import get_attr, get_device, set_attr, simple_average
+from mass.utils.fusion_bench_utils import (
+    get_attr,
+    get_device,
+    replace_attention_with_linear,
+    set_attr,
+    simple_average,
+)
 from mass.utils.utils import pad_unbatched_output
 
 
@@ -29,7 +35,6 @@ pylogger = logging.getLogger(__name__)
 class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
     # _linear_layer_cls = (nn.Linear,) avoid hard coding
     _linear_layer_cls = (nn.Linear,)
-    _attn_layer_cls = (nn.MultiheadAttention,)
     _upscaled_layer_cls = (SmileMoELinear,)
 
     def __init__(
@@ -127,44 +132,6 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         self._upscale_submodules(model, finetuned_models)
         return model
 
-    def _upscale_attn_layer(self, pretrained_model, finetuned_models, name):
-        name_list = name.split(".")
-        pylogger.info(f"Layer name {name}")
-        module = get_attr(pretrained_model, name_list)
-        pylogger.info(f"Upscaling layer {name} of type {type(module)}")
-        original_device = get_device(module)
-        module = module.to(self.merge_device, non_blocking=True)
-        experts = [
-            get_attr(m, name_list).to(self.merge_device, non_blocking=True)
-            for m in finetuned_models
-        ]
-        try:
-            moe_attn = SmileMultiheadAttention(
-                module,
-                experts,
-                gate_k=self.gate_k,
-                k=self.k,
-                top_k=self.top_k,
-                routing_use_diff=self.routing_use_diff,
-                full_matrices=self.full_matrices,
-                upscaling_accelerator=self.upscaling_accelerator,
-                name=name,
-            )
-            moe_attn = moe_attn.to(original_device, non_blocking=True)
-            pylogger.info(f"Successfully upscaled layer: {name}")
-        except ExpertNotTrainedError:
-            pylogger.info(f"skip {name} because the experts are not trained.")
-            self.upscaled_layers.discard(name)  # Remove from upscaled layers set
-            return
-        except Exception as e:
-            pylogger.error(f"Failed to upscale layer {name}: {e}")
-            self.upscaled_layers.discard(name)  # Remove from upscaled layers set
-            return
-        set_attr(pretrained_model, name_list, moe_attn)
-        # remove the original module from fine-tuned models to save memory
-        for m in finetuned_models:
-            set_attr(m, name_list, None)
-
     def _upscale_linear_layer(
         self,
         pretrained_model,
@@ -254,25 +221,17 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             finetuned_models (List[nn.Module]): A list of fine-tuned models.
             tqdm_desc (str): Description for the tqdm progress bar.
         """
+        replace_attention_with_linear(pretrained_model, finetuned_models)
+
         for name, module in tqdm(
             tuple(pretrained_model.named_modules()),
             tqdm_desc,
             leave=False,
             dynamic_ncols=True,
         ):
-            if name.endswith("out_proj"):
-                pylogger.info(f"Skipping output projection layer: {name}")
-                continue
             if isinstance(module, self._linear_layer_cls):
                 pylogger.info(f"Upscaling linear layer: {name}")
                 self._upscale_linear_layer(
-                    pretrained_model=pretrained_model,
-                    finetuned_models=finetuned_models,
-                    name=name,
-                )
-            elif isinstance(module, self._attn_layer_cls):
-                pylogger.info(f"Upscaling attention layer: {name}")
-                self._upscale_attn_layer(
                     pretrained_model=pretrained_model,
                     finetuned_models=finetuned_models,
                     name=name,

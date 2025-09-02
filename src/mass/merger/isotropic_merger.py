@@ -5,7 +5,6 @@ from mass.utils.utils import apply_dict_to_model, compute_task_dict, print_memor
 from mass.task_vectors.task_singular_vectors import (
     get_svd_dict,
     isotropic_sum,
-    sum_svd_no_redundant_tasks_simple,
 )
 
 import torch
