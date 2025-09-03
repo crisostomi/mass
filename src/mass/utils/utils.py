@@ -570,7 +570,7 @@ def compute_task_dict(pretrained, finetuned):
             pylogger.info(f"Skipping key {key}")
             continue
 
-        difference = finetuned[key] - pretrained[key].cuda()
+        difference = finetuned[key] - pretrained[key]
         new_state_dict[key] = difference
 
     return new_state_dict

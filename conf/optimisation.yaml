@@ -19,7 +19,7 @@ defaults:
 llambda: 0.0
 gradient_accumulation_steps: 128
 seed_index: 0
-ntasks: 0
+num_tasks: 0
 number_of_train_batches: 10
 device: 'cuda'
 svd_compress_factor: 1.0
