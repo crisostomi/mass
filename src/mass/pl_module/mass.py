@@ -3,7 +3,7 @@ from hydra.utils import instantiate
 import wandb
 import torch
 
-import delta
+import mass
 from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
 
 import torchmetrics
