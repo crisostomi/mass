@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from mass.data.dataset import HFImageClassification
 from mass.pl_module.image_classifier import ImageClassifier
 import open_clip
 import wandb
@@ -63,6 +64,31 @@ pylogger = logging.getLogger(__name__)
 torch.set_float32_matmul_precision("high")
 
 
+def load_config(
+    config_path: str,
+    config_name: str,
+    overrides: list[str] | None = None,
+) -> DictConfig:
+    """
+    Load a Hydra config without launching a full Hydra app.
+
+    Args:
+        config_path (str): Path to the folder containing your configs (relative to project root).
+        config_name (str): Name of the YAML config file (without `.yaml`).
+        overrides (list[str], optional): List of override strings, e.g. ["trainer.max_epochs=20"].
+
+    Returns:
+        DictConfig: The loaded configuration.
+    """
+    overrides = overrides or []
+    abs_config_path = str(Path(config_path).absolute())
+
+    with hydra.initialize(config_path=abs_config_path, version_base=None):
+        cfg = hydra.compose(config_name=config_name, overrides=overrides)
+
+    return cfg
+
+
 def run(cfg: DictConfig) -> str:
     """Generic train loop.
 
@@ -77,7 +103,9 @@ def run(cfg: DictConfig) -> str:
 
     logger, template_core = boilerplate(cfg)
 
-    num_tasks = len(cfg.eval_datasets)
+    print(cfg.benchmark.datasets)
+
+    num_tasks = len(cfg.benchmark.datasets)
 
     # Temporarily disable struct mode to allow dynamic update
     omegaconf.OmegaConf.set_struct(cfg, False)
@@ -101,7 +129,7 @@ def run(cfg: DictConfig) -> str:
         dataset: load_model_from_disk(
             finetuned_name(dataset), model_name=cfg.nn.module.encoder.model_name
         ).state_dict()
-        for dataset in cfg.task_vectors.to_apply
+        for dataset in cfg.benchmark.datasets
     }
 
     pylogger.info(f"Number of tasks: {cfg.num_tasks}")
@@ -115,17 +143,18 @@ def run(cfg: DictConfig) -> str:
 
     results = {}
     print_memory("before eval")
-    for dataset_name in cfg.eval_datasets:
+    for dataset_name in cfg.benchmark.datasets:
 
-        dataset = get_dataset(
-            dataset_name,
-            preprocess_fn=zeroshot_encoder.val_preprocess,
-            location=cfg.nn.data.data_path,
-            batch_size=cfg.nn.data.batch_size.train,
+        dataset_cfg = OmegaConf.load(
+            PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
+        )
+
+        dataset = instantiate(
+            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
         )
 
         classification_head = get_classification_head(
-            merged_encoder,
+            cfg.nn.module.encoder.model_name,
             dataset_name,
             data_path=cfg.nn.data.data_path,
             ckpt_path=cfg.misc.ckpt_path,
@@ -184,7 +213,7 @@ def run(cfg: DictConfig) -> str:
 
     results_path = Path(cfg.misc.results_path)
     results_path.mkdir(parents=True, exist_ok=True)
-    with open(results_path / f"{len(cfg.eval_datasets)}.json", "w+") as f:
+    with open(results_path / f"{len(cfg.benchmark.datasets)}.json", "w+") as f:
         json.dump(results, f, indent=4)
 
     radarchart = plot_interactive_radar_chart(results, title="Radar Chart")

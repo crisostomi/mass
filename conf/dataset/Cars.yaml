@@ -1,0 +1,7 @@
+_target_: mass.data.dataset.load_dataset
+name: Cars
+preprocess_fn: ???
+hf_dataset: 
+  _target_: datasets.load_dataset
+  path: tanganke/stanford_cars
+

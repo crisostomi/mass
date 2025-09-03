@@ -1,0 +1,30 @@
+_target_: mass.data.dataset.load_dataset
+name: CIFAR10
+preprocess_fn: ???
+hf_dataset: 
+  _target_: datasets.load_dataset
+  path: tanganke/cifar10
+label_map:
+  0: 0  # airplane
+  1: 1  # automobile
+  2: 2  # bird
+  3: 3  # cat
+  4: 4  # deer
+  5: 5  # dog
+  6: 6  # frog
+  7: 7  # horse
+  8: 9  # ship
+  9: 10  # truck
+classnames_override: 
+  - "airplane"
+  - "automobile"
+  - "bird"
+  - "cat"
+  - "deer"
+  - "dog"
+  - "frog"
+  - "horse"
+  - "monkey"
+  - "ship"
+  - "truck"
+

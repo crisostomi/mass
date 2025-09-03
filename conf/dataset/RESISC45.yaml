@@ -1,0 +1,98 @@
+_target_: mass.data.dataset.load_dataset
+name: RESISC45
+preprocess_fn: ???
+hf_dataset: 
+  _target_: datasets.load_dataset
+  path: tanganke/resisc45
+label_map:
+  0: 0
+  1: 2
+  2: 3
+  3: 5
+  4: 6
+  5: 7
+  6: 9
+  7: 10
+  8: 11
+  9: 12
+  10: 13
+  11: 14
+  12: 15
+  13: 1
+  14: 16
+  15: 17
+  16: 18
+  17: 19
+  18: 4
+  19: 20
+  20: 21
+  21: 22
+  22: 23
+  23: 24
+  24: 25
+  25: 26
+  26: 27
+  27: 28
+  28: 29
+  29: 30
+  30: 31
+  31: 32
+  32: 8
+  33: 33
+  34: 34
+  35: 35
+  36: 36
+  37: 37
+  38: 38
+  39: 39
+  40: 40
+  41: 41
+  42: 42
+  43: 43
+  44: 44
+classnames_override:
+  - "airplane"
+  - "forest"
+  - "airport"
+  - "baseball diamond"
+  - "industrial area"
+  - "basketball court"
+  - "beach"
+  - "bridge"
+  - "river"
+  - "chaparral"
+  - "church"
+  - "circular farmland"
+  - "cloud"
+  - "commercial area"
+  - "dense residential"
+  - "desert"
+  - "freeway"
+  - "golf course"
+  - "ground track field"
+  - "harbor"
+  - "intersection"
+  - "island"
+  - "lake"
+  - "meadow"
+  - "medium residential"
+  - "mobile home park"
+  - "mountain"
+  - "overpass"
+  - "palace"
+  - "parking lot"
+  - "railway"
+  - "railway station"
+  - "rectangular farmland"
+  - "roundabout"
+  - "runway"
+  - "sea ice"
+  - "ship"
+  - "snowberg"
+  - "sparse residential"
+  - "stadium"
+  - "storage tank"
+  - "tennis court"
+  - "terrace"
+  - "thermal power station"
+  - "wetland"

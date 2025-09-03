@@ -1,0 +1,27 @@
+# The 20 task used in the paper: 
+# Wang et al. Localizing Task Information for Improved Model Merging and Compression
+# http://arxiv.org/abs/2405.07813
+
+datasets:
+  - "SUN397"
+  - "Cars"
+  - "RESISC45"
+  - "EuroSAT"
+  - "SVHN"
+  - "GTSRB"
+  - "MNIST"
+  - "DTD"
+  # end of 8 tasks
+  - "Flowers102"
+  - "PCAM"
+  - "FER2013"
+  - "OxfordIIITPet"
+  - "STL10"
+  - "CIFAR100"
+  # end of 14 task
+  - "CIFAR10"
+  - "Food101"
+  - "FashionMNIST"
+  - "EMNIST"
+  - "KMNIST"
+  - "RenderedSST2"

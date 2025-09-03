@@ -1,22 +1,22 @@
 {
-    "CIFAR10": [
+    "EMNIST": [
         {
-            "acc/test/CIFAR10": 0.9912499785423279,
-            "loss/test/CIFAR10": 0.05635450780391693,
-            "normalized_acc/test/CIFAR10": 1.0127196311950684
+            "acc/test/EMNIST": 0.9980999827384949,
+            "loss/test/EMNIST": 0.010819710791110992,
+            "normalized_acc/test/EMNIST": 1.0002756118774414
         }
     ],
-    "MNIST": [
+    "RESISC45": [
         {
-            "acc/test/MNIST": 1.0,
-            "loss/test/MNIST": 0.006159148644655943,
-            "normalized_acc/test/MNIST": 1.0044194459915161
+            "acc/test/RESISC45": 0.266825407743454,
+            "loss/test/RESISC45": 10.533822059631348,
+            "normalized_acc/test/RESISC45": 0.2785418629646301
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.9956249892711639,
-            "normalized_acc/test/avg": 1.0085695385932922
+            "acc/test/avg": 0.6324626952409744,
+            "normalized_acc/test/avg": 0.6394087374210358
         }
     ]
 }
