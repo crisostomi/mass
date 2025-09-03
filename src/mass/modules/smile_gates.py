@@ -202,8 +202,7 @@ class SmileMoELinear(nn.Module):
 
         if routing_use_diff or k > 0:
             svd_cache_list = [
-                torch.linalg.svd(w, full_matrices=full_matrices)
-                for w in w_diff_list
+                torch.linalg.svd(w, full_matrices=full_matrices) for w in w_diff_list
             ]  # the svd cache list to avoid recomputing
 
         # construct the gate network
@@ -243,7 +242,6 @@ class SmileMoELinear(nn.Module):
         # assign the pretrained model (the shared part)
         self.pretrained_model = pretrained_model
 
-
     def forward(self, hidden_states: Tensor):
         """
         Forward pass of the SmileMoELinear module.
@@ -265,7 +263,7 @@ class SmileMoELinear(nn.Module):
         routing_weights, selected_experts = torch.topk(
             routing_weights, self.top_k, dim=-1
         )
-        
+
         routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
 
         final_hidden_states = torch.zeros(
@@ -304,9 +302,14 @@ class SmileMoELinear(nn.Module):
             *input_shape[:-1], self.out_features
         )
         final_hidden_states = pretrained_out + final_hidden_states
-        
-        self.last_selected_experts = selected_experts.view(input_shape[0], input_shape[1]).cpu().mode(dim=0).values
-        
+
+        self.last_selected_experts = (
+            selected_experts.view(input_shape[0], input_shape[1])
+            .cpu()
+            .mode(dim=0)
+            .values
+        )
+
         return final_hidden_states
 
     @property

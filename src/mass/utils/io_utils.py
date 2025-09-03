@@ -76,6 +76,8 @@ def load_model_from_artifact(run, artifact_path):
 
 def load_model_from_disk(model_path, model_name=None) -> ImageEncoder:
 
+    pylogger.info(f"Loading model from disk {model_path}")
+
     loaded = torch.load(model_path)
 
     # if it's a statedict, we need to create the model first

@@ -3,7 +3,7 @@ from hydra.utils import instantiate
 import wandb
 import torch
 
-import mass
+import delta
 from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
 
 import torchmetrics
@@ -32,7 +32,7 @@ num_of_tasks_to_scaling_coeff = {
 }
 
 
-class MASS(MultiHeadImageClassifier):
+class delta(MultiHeadImageClassifier):
     def __init__(
         self,
         router,
@@ -45,7 +45,7 @@ class MASS(MultiHeadImageClassifier):
     ):
         """
 
-        encoder: the model used to do the first pass of MASS
+        encoder: the model used to do the first pass of delta
         router:
         zeroshot_model:
         classification_heads: list of classification heads, one for each dataset

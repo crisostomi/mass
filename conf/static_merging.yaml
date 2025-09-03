@@ -11,6 +11,7 @@ defaults:
   - nn: default
   - train: default
   - merger: tsv
+  - benchmark: N20
   - override hydra/launcher: basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none

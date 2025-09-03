@@ -20,7 +20,7 @@ from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
-import mass  # noqa
+import delta  # noqa
 from mass.data.datasets.registry import get_dataset
 from mass.modules.encoder import ClassificationHead, ImageEncoder
 from mass.modules.heads import get_classification_head
@@ -106,16 +106,14 @@ def run(cfg: DictConfig) -> str:
     # only has vision encoder, no text transformer
     zeroshot_encoder_statedict = load_model_from_disk(cfg.misc.pretrained_checkpoint)
 
-    zeroshot_encoder: ImageEncoder = instantiate(
-        cfg.nn.module.encoder
-    )  
+    zeroshot_encoder: ImageEncoder = instantiate(cfg.nn.module.encoder)
 
     zeroshot_encoder.load_state_dict(zeroshot_encoder_statedict, strict=False)
 
     finetuned_name = (
         lambda name: Path(cfg.misc.ckpt_path) / f"{name}Val" / "nonlinear_finetuned.pt"
     )
-    
+
     finetuned_models = {}
     for dataset in cfg.task_vectors.to_apply:
         weights = load_model_from_disk(finetuned_name(dataset))
@@ -132,7 +130,7 @@ def run(cfg: DictConfig) -> str:
 
     # Convert finetuned_models dict to list of model objects
     finetuned_models_list = list(finetuned_models.values())
-    
+
     model = instantiate(
         cfg.nn.module,
         pretrained_model=zeroshot_encoder,

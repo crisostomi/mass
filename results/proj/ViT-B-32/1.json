@@ -1,0 +1,15 @@
+{
+    "RESISC45": [
+        {
+            "acc/test/RESISC45": 0.9571428298950195,
+            "loss/test/RESISC45": 0.19101351499557495,
+            "normalized_acc/test/RESISC45": 0.9991714954376221
+        }
+    ],
+    "avg": [
+        {
+            "acc/test/avg": 0.9571428298950195,
+            "normalized_acc/test/avg": 0.9991714954376221
+        }
+    ]
+}

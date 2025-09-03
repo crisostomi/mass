@@ -20,7 +20,9 @@ class CustomFER2013Dataset(Dataset):
 
     def __getitem__(self, idx):
         sample = self.hf_dataset[idx]
-        image = Image.open(io.BytesIO(sample["img_bytes"])).convert("L")  # Convert to grayscale
+        image = Image.open(io.BytesIO(sample["img_bytes"])).convert(
+            "L"
+        )  # Convert to grayscale
         label = sample["labels"]
 
         if self.transform:
@@ -35,7 +37,7 @@ class FER2013:
         preprocess,
         location=os.path.expanduser("~/data"),
         batch_size=128,
-        num_workers=6
+        num_workers=6,
     ):
         train_dataset_path = os.path.join(location, "fer-2013/train")
         test_dataset_path = os.path.join(location, "fer-2013/test")
@@ -54,7 +56,6 @@ class FER2013:
 
         # Instantiate the custom PyTorch training dataset
         self.train_dataset = CustomFER2013Dataset(train_data, transform=preprocess)
-
 
         self.train_loader = DataLoader(
             self.train_dataset,

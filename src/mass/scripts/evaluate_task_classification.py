@@ -24,7 +24,7 @@ from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
-import mass  # noqa
+import delta  # noqa
 from mass.data.datamodule import MetaData
 from mass.data.datasets.registry import get_dataset, get_task_evaluation_dataset
 from mass.data.datasets.templates import get_dataset_to_label
@@ -158,7 +158,12 @@ def run(cfg: DictConfig) -> str:
     )
 
     if cfg.nn.module.router.name == "linear":
-        model.new_load_from_checkpoint(os.path.join(os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename), "checkpoint.ckpt"))
+        model.new_load_from_checkpoint(
+            os.path.join(
+                os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename),
+                "checkpoint.ckpt",
+            )
+        )
 
     model.set_metrics(len(cfg.eval_datasets))
 

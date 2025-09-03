@@ -18,7 +18,7 @@ from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
-import mass  # noqa
+import delta  # noqa
 from mass.data.datasets.registry import get_task_evaluation_dataset
 from mass.modules.encoder import ImageEncoder
 from mass.pl_module.router_task_classifier import RouterTaskClassifier
@@ -113,7 +113,7 @@ def run(cfg: DictConfig) -> str:
     print_memory("after computing merged vector")
 
     seed_index_everything(cfg)
-    pylogger.info(f"Training {cfg.nn.module.router.name}-MASS")
+    pylogger.info(f"Training {cfg.nn.module.router.name}-delta")
 
     assert (
         cfg.nn.module.router.name == "linear"

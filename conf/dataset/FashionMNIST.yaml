@@ -1,0 +1,6 @@
+_target_: mass.data.dataset.load_dataset
+name: FashionMNIST
+preprocess_fn: ???
+hf_dataset: 
+  _target_: datasets.load_dataset
+  path: zalando-datasets/fashion_mnist

@@ -1,0 +1,6 @@
+_target_: mass.data.dataset.load_dataset
+name: OxfordIIITPet
+preprocess_fn: ???
+hf_dataset: 
+  _target_: datasets.load_dataset
+  path: timm/oxford-iiit-pet

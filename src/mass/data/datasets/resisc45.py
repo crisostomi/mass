@@ -120,6 +120,7 @@ class RESISC45Dataset(VisionClassificationDataset):
     """RESISC45 dataset with updated label mapping.
     Note: This version updates the datapoint labels according to the new class ordering.
     """
+
     directory = "resisc45/NWPU-RESISC45"
 
     splits = ["train", "val", "test"]
@@ -134,15 +135,15 @@ class RESISC45Dataset(VisionClassificationDataset):
         "test": "3dda9e4988b47eb1de9f07993653eb08",
     }
     classes = [
-        "airplane",         # 0
-        "forest",           # 1, moved here for consistency with EuroSAT
-        "airport",          # 2
-        "baseball_diamond", # 3
+        "airplane",  # 0
+        "forest",  # 1, moved here for consistency with EuroSAT
+        "airport",  # 2
+        "baseball_diamond",  # 3
         "industrial_area",  # 4, moved here for consistency with EuroSAT
-        "basketball_court", # 5
-        "beach",            # 6
-        "bridge",           # 7
-        "river",            # 8, moved here for consistency with EuroSAT
+        "basketball_court",  # 5
+        "beach",  # 6
+        "bridge",  # 7
+        "river",  # 8, moved here for consistency with EuroSAT
         "chaparral",
         "church",
         "circular_farmland",
@@ -156,7 +157,7 @@ class RESISC45Dataset(VisionClassificationDataset):
         "harbor",
         "intersection",
         "island",
-        "lake",             # this
+        "lake",  # this
         "meadow",
         "medium_residential",  # one of this under residential
         "mobile_home_park",
@@ -218,9 +219,16 @@ class RESISC45Dataset(VisionClassificationDataset):
 
 
 class RESISC45:
-    def __init__(self, preprocess, location=os.path.expanduser("~/data"), batch_size=32, num_workers=8):
-        self.train_dataset = RESISC45Dataset(root=location, split="train", transforms=preprocess)
-
+    def __init__(
+        self,
+        preprocess,
+        location=os.path.expanduser("~/data"),
+        batch_size=32,
+        num_workers=8,
+    ):
+        self.train_dataset = RESISC45Dataset(
+            root=location, split="train", transforms=preprocess
+        )
 
         self.train_loader = torch.utils.data.DataLoader(
             self.train_dataset,
@@ -229,7 +237,9 @@ class RESISC45:
             num_workers=num_workers,
         )
 
-        self.test_dataset = RESISC45Dataset(root=location, split="test", transforms=preprocess)
+        self.test_dataset = RESISC45Dataset(
+            root=location, split="test", transforms=preprocess
+        )
         self.test_loader = torch.utils.data.DataLoader(
             self.test_dataset, batch_size=batch_size, num_workers=num_workers
         )
