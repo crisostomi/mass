@@ -42,6 +42,7 @@ from mass.utils.io_utils import (
     boilerplate,
     get_classification_heads,
     load_model_from_disk,
+    load_model_from_hf,
 )
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
@@ -118,16 +119,13 @@ def run(cfg: DictConfig) -> str:
     )
 
     # only has vision encoder, no text transformer
-    zeroshot_encoder: ImageEncoder = load_model_from_disk(
+    zeroshot_encoder: ImageEncoder = load_model_from_hf(
         cfg.misc.pretrained_checkpoint, model_name=cfg.nn.module.encoder.model_name
     )
 
-    finetuned_name = (
-        lambda name: Path(cfg.misc.ckpt_path) / f"{name}Val" / "nonlinear_finetuned.pt"
-    )
     finetuned_models = {
-        dataset: load_model_from_disk(
-            finetuned_name(dataset), model_name=cfg.nn.module.encoder.model_name
+        dataset: load_model_from_hf(
+            model_name=cfg.nn.module.encoder.model_name, dataset_name=dataset
         ).state_dict()
         for dataset in cfg.benchmark.datasets
     }
