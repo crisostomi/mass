@@ -28,33 +28,20 @@ from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
-from mass.data.datasets.registry import get_dataset
 from mass.modules.encoder import ClassificationHead, ImageEncoder
-from mass.modules.projection_router import ProjectionRouter
-from mass.modules.nn_router import NNRouter
 from mass.modules.heads import (
-    build_classification_head,
-    build_task_classification_head,
     get_classification_head,
 )
-from mass.modules.router import AbstractRouter
 from mass.utils.io_utils import (
     boilerplate,
-    get_classification_heads,
-    load_model_from_disk,
     load_model_from_hf,
 )
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
-    compute_task_dict,
-    apply_dict_to_model,
     build_callbacks,
     get_finetuning_accuracies,
-    add_normalized_accuracy,
     compute_avg_accuracy,
     print_memory,
-    get_routing_weights,
-    svd_key_from_layer,
 )
 from mass.task_vectors.task_singular_vectors import *
 import json
@@ -120,7 +107,7 @@ def run(cfg: DictConfig) -> str:
 
     # only has vision encoder, no text transformer
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
-        cfg.misc.pretrained_checkpoint, model_name=cfg.nn.module.encoder.model_name
+        model_name=cfg.nn.module.encoder.model_name
     )
 
     finetuned_models = {

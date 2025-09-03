@@ -1,16 +1,19 @@
 import logging
 import os
 
+from omegaconf import OmegaConf
 import open_clip
 import torch
 from tqdm import tqdm
 
-from mass.data.datasets.registry import get_dataset
-from mass.data.datasets.templates import (
+from mass.data.templates import (
     get_templates,
     dataset_descriptions,
 )
+from mass import PROJECT_ROOT
 from mass.modules.encoder import ClassificationHead, ImageEncoder
+
+from hydra.utils import instantiate
 
 pylogger = logging.getLogger(__name__)
 
@@ -33,7 +36,11 @@ def build_task_classification_head(
 
         for task_name in tqdm(task_names):
 
-            dataset = get_dataset(task_name, None, location=data_location)
+            dataset_cfg = OmegaConf.load(
+                PROJECT_ROOT / "conf" / "dataset" / f"{task_name}.yaml"
+            )
+
+            dataset = instantiate(dataset_cfg, preprocess_fn=None)
 
             class_names = dataset.classnames
 
@@ -72,7 +79,13 @@ def build_classification_head(model, dataset_name, template, data_location, devi
     template = get_templates(dataset_name)
 
     logit_scale = model.logit_scale
-    dataset = get_dataset(dataset_name, None, location=data_location)
+
+    dataset_cfg = OmegaConf.load(
+        PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
+    )
+
+    dataset = instantiate(dataset_cfg, preprocess_fn=None)
+
     model.eval()
     model.to(device)
 

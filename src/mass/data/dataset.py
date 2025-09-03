@@ -230,3 +230,17 @@ def load_dataset(
     )
 
     return dataset
+
+
+def maybe_dictionarize(batch, x_key, y_key):
+    if isinstance(batch, dict):
+        return batch
+
+    if len(batch) == 2:
+        batch = {x_key: batch[0], y_key: batch[1]}
+    elif len(batch) == 3:
+        batch = {x_key: batch[0], y_key: batch[1], "metadata": batch[2]}
+    else:
+        raise ValueError(f"Unexpected number of elements: {len(batch)}")
+
+    return batch

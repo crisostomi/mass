@@ -11,7 +11,7 @@ from torch.optim import Optimizer
 from nn_core.model_logging import NNLogger
 
 from mass.data.datamodule import MetaData
-from mass.data.datasets.common import maybe_dictionarize
+from mass.data.dataset import maybe_dictionarize
 from mass.utils.utils import torch_load, torch_save
 
 pylogger = logging.getLogger(__name__)
