@@ -10,8 +10,9 @@ core:
 defaults:
   - hydra: default
   - nn: default
-  - train: default
+  - train: finetune
   - dataset: MNIST
+  - override hydra/launcher: basic
   - _self_ # as last argument to allow the override of parameters via this main config
 
 seed_index: 0

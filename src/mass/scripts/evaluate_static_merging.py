@@ -107,12 +107,12 @@ def run(cfg: DictConfig) -> str:
 
     # only has vision encoder, no text transformer
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
-        model_name=cfg.nn.module.encoder.model_name
+        model_name=cfg.nn.encoder.model_name
     )
 
     finetuned_models = {
         dataset: load_model_from_hf(
-            model_name=cfg.nn.module.encoder.model_name, dataset_name=dataset
+            model_name=cfg.nn.encoder.model_name, dataset_name=dataset
         ).state_dict()
         for dataset in cfg.benchmark.datasets
     }
@@ -139,7 +139,7 @@ def run(cfg: DictConfig) -> str:
         )
 
         classification_head = get_classification_head(
-            cfg.nn.module.encoder.model_name,
+            cfg.nn.encoder.model_name,
             dataset_name,
             data_path=cfg.nn.data.data_path,
             ckpt_path=cfg.misc.ckpt_path,
@@ -208,7 +208,7 @@ def run(cfg: DictConfig) -> str:
 
     logger.experiment.log_artifact(
         wandb.Artifact(
-            f"results_{cfg.nn.module.encoder.model_name}_{num_tasks}",
+            f"results_{cfg.nn.encoder.model_name}_{num_tasks}",
             type="results",
             metadata={"results": results_path},
         )

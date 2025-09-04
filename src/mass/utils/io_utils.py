@@ -72,9 +72,9 @@ def get_classification_heads(cfg: DictConfig):
 def boilerplate(cfg):
     cfg.core.tags = enforce_tags(cfg.core.get("tags", None))
 
-    num_tasks = len(cfg.nn.benchmark.tasks)
+    num_tasks = len(cfg.benchmark.datasets)
     cfg.core.tags.append(f"n{num_tasks}")
-    cfg.core.tags.append(f"{cfg.nn.module.encoder.model_name}")
+    cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
 
     template_core = NNTemplateCore(
         restore_cfg=None,  # Disable checkpoint restoration for evaluation

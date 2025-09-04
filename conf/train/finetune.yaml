@@ -2,6 +2,7 @@ seed_index: 0
 deterministic: False
 
 trainer:
+  max_epochs: ${dataset.ft_epochs} 
   log_every_n_steps: 1
   fast_dev_run: False
   accelerator: 'gpu'
