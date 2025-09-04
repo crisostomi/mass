@@ -1,3 +1,0 @@
-dataset_name: ImageNet
-ft_epochs: 4
-num_classes: 1000

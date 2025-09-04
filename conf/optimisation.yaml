@@ -28,7 +28,7 @@ conventions:
   x_key: 'x'
   y_key: 'y'
 
-eval_datasets: ${nn.benchmark.tasks}
+eval_datasets: ${benchmark.datasets.tasks}
 
 task_vectors:
   to_apply: ${eval_datasets}

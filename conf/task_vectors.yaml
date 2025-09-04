@@ -28,7 +28,7 @@ conventions:
   x_key: 'x'
   y_key: 'y'
 
-eval_datasets: ${nn.benchmark.tasks}
+eval_datasets: ${benchmark.datasets.tasks}
 
 # compression_ratio = 1 / svd_compress_factor, if null the ratio is set to 1 / num_tasks
 svd_compress_factor: null

@@ -19,6 +19,13 @@ Setup the development environment:
     uv sync
 ```
 
+Create a .env file in the root folder with your chosen paths. This is currently due to legacy reasons and these will be removed in the future.
+```sh
+    DATA_PATH=/path/to/store/datasets
+    MODELS_PATH=/path/to/store/models
+    HYDRA_FULL_ERROR=1
+```
+
 ## Fine-tuning
 First, choose a vision encoder in `{"ViT-B-16", "ViT-B-32", "ViT-L-14"}`. Check that the corresponding WandB artifact is present online.
 

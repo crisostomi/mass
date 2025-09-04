@@ -75,7 +75,7 @@ def build_task_classification_head(
     return classification_head
 
 
-def build_classification_head(model, dataset_name, template, data_location, device):
+def build_classification_head(model, dataset_name, template, device):
     template = get_templates(dataset_name)
 
     logit_scale = model.logit_scale
@@ -126,7 +126,7 @@ def build_classification_head(model, dataset_name, template, data_location, devi
 
 
 def get_classification_head(
-    model, dataset, data_path, ckpt_path, cache_dir, openclip_cachedir, device="cuda"
+    model, dataset, ckpt_path, cache_dir, openclip_cachedir, device="cuda"
 ):
     filename = os.path.join(ckpt_path, f"head_{dataset}.pt")
 
@@ -140,9 +140,7 @@ def get_classification_head(
         model, cache_dir=cache_dir, openclip_cachedir=openclip_cachedir, keep_lang=True
     ).model
     template = get_templates(dataset)
-    classification_head = build_classification_head(
-        model, dataset, template, data_path, device
-    )
+    classification_head = build_classification_head(model, dataset, template, device)
     os.makedirs(ckpt_path, exist_ok=True)
     classification_head.save(filename)
 

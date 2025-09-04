@@ -1,3 +1,0 @@
-dataset_name: GTSRB
-ft_epochs: 11 
-num_classes: 43 

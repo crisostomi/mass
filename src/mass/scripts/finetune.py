@@ -49,7 +49,6 @@ def run(cfg: DictConfig):
     classification_head = get_classification_head(
         cfg.nn.encoder.model_name,
         cfg.dataset.name,
-        cfg.nn.data.data_path,
         cfg.misc.ckpt_path,
         cache_dir=cfg.misc.cache_dir,
         openclip_cachedir=cfg.misc.openclip_cachedir,

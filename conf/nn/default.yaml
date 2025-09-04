@@ -1,6 +1,4 @@
 defaults:
   - _self_
-  - data: default
   - module: default
-  - benchmark: three
   - encoder: b32
