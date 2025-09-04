@@ -124,7 +124,7 @@ def build_classification_head(model, dataset_name, template, device):
 
 
 def get_classification_head(
-    model, dataset, ckpt_path, cache_dir, openclip_cachedir, device="cuda"
+    model, dataset, ckpt_path, openclip_cachedir, device="cuda"
 ):
     filename = os.path.join(ckpt_path, f"head_{dataset}.pt")
 
@@ -135,7 +135,7 @@ def get_classification_head(
         pylogger.info(f"Building classification head for {dataset}")
 
     model = ImageEncoder(
-        model, cache_dir=cache_dir, openclip_cachedir=openclip_cachedir, keep_lang=True
+        model, openclip_cachedir=openclip_cachedir, keep_lang=True
     ).model
     template = get_templates(dataset)
     classification_head = build_classification_head(model, dataset, template, device)

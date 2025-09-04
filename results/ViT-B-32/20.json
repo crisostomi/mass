@@ -1,148 +1,148 @@
 {
     "SUN397": [
         {
-            "acc/test/SUN397": 0.6253400444984436,
-            "loss/test/SUN397": 1.4660999774932861,
-            "normalized_acc/test/SUN397": 0.8299679160118103
+            "acc/test/SUN397": 0.6252896785736084,
+            "loss/test/SUN397": 1.4660905599594116,
+            "normalized_acc/test/SUN397": 0.8350938558578491
         }
     ],
     "Cars": [
         {
-            "acc/test/Cars": 0.5152344107627869,
-            "loss/test/Cars": 2.075693368911743,
-            "normalized_acc/test/Cars": 0.6589788198471069
+            "acc/test/Cars": 0.5149856805801392,
+            "loss/test/Cars": 2.075639486312866,
+            "normalized_acc/test/Cars": 0.6452165842056274
         }
     ],
     "RESISC45": [
         {
             "acc/test/RESISC45": 0.7225396633148193,
-            "loss/test/RESISC45": 1.1087206602096558,
-            "normalized_acc/test/RESISC45": 0.7542667388916016
+            "loss/test/RESISC45": 1.1087373495101929,
+            "normalized_acc/test/RESISC45": 0.758161187171936
         }
     ],
     "EuroSAT": [
         {
             "acc/test/EuroSAT": 0.864814817905426,
-            "loss/test/EuroSAT": 0.4139593839645386,
-            "normalized_acc/test/EuroSAT": 0.8742043972015381
+            "loss/test/EuroSAT": 0.4139532148838043,
+            "normalized_acc/test/EuroSAT": 0.8712686896324158
         }
     ],
     "SVHN": [
         {
-            "acc/test/SVHN": 0.7775430083274841,
-            "loss/test/SVHN": 0.7169902324676514,
-            "normalized_acc/test/SVHN": 0.7969211339950562
+            "acc/test/SVHN": 0.7775814533233643,
+            "loss/test/SVHN": 0.71683669090271,
+            "normalized_acc/test/SVHN": 0.8044031262397766
         }
     ],
     "GTSRB": [
         {
             "acc/test/GTSRB": 0.7548693418502808,
-            "loss/test/GTSRB": 0.8925807476043701,
-            "normalized_acc/test/GTSRB": 0.7613799571990967
+            "loss/test/GTSRB": 0.8926536440849304,
+            "normalized_acc/test/GTSRB": 0.7630252242088318
         }
     ],
     "MNIST": [
         {
             "acc/test/MNIST": 0.9952999949455261,
-            "loss/test/MNIST": 0.02589946612715721,
-            "normalized_acc/test/MNIST": 0.9983950257301331
+            "loss/test/MNIST": 0.02589055709540844,
+            "normalized_acc/test/MNIST": 1.0008044242858887
         }
     ],
     "DTD": [
         {
             "acc/test/DTD": 0.6968085169792175,
-            "loss/test/DTD": 1.1215384006500244,
-            "normalized_acc/test/DTD": 0.711183488368988
+            "loss/test/DTD": 1.121596097946167,
+            "normalized_acc/test/DTD": 0.8911564946174622
         }
     ],
     "Flowers102": [
         {
-            "acc/test/Flowers102": 0.6851520538330078,
-            "loss/test/Flowers102": 1.5206167697906494,
-            "normalized_acc/test/Flowers102": 0.757053017616272
+            "acc/test/Flowers102": 0.6843389272689819,
+            "loss/test/Flowers102": 1.5600796937942505,
+            "normalized_acc/test/Flowers102": 0.7614911198616028
         }
     ],
     "PCAM": [
         {
             "acc/test/PCAM": 0.839599609375,
             "loss/test/PCAM": 0.35641589760780334,
-            "normalized_acc/test/PCAM": 0.9554436802864075
+            "normalized_acc/test/PCAM": 0.9733248353004456
         }
     ],
     "FER2013": [
         {
-            "acc/test/FER2013": 0.5739760398864746,
-            "loss/test/FER2013": 1.2113621234893799,
-            "normalized_acc/test/FER2013": 0.7868602275848389
+            "acc/test/FER2013": 0.4497074484825134,
+            "loss/test/FER2013": 1.5701934099197388,
+            "normalized_acc/test/FER2013": 0.6308383941650391
         }
     ],
     "OxfordIIITPet": [
         {
-            "acc/test/OxfordIIITPet": 0.8776233196258545,
-            "loss/test/OxfordIIITPet": 0.4444960951805115,
-            "normalized_acc/test/OxfordIIITPet": 0.9632067084312439
+            "acc/test/OxfordIIITPet": 0.8402834534645081,
+            "loss/test/OxfordIIITPet": 0.7888202667236328,
+            "normalized_acc/test/OxfordIIITPet": 0.9064980745315552
         }
     ],
     "STL10": [
         {
             "acc/test/STL10": 0.9547500014305115,
             "loss/test/STL10": 0.19245222210884094,
-            "normalized_acc/test/STL10": 0.9744833111763
+            "normalized_acc/test/STL10": 0.9787288904190063
         }
     ],
     "CIFAR100": [
         {
-            "acc/test/CIFAR100": 0.6528000235557556,
-            "loss/test/CIFAR100": 1.5218045711517334,
-            "normalized_acc/test/CIFAR100": 0.7312647104263306
+            "acc/test/CIFAR100": 0.6478000283241272,
+            "loss/test/CIFAR100": 1.5793919563293457,
+            "normalized_acc/test/CIFAR100": 0.7449402213096619
         }
     ],
     "CIFAR10": [
         {
             "acc/test/CIFAR10": 0.9230999946594238,
             "loss/test/CIFAR10": 0.3200048804283142,
-            "normalized_acc/test/CIFAR10": 0.9428046345710754
+            "normalized_acc/test/CIFAR10": 0.946478009223938
         }
     ],
     "Food101": [
         {
-            "acc/test/Food101": 0.7245940566062927,
-            "loss/test/Food101": 1.2374943494796753,
-            "normalized_acc/test/Food101": 0.813264012336731
+            "acc/test/Food101": 0.7386138439178467,
+            "loss/test/Food101": 1.062027096748352,
+            "normalized_acc/test/Food101": 0.8584975004196167
         }
     ],
     "FashionMNIST": [
         {
             "acc/test/FashionMNIST": 0.8398000001907349,
             "loss/test/FashionMNIST": 0.488142728805542,
-            "normalized_acc/test/FashionMNIST": 0.8812171816825867
+            "normalized_acc/test/FashionMNIST": 0.8918861150741577
         }
     ],
     "EMNIST": [
         {
             "acc/test/EMNIST": 0.9957000017166138,
             "loss/test/EMNIST": 0.021227549761533737,
-            "normalized_acc/test/EMNIST": 0.9978703856468201
+            "normalized_acc/test/EMNIST": 1.001206636428833
         }
     ],
     "KMNIST": [
         {
-            "acc/test/KMNIST": 0.508899986743927,
-            "loss/test/KMNIST": 1.673970103263855,
-            "normalized_acc/test/KMNIST": 0.5159687399864197
+            "acc/test/KMNIST": 0.10400000214576721,
+            "loss/test/KMNIST": 2.627474546432495,
+            "normalized_acc/test/KMNIST": 0.10598186403512955
         }
     ],
     "RenderedSST2": [
         {
             "acc/test/RenderedSST2": 0.7254256010055542,
             "loss/test/RenderedSST2": 0.6440528035163879,
-            "normalized_acc/test/RenderedSST2": 0.9756277799606323
+            "normalized_acc/test/RenderedSST2": 1.068770170211792
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.7626935243606567,
-            "normalized_acc/test/avg": 0.8340180933475494
+            "acc/test/avg": 0.7347654029726982,
+            "normalized_acc/test/avg": 0.8218885708600283
         }
     ]
 }

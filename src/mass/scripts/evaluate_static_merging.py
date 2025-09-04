@@ -91,8 +91,6 @@ def run(cfg: DictConfig) -> str:
 
     logger, template_core = boilerplate(cfg)
 
-    print(cfg.benchmark.datasets)
-
     num_tasks = len(cfg.benchmark.datasets)
 
     # Temporarily disable struct mode to allow dynamic update
@@ -142,7 +140,6 @@ def run(cfg: DictConfig) -> str:
             cfg.nn.encoder.model_name,
             dataset_name,
             ckpt_path=cfg.misc.ckpt_path,
-            cache_dir=cfg.misc.cache_dir,
             openclip_cachedir=cfg.misc.openclip_cachedir,
             device=cfg.device,
         )
