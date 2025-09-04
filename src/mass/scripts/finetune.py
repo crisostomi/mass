@@ -92,6 +92,8 @@ def run(cfg: DictConfig):
 
     upload_model_to_hf(model.encoder, cfg.nn.encoder.model_name, cfg.dataset.name)
 
+    logger.log_configuration(model, cfg)
+
     if logger is not None:
         logger.experiment.finish()
 
