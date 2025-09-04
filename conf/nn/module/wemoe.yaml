@@ -1,7 +1,6 @@
 
 defaults:
   - _self_
-  - encoder: b32 #b16, b32, l14
   - aggregator: ta
 
 _target_: mass.pl_module.we_moe.WeightEnsemblingMoEAlgorithm

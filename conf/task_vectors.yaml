@@ -4,14 +4,15 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - smile
-
+  - dev
+  - wemoe
 
 
 defaults:
   - hydra: default
   - nn: default
   - train: default
+  - benchmark: N2
   - override hydra/launcher: basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none

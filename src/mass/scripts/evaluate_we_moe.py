@@ -44,7 +44,7 @@ torch.set_float32_matmul_precision("high")
 
 def get_optimal_alpha(cfg):
     try:
-        cfg.nn.module.aggregator.optimal_alpha = cfg.optimal_alphas[cfg.nn.module.encoder.model_name][len(cfg.eval_datasets)]
+        cfg.nn.module.aggregator.optimal_alpha = cfg.optimal_alphas[cfg.nn.encoder.model_name][len(cfg.eval_datasets)]
     except:
         pylogger.warning("Optimal alpha not found, using default value")
         cfg.nn.module.aggregator.optimal_alpha = 1.0
@@ -64,7 +64,7 @@ def run(cfg: DictConfig) -> str:
 
     logger, template_core = boilerplate(cfg)
 
-    ntasks = len(cfg.eval_datasets)
+    ntasks = len(cfg.benchmark.datasets)
 
     # Temporarily disable struct mode to allow dynamic update
     omegaconf.OmegaConf.set_struct(cfg, False)
@@ -76,19 +76,19 @@ def run(cfg: DictConfig) -> str:
 
     # only has vision encoder, no text transformer
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
-        model_name=cfg.nn.module.encoder.model_name
+        model_name=cfg.nn.encoder.model_name
     )
 
     finetuned_models = {
         dataset: load_model_from_hf(
-            model_name=cfg.nn.module.encoder.model_name, dataset_name=dataset
+            model_name=cfg.nn.encoder.model_name, dataset_name=dataset
         )
-        for dataset in cfg.nn.benchmark.tasks
+        for dataset in cfg.benchmark.datasets
     }
 
-    num_tasks = len(cfg.eval_datasets)
+    num_tasks = len(cfg.benchmark.datasets)
 
-    pylogger.info(f"Number of tasks: {len(cfg.eval_datasets)}")
+    pylogger.info(f"Number of tasks: {len(cfg.benchmark.datasets)}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
 
     classification_heads: List[ClassificationHead] = get_classification_heads(cfg)
@@ -103,9 +103,8 @@ def run(cfg: DictConfig) -> str:
         pretrained_model=zeroshot_encoder,
         finetuned_models=finetuned_models_list,
         classification_heads=classification_heads,
-        tasks=cfg.eval_datasets,
+        tasks=cfg.benchmark.datasets,
         save_checkpoint_path=cfg.misc.ckpt_path + "/we_moe.ckpt",
-        data_path=cfg.nn.data.data_path,
         _recursive_=False,
     )
 
@@ -113,7 +112,7 @@ def run(cfg: DictConfig) -> str:
 
     results = {}
     print_memory("before eval")
-    for dataset_name in cfg.eval_datasets:
+    for dataset_name in cfg.benchmark.datasets:
 
         dataset_cfg = OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
@@ -177,7 +176,7 @@ def run(cfg: DictConfig) -> str:
 
     logger.experiment.log_artifact(
         wandb.Artifact(
-            f"results_{cfg.nn.module.encoder.model_name}_{num_tasks}",
+            f"results_{cfg.nn.encoder.model_name}_{num_tasks}",
             type="results",
             metadata={"results": results_path},
         )

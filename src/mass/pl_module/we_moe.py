@@ -71,7 +71,6 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         finetuned_models,
         classification_heads,
         tasks,
-        data_path,
         **kwargs: Any,
     ):
         
@@ -83,8 +82,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
 
         self.pretrained_model = pretrained_model
         self.finetuned_models = finetuned_models
-        
-        self.data_path = data_path
+
                 
         self.zeroshot_heads = {}
         pylogger.info(
