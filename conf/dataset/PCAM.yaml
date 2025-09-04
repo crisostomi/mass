@@ -1,5 +1,6 @@
 _target_: mass.data.dataset.load_dataset
 name: PCAM
+ft_epochs: 1
 preprocess_fn: ??
 hf_dataset: 
   _target_: datasets.load_dataset

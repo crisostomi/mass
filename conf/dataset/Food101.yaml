@@ -1,5 +1,6 @@
 _target_: mass.data.dataset.load_dataset
 name: Food101
+ft_epochs: 4 
 preprocess_fn: ???
 hf_dataset: 
   _target_: datasets.load_dataset

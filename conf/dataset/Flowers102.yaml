@@ -1,5 +1,6 @@
 _target_: mass.data.dataset.load_dataset
 name: Flowers102
+ft_epochs: 147
 preprocess_fn: ???
 hf_dataset: 
   _target_: datasets.load_dataset

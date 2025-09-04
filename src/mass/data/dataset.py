@@ -80,6 +80,7 @@ class HFImageClassification:
         self,
         hf_ds: DatasetDict,
         preprocess,
+        ft_epochs: int,
         split_map: Optional[
             Dict[str, str]
         ] = None,  # e.g., {"train":"train","test":"test"}
@@ -136,6 +137,7 @@ class HFImageClassification:
         # mirror torchvision attr some libs expect
         self.train_dataset.classes = self.classnames
         self.test_dataset.classes = self.classnames
+        self.ft_epochs = ft_epochs
 
     @staticmethod
     def _extract_classnames_strict(ds: DatasetDict) -> Sequence[str]:
@@ -209,6 +211,7 @@ def load_dataset(
     name,
     hf_dataset,
     preprocess_fn,
+    ft_epochs,
     split_map=None,
     label_map=None,
     classnames_override=None,
@@ -225,6 +228,7 @@ def load_dataset(
         hf_ds=hf_dataset,
         preprocess=preprocess_fn,
         split_map=split_map,
+        ft_epochs=ft_epochs,
         label_map=label_map,
         classnames_override=classnames_override,
     )

@@ -11,14 +11,14 @@ embedding_dims: 512
 hidden_dim: 1024
 dropout_prob: 0.5
 load: true
-filename: "${nn.module.encoder.model_name}_${num_tasks}tasks"
+filename: "${nn.encoder.model_name}_${num_tasks}tasks"
 
-layer_to_hook: ${nn.module.encoder.layer_to_hook}
-layer_num_to_hook: ${nn.module.encoder.layer_num_to_hook}
+layer_to_hook: ${nn.encoder.layer_to_hook}
+layer_num_to_hook: ${nn.encoder.layer_num_to_hook}
 hook_type: input
 
 device: ${device}
-model_name: ${nn.module.encoder.model_name}
+model_name: ${nn.encoder.model_name}
 dataset_names: ${eval_datasets}
 
 token_selection: cls

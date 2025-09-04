@@ -1,5 +1,6 @@
 _target_: mass.data.dataset.load_dataset
 name: SUN397
+ft_epochs: 14
 preprocess_fn: ???
 hf_dataset: 
   _target_: datasets.load_dataset

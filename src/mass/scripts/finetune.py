@@ -19,12 +19,17 @@ from nn_core.common.utils import seed_index_everything
 from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
-from mass.data.datasets.registry import get_dataset
 from mass.modules.encoder import ImageEncoder
 from mass.modules.heads import get_classification_head
 from mass.pl_module.image_classifier import ImageClassifier
-from mass.utils.io_utils import get_class, load_model_from_artifact, upload_model_to_hf
+from mass.utils.io_utils import (
+    get_class,
+    load_model_from_artifact,
+    load_model_from_hf,
+    upload_model_to_hf,
+)
 from mass.utils.utils import build_callbacks
+from hydra.utils import instantiate
 
 pylogger = logging.getLogger(__name__)
 torch.set_float32_matmul_precision("high")
@@ -42,39 +47,38 @@ def run(cfg: DictConfig):
     )
 
     classification_head = get_classification_head(
-        cfg.nn.module.model.model_name,
-        cfg.nn.data.train_dataset,
+        cfg.nn.encoder.model_name,
+        cfg.dataset.name,
         cfg.nn.data.data_path,
         cfg.misc.ckpt_path,
         cache_dir=cfg.misc.cache_dir,
         openclip_cachedir=cfg.misc.openclip_cachedir,
     )
 
-    model_class = get_class(classification_head)
-
+    zeroshot_encoder: ImageEncoder = load_model_from_hf(
+        model_name=cfg.nn.encoder.model_name
+    )
 
     model: ImageClassifier = hydra.utils.instantiate(
         cfg.nn.module,
-        encoder=image_encoder,
+        encoder=zeroshot_encoder,
         classifier=classification_head,
         _recursive_=False,
     )
 
-    dataset = 
+    model.task_name = cfg.dataset.name
+
+    dataset = instantiate(cfg.dataset, preprocess_fn=zeroshot_encoder.val_preprocess)
 
     model.freeze_head()
-
-    callbacks: List[Callback] = build_callbacks(cfg.train.callbacks, template_core)
 
     storage_dir: str = cfg.core.storage_dir
 
     pylogger.info("Instantiating the <Trainer>")
     trainer = pl.Trainer(
         default_root_dir=storage_dir,
-        plugins=[NNCheckpointIO(jailing_dir=logger.run_dir)],
-        max_epochs=cfg.nn.data.dataset.ft_epochs,
         logger=logger,
-        callbacks=callbacks,
+        enable_checkpointing=False,  # Completely disable checkpointing
         **cfg.train.trainer,
     )
 
@@ -82,13 +86,12 @@ def run(cfg: DictConfig):
     trainer.fit(
         model=model,
         train_dataloaders=dataset.train_loader,
-        ckpt_path=template_core.trainer_ckpt_path,
     )
 
     pylogger.info("Starting testing!")
     trainer.test(model=model, dataloaders=dataset.test_loader)
 
-    upload_model_to_hf(model.encoder, cfg.nn.module.model.model_name, dataset)
+    upload_model_to_hf(model.encoder, cfg.nn.encoder.model_name, dataset.name)
 
     if logger is not None:
         logger.experiment.finish()

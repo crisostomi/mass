@@ -7,13 +7,13 @@ threshold: 0.2
 temperature: 1
 norm: mahalanobis # mahalanobis, l1, l2
 
-layer_to_hook: ${nn.module.encoder.layer_to_hook}
-layer_num_to_hook: ${nn.module.encoder.layer_num_to_hook}
+layer_to_hook: ${nn.encoder.layer_to_hook}
+layer_num_to_hook: ${nn.encoder.layer_num_to_hook}
 hook_type: input
 routing_weights: ???
 
 device: ${device}
-model_name: ${nn.module.encoder.model_name}
+model_name: ${nn.encoder.model_name}
 dataset_names: ${eval_datasets}
 
 use_constant_compressed_routing_weights: False 

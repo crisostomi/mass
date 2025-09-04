@@ -1,0 +1,20 @@
+
+defaults:
+  - _self_
+
+_target_: mass.pl_module.image_classifier.ImageClassifier
+x_key: ${conventions.x_key}
+y_key: ${conventions.y_key}
+dataset_names: {eval_dataset}
+
+image_encoder: ??  
+classification_heads: ??
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 1e-5
+  weight_decay: 0.1
+
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  T_max: 10
