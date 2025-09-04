@@ -192,7 +192,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         # replace_attention_with_linear(pretrained_model, finetuned_models)
 
         # Merge the models using task arithmetic
-        moe_model = self.aggregator.merge(pretrained_model, {task: m for task,m  in zip(self.tasks, finetuned_models)})
+        moe_model = self.aggregator.merge(pretrained_model, {task: m for task,m  in zip(self.tasks, finetuned_models)}).requires_grad_(False)
 
         # Up-scale MLP modules
 
@@ -242,13 +242,14 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
 
         return logits_per_image
 
+    @functools.cache
     def get_infinite_dataloader(self, task):
         dataset_cfg = OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{task}.yaml"
         )
         
         dataset = instantiate(
-            dataset_cfg, preprocess_fn=self.pretrained_model.val_preprocess
+            dataset_cfg, preprocess_fn=self.pretrained_model.val_preprocess, batch_size=self.hparams.batch_size
         )
         return iter(InfiniteDataLoader(dataset.test_loader))
         
@@ -271,12 +272,6 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         )
         pylogger.info(f"Using {sum(p.numel() for p in module.parameters() if p.requires_grad)} parameters in total")
 
-        # Initialize data iterators once for each task
-        task_iterators = {}
-        for task in self.tasks:
-            task_iterators[task] = self.get_infinite_dataloader(task)
-            pylogger.info(f"Initialized data iterator for task: {task}")
-
         module.train()
 
         pbar = tqdm(
@@ -287,7 +282,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         for step_idx in pbar:
             if self.hparams.use_grad_accumulate:
                 for task in self.tasks:
-                    batch = next(task_iterators[task])  # Use cached iterator
+                    batch = next(self.get_infinite_dataloader(task))  # Use cached iterator
                     logits = self.compute_logits(module, batch, task)
                     assert (
                         logits.dim() == 2
@@ -300,7 +295,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
                 loss = 0
                 for task in self.tasks:
 
-                    batch = next(task_iterators[task])  # Use cached iterator
+                    batch = next(self.get_infinite_dataloader(task))  # Use cached iterator
 
                     logits = self.compute_logits(module, batch, task)
                     assert (

@@ -213,6 +213,7 @@ def load_dataset(
     preprocess_fn,
     ft_epochs,
     split_map=None,
+    batch_size=128,
     label_map=None,
     classnames_override=None,
 ):
@@ -228,6 +229,7 @@ def load_dataset(
         hf_ds=hf_dataset,
         preprocess=preprocess_fn,
         split_map=split_map,
+        batch_size=batch_size,
         ft_epochs=ft_epochs,
         label_map=label_map,
         classnames_override=classnames_override,
