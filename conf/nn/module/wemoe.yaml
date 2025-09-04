@@ -25,7 +25,7 @@ init_lambda: 0.3
 max_steps: 1000
 batch_size: 32
 batch_reduce: true
-use_grad_accumulate: true
+use_grad_accumulate: false
 model_path: null
 
 

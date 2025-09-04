@@ -6,14 +6,15 @@ import logging
 from typing import Any, Generic, List, cast  # noqa: F401
 
 import lightning.fabric.wrappers
+from omegaconf import OmegaConf
 import torch
 from torch import Tensor
 import torch.nn as nn
 from torch.utils.data import DataLoader
 import torchmetrics
 from tqdm.autonotebook import tqdm
+from nn_core.common import PROJECT_ROOT
 
-from mass.data.datasets.registry import get_dataset
 from mass.merger.arithmetic_merger import TaskArithmeticMerger
 from mass.modules.encoder import ImageEncoder
 from mass.modules.heads import get_classification_head
@@ -94,6 +95,9 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         )
         moe_model = self.construct_moe_model(pretrained_model, finetuned_models)
 
+        pylogger.info(f"MoE models has {sum(p.numel() for p in moe_model.parameters() if p.requires_grad)} trainable parameters")
+        pylogger.info(f"MoE model has {sum(p.numel() for p in moe_model.parameters())} parameters in total")
+
         if self.hparams.checkpoint:
             pylogger.info(
                 f"load checkpoint from {self.hparams.save_checkpoint_path}, test-time adaptation will be skipped."
@@ -107,7 +111,6 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
                 torch.save({"model": moe_model}, self.hparams.save_checkpoint_path)
 
         moe_model.batch_reduce = False # TODO: check this
-        # TODO: do they use the zeroshot or the finetuned heads?
         super().__init__(moe_model, classification_heads)
 
     def load_checkpoint(self, model: Any, checkpoint: Any):
@@ -158,7 +161,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         ]
         try:
             moe_linear = WeightEnsemblingMoE(
-                hidden_size=module[0].in_features, # TODO: how can I retrieve this?
+                hidden_size=module[0].in_features,
                 base_model=module,
                 expert_models=experts,
                 init_lambda=self.hparams.init_lambda,
@@ -242,11 +245,12 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         return logits_per_image
 
     def get_infinite_dataloader(self, task):
-        dataset = get_dataset(
-            task,
-            preprocess_fn=self.pretrained_model.val_preprocess,
-            location=self.data_path,
-            batch_size=self.hparams.batch_size,
+        dataset_cfg = OmegaConf.load(
+            PROJECT_ROOT / "conf" / "dataset" / f"{task}.yaml"
+        )
+        
+        dataset = instantiate(
+            dataset_cfg, preprocess_fn=self.pretrained_model.val_preprocess
         )
         return iter(InfiniteDataLoader(dataset.test_loader))
         
@@ -267,6 +271,13 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
             self.hparams["optimizer"], 
             params=[p for p in module.parameters() if p.requires_grad]
         )
+        pylogger.info(f"Using {sum(p.numel() for p in module.parameters() if p.requires_grad)} parameters in total")
+
+        # Initialize data iterators once for each task
+        task_iterators = {}
+        for task in self.tasks:
+            task_iterators[task] = self.get_infinite_dataloader(task)
+            pylogger.info(f"Initialized data iterator for task: {task}")
 
         module.train()
 
@@ -278,7 +289,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         for step_idx in pbar:
             if self.hparams.use_grad_accumulate:
                 for task in self.tasks:
-                    batch = next(self.get_infinite_dataloader(task))
+                    batch = next(task_iterators[task])  # Use cached iterator
                     logits = self.compute_logits(module, batch, task)
                     assert (
                         logits.dim() == 2
@@ -291,7 +302,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
                 loss = 0
                 for task in self.tasks:
 
-                    batch = next(self.get_infinite_dataloader(task))
+                    batch = next(task_iterators[task])  # Use cached iterator
 
                     logits = self.compute_logits(module, batch, task)
                     assert (
@@ -350,7 +361,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         for head_idx, sample_indices in head_groups.items():
 
             group_features = features[sample_indices]
-
+            # TODO: rollback to selected head by voting.
             group_output = self.classification_heads[self.task_to_index[self.task_name]](group_features)
 
             for i, sample_idx in enumerate(sample_indices):

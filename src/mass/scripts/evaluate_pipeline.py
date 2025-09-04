@@ -24,7 +24,6 @@ from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
-from mass.data.datasets.registry import get_dataset
 from mass.modules.encoder import ClassificationHead, ImageEncoder
 from mass.modules.router import AbstractRouter
 from mass.utils.io_utils import (
@@ -219,11 +218,12 @@ def run(cfg: omegaconf.DictConfig) -> str:
     print_memory("before eval")
     for dataset_name in cfg.eval_datasets:
 
-        dataset = get_dataset(
-            dataset_name,
-            preprocess_fn=zeroshot_encoder.val_preprocess,
-            location=cfg.nn.data.data_path,
-            batch_size=cfg.nn.data.batch_size.train,
+        dataset_cfg = omegaconf.OmegaConf.load(
+            PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
+        )
+
+        dataset = instantiate(
+            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
         )
 
         model.set_metrics(len(dataset.classnames))

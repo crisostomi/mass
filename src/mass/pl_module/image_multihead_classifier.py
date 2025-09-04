@@ -5,8 +5,9 @@ from typing import Any, Dict, Mapping, Optional
 import torch.nn.functional as F
 
 from mass.data.datamodule import MetaData
+from mass.data.dataset import maybe_dictionarize
 from mass.utils.utils import torch_load, torch_save
-from mass.data.datasets.common import maybe_dictionarize
+
 
 
 class MultiHeadImageClassifier(pl.LightningModule):

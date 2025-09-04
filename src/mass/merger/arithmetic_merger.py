@@ -1,10 +1,12 @@
 import copy
+import logging
 from typing import Dict, List
 import torch
 from mass.merger.merger import TaskVectorBasedMerger
 from mass.modules.encoder import ImageEncoder
 from mass.utils.utils import apply_dict_to_model, compute_task_dict, sum_task_dict
 
+pylogger = logging.getLogger(__name__)
 
 class TaskArithmeticMerger(TaskVectorBasedMerger):
 

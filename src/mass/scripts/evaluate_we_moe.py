@@ -1,4 +1,5 @@
 ## Imports
+from ast import Dict
 from hmac import new
 import logging
 from pathlib import Path
@@ -12,7 +13,7 @@ import pytorch_lightning as pl
 import torch
 from hydra.utils import instantiate
 from lightning.pytorch import Callback
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from nn_core.callbacks import NNTemplateCore
 from nn_core.common import PROJECT_ROOT
@@ -22,11 +23,10 @@ from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
-from mass.data.datasets.registry import get_dataset
 from mass.modules.encoder import ClassificationHead, ImageEncoder
 from mass.modules.heads import get_classification_head
 from mass.scripts.evaluate_pipeline import boilerplate
-from mass.utils.io_utils import get_classification_heads, load_model_from_disk
+from mass.utils.io_utils import get_classification_heads, load_model_from_disk, load_model_from_hf
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
     build_callbacks,
@@ -74,23 +74,17 @@ def run(cfg: DictConfig) -> str:
     # upperbound accuracies, used for logging the normalized accuracy
     finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)
 
-    pylogger.info(cfg.nn.module.encoder)
     # only has vision encoder, no text transformer
-    zeroshot_encoder_statedict = load_model_from_disk(cfg.misc.pretrained_checkpoint)
-    zeroshot_encoder: ImageEncoder = instantiate(cfg.nn.module.encoder)
-
-    zeroshot_encoder.load_state_dict(zeroshot_encoder_statedict, strict=False)
-
-    finetuned_name = (
-        lambda name: Path(cfg.misc.ckpt_path) / f"{name}Val" / "nonlinear_finetuned.pt"
+    zeroshot_encoder: ImageEncoder = load_model_from_hf(
+        model_name=cfg.nn.module.encoder.model_name
     )
 
-    finetuned_models = {}
-    for dataset in cfg.task_vectors.to_apply:
-        weights = load_model_from_disk(finetuned_name(dataset))
-        finetuned_encoder: ImageEncoder = instantiate(cfg.nn.module.encoder)
-        finetuned_encoder.load_state_dict(weights, strict=False)
-        finetuned_models[dataset] = finetuned_encoder
+    finetuned_models = {
+        dataset: load_model_from_hf(
+            model_name=cfg.nn.module.encoder.model_name, dataset_name=dataset
+        )
+        for dataset in cfg.nn.benchmark.tasks
+    }
 
     num_tasks = len(cfg.eval_datasets)
 
@@ -121,11 +115,12 @@ def run(cfg: DictConfig) -> str:
     print_memory("before eval")
     for dataset_name in cfg.eval_datasets:
 
-        dataset = get_dataset(
-            dataset_name,
-            preprocess_fn=zeroshot_encoder.val_preprocess,
-            location=cfg.nn.data.data_path,
-            batch_size=cfg.nn.data.batch_size.train,
+        dataset_cfg = OmegaConf.load(
+            PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
+        )
+
+        dataset = instantiate(
+            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
         )
 
         model.set_metrics(len(dataset.classnames))
