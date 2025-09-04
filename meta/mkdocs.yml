@@ -1,6 +1,6 @@
-site_name: task-vectors-playground
+site_name: mass
 site_description: Playing with those task vectors
-repo_url: https://github.com/crisostomi/task-vectors-playground
+repo_url: https://github.com/crisostomi/mass
 
 nav:
   - Home: index.md
