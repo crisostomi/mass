@@ -91,7 +91,7 @@ def run(cfg: DictConfig):
     pylogger.info("Starting testing!")
     trainer.test(model=model, dataloaders=dataset.test_loader)
 
-    upload_model_to_hf(model.encoder, cfg.nn.encoder.model_name, dataset.name)
+    upload_model_to_hf(model.encoder, cfg.nn.encoder.model_name, cfg.dataset.name)
 
     if logger is not None:
         logger.experiment.finish()
