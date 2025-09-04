@@ -42,8 +42,6 @@ def build_task_classification_head(
 
             dataset = instantiate(dataset_cfg, preprocess_fn=None)
 
-            class_names = dataset.classnames
-
             # template = lambda x: f"An image of a {x} from the {task_name} dataset."
 
             texts = [dataset_descriptions[task_name]]
