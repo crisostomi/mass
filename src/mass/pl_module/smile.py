@@ -222,6 +222,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             tqdm_desc (str): Description for the tqdm progress bar.
         """
         replace_attention_with_linear(pretrained_model, finetuned_models)
+        pylogger.info(f"{pretrained_model}")
 
         for name, module in tqdm(
             tuple(pretrained_model.named_modules()),

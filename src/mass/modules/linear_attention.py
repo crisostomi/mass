@@ -680,10 +680,8 @@ def multi_head_attention_forward(
             attn_output.transpose(0, 1).contiguous().view(tgt_len * bsz, embed_dim)
         )
 
-        if len(attn_output) == 2:
-            attn_output = out_proj(attn_output, bsz)
-        else:
-            attn_output = out_proj(attn_output)
+        attn_output = out_proj(attn_output, bsz)
+
         attn_output = attn_output.view(tgt_len, bsz, attn_output.size(1))
 
         # optionally average attention weights over heads
@@ -717,11 +715,8 @@ def multi_head_attention_forward(
             attn_output.permute(2, 0, 1, 3).contiguous().view(bsz * tgt_len, embed_dim)
         )
 
-        
-        if len(attn_output) == 2:
-            attn_output = out_proj(attn_output, bsz)
-        else:
-            attn_output = out_proj(attn_output)
+        attn_output = out_proj(attn_output, bsz)
+
         attn_output = attn_output.view(tgt_len, bsz, attn_output.size(1))
         if not is_batched:
             # squeeze the output if input was unbatched

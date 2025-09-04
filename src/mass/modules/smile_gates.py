@@ -274,7 +274,6 @@ class SmileMoELinear(nn.Module):
         Returns:
             Tensor: The output tensor.
         """
-        # pylogger.info(f"Layer {self.name}")
         pretrained_out = self.pretrained_model(hidden_states)
 
         input_shape = hidden_states.size()
@@ -335,7 +334,7 @@ class SmileMoELinear(nn.Module):
                 .mode(dim=0)
                 .values
             )
-        elif len(input_shape) == 2 and batch_size:
+        elif len(input_shape) == 2 and batch_size is not None:
             patches = input_shape[0] // batch_size
             self.last_selected_experts = (
                 selected_experts.view(patches, batch_size).cpu().mode(dim=0).values

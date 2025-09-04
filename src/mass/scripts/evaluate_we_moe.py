@@ -86,8 +86,6 @@ def run(cfg: DictConfig) -> str:
         for dataset in cfg.benchmark.datasets
     }
 
-    num_tasks = len(cfg.benchmark.datasets)
-
     pylogger.info(f"Number of tasks: {len(cfg.benchmark.datasets)}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
 
@@ -176,7 +174,7 @@ def run(cfg: DictConfig) -> str:
 
     logger.experiment.log_artifact(
         wandb.Artifact(
-            f"results_{cfg.nn.encoder.model_name}_{num_tasks}",
+            f"results_{cfg.nn.encoder.model_name}_{ntasks}",
             type="results",
             metadata={"results": results_path},
         )

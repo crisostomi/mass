@@ -4,8 +4,7 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - dev
-  - wemoe
+  - smile
 
 
 defaults:
