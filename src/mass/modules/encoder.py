@@ -13,7 +13,6 @@ class ImageEncoder(torch.nn.Module):
         self,
         model_name: str,
         openclip_cachedir=None,
-        cache_dir=None,
         keep_lang=False,
         **kwargs,
     ):
@@ -31,8 +30,6 @@ class ImageEncoder(torch.nn.Module):
                 name, pretrained=pretrained, cache_dir=openclip_cachedir
             )
         )
-
-        self.cache_dir = cache_dir
 
         if not keep_lang and hasattr(self.model, "transformer"):
             pylogger.info("Removing text transformer from the model.")

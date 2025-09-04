@@ -27,4 +27,3 @@ misc:
   pretrained_checkpoint: ${misc.ckpt_path}/zeroshot.pt
   openclip_cachedir: "${oc.env:PROJECT_ROOT}/checkpoints/openclip_cache"
   svd_path: ${oc.env:PROJECT_ROOT}/checkpoints
-  cache_dir: null

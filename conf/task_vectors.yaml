@@ -54,9 +54,7 @@ misc:
   openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
   checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
   svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
-  merged_vector_path: "${oc.env:MODELS_PATH}/tv_merged_${nn.encoder.model_name}.pt"
-  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/single/${nn.encoder.model_name}/nonlinear_ft_accuracies.json"
-  cache_dir: null
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/${nn.encoder.model_name}/accs.json"
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"
 
 

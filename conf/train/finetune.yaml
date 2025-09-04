@@ -29,21 +29,6 @@ callbacks:
 
   - _target_: pytorch_lightning.callbacks.progress.tqdm_progress.TQDMProgressBar
     refresh_rate: 20
-  # - _target_: pytorch_lightning.callbacks.EarlyStopping
-  #   patience: 42
-  #   verbose: False
-  #   monitor: ${train.monitor.metric}
-  #   mode: ${train.monitor.mode}
-
-  # - _target_: pytorch_lightning.callbacks.ModelCheckpoint
-  #   dirpath: ${misc.checkpoint_dir} 
-  #   filename: "${nn.encoder.model_name}_${num_tasks}tasks"
-  #   save_top_k: 1 
-  #   save_last: False  
-  #   verbose: False
-  #   monitor: ${train.monitor.metric}
-  #   mode: ${train.monitor.mode}
-  #   save_on_train_epoch_end: False 
 
 logging:
   upload:

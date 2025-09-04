@@ -42,7 +42,6 @@ misc:
   openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
   checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
   svd_path: "${oc.env:MODELS_PATH}svd_dict_${model}.pt"
-  cache_dir: null
   text_description: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
   output_dir: "${oc.env:PROJECT_ROOT}/results/interpret/${model}/"
   description_dir: "${oc.env:PROJECT_ROOT}/misc/text_descriptions/"
