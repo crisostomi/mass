@@ -16,6 +16,7 @@ defaults:
   - _self_ # as last argument to allow the override of parameters via this main config
 
 seed_index: 0
+device: cuda
 
 conventions:
   x_key: 'x'
