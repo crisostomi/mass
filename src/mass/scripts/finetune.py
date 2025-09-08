@@ -49,9 +49,9 @@ def run(cfg: DictConfig):
     classification_head = get_classification_head(
         cfg.nn.encoder.model_name,
         cfg.dataset.name,
-        cfg.misc.ckpt_path,
-        cache_dir=cfg.misc.cache_dir,
+        ckpt_path=cfg.misc.ckpt_path,
         openclip_cachedir=cfg.misc.openclip_cachedir,
+        device=cfg.device,
     )
 
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
