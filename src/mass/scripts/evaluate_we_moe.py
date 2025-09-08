@@ -26,7 +26,11 @@ import mass  # noqa
 from mass.modules.encoder import ClassificationHead, ImageEncoder
 from mass.modules.heads import get_classification_head
 from mass.scripts.evaluate_pipeline import boilerplate
-from mass.utils.io_utils import get_classification_heads, load_model_from_disk, load_model_from_hf
+from mass.utils.io_utils import (
+    get_classification_heads,
+    load_model_from_disk,
+    load_model_from_hf,
+)
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
     build_callbacks,
@@ -41,13 +45,6 @@ import os
 pylogger = logging.getLogger(__name__)
 
 torch.set_float32_matmul_precision("high")
-
-def get_optimal_alpha(cfg):
-    try:
-        cfg.nn.module.aggregator.optimal_alpha = cfg.optimal_alphas[cfg.nn.encoder.model_name][len(cfg.eval_datasets)]
-    except:
-        pylogger.warning("Optimal alpha not found, using default value")
-        cfg.nn.module.aggregator.optimal_alpha = 1.0
 
 
 def run(cfg: DictConfig) -> str:
@@ -93,8 +90,6 @@ def run(cfg: DictConfig) -> str:
 
     # Convert finetuned_models dict to list of model objects
     finetuned_models_list = list(finetuned_models.values())
-    
-    get_optimal_alpha(cfg)
 
     model: WeightEnsemblingMoEAlgorithm = instantiate(
         cfg.nn.module,

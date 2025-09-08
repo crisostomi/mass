@@ -11,10 +11,12 @@ image_encoder: ??
 finetuned_models: ??
 classification_heads: ??
 
+oracle_mode: true
+
 device: cuda
 full_matrices: true
 gate_k: 16                     
-k: 32                          
+k: 32                        
 top_k: 1                      
 routing_use_diff: true        
 average_experts: false         

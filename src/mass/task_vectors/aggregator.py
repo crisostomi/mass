@@ -93,11 +93,9 @@ class WeightedAggregator(Aggregator):
         for key in multi_task_vector:
             new_state_dict[key] += scaling_coeff * multi_task_vector[key]
 
-        self.tmp_model.load_state_dict(
-            new_state_dict, strict=False
-        )  # Allow missing keys
+        self.tmp_model.load_state_dict(new_state_dict)
 
-        return self.tmp_model.cuda()
+        return self.tmp_model
 
 
 class TaskSingularVectorAggregator(Aggregator):
@@ -105,29 +103,35 @@ class TaskSingularVectorAggregator(Aggregator):
         self,
         zeroshot_model,
         normalize_coefficients=False,
+        tv_device="cpu",
     ):
         super().__init__()
 
-        self.zeroshot_model = copy.deepcopy(zeroshot_model)
-        self.tmp_model = copy.deepcopy(self.zeroshot_model)
+        self.zeroshot_model = zeroshot_model
+        self.tmp_model = self.zeroshot_model
         self.normalize_coefficients = normalize_coefficients
 
-    def aggregate(self, svd_dicts, coefficients: torch.Tensor = None):
+        self.device = tv_device
 
-        self.tmp_model = copy.deepcopy(self.zeroshot_model)
+    def aggregate(self, svd_dicts):
 
         new_state_dict = copy.deepcopy(self.zeroshot_model.state_dict())
 
         delta_aggregated_state_dict = sum_svd(
-            copy.deepcopy(self.zeroshot_model.state_dict()), svd_dicts, device="cuda"
+            copy.deepcopy(self.zeroshot_model.state_dict()),
+            svd_dicts,
+            device=self.device,
         )
 
         for key in delta_aggregated_state_dict:
             new_state_dict[key] += delta_aggregated_state_dict[key]
 
+        del delta_aggregated_state_dict
+
+        self.tmp_model = copy.deepcopy(self.zeroshot_model)
         self.tmp_model.load_state_dict(new_state_dict)
 
-        return self.tmp_model.cuda()
+        return self.tmp_model
 
 
 class IsotropicAggregator(Aggregator):
@@ -138,7 +142,7 @@ class IsotropicAggregator(Aggregator):
         self.zeroshot_model: OrderedDict = zeroshot_model
         self.tmp_model = copy.deepcopy(self.zeroshot_model)
 
-    def aggregate(self, svd_dicts, coefficients: torch.Tensor):
+    def aggregate(self, svd_dicts):
 
         new_state_dict = copy.deepcopy(self.zeroshot_model.state_dict())
 
@@ -151,4 +155,4 @@ class IsotropicAggregator(Aggregator):
 
         self.tmp_model.load_state_dict(new_state_dict)
 
-        return self.tmp_model.cuda()
+        return self.tmp_model

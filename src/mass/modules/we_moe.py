@@ -146,7 +146,9 @@ class WeightEnsemblingMoE(nn.Module, Generic[TorchModelType]):
     @property
     def forward_model(self):
         if self._merged_state_dict is None:
-            raise RuntimeError("merge_weights must be called before using forward_model")
+            raise RuntimeError(
+                "merge_weights must be called before using forward_model"
+            )
         return functools.partial(
             functional_call,
             self.base_model,
@@ -155,7 +157,7 @@ class WeightEnsemblingMoE(nn.Module, Generic[TorchModelType]):
 
     def merge_weights(self, expert_weights) -> StateDictType:
         state_dict = self.base_model.state_dict(keep_vars=True)
-                
+
         for weight, task_vector in zip(expert_weights, self.task_vectors):
             for name, param in task_vector.named_parameters():
                 state_dict[name] = state_dict[name] + weight * param
@@ -170,12 +172,12 @@ class WeightEnsemblingMoE(nn.Module, Generic[TorchModelType]):
             if self.batch_first:
                 # the input is in the shape of (batch_size, seq_len, hidden_size)
                 gate_weights = gate_weights.mean(dim=1)
-                
+
             else:
                 # the input is in the shape of (seq_len, batch_size, hidden_size)
                 gate_weights = gate_weights.mean(dim=0)
-                
-        self.last_selected_experts = gate_weights.argmax(dim=1)     
+
+        self.last_selected_experts = gate_weights.argmax(dim=1)
 
         if self.gate.num_hidden_layers == 0:
             self.merge_weights(gate_weights)
@@ -205,7 +207,7 @@ class WeightEnsemblingMoE(nn.Module, Generic[TorchModelType]):
 
         self._merged_state_dict = None
         return output_hidden_states
-    
+
     @property
     def weight(self):
         """

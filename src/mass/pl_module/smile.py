@@ -42,7 +42,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         pretrained_model,
         finetuned_models,
         classification_heads: List[nn.Module],
-        *,
+        oracle_mode: bool = False,
         device: str = "cuda",
         full_matrices: bool = True,
         gate_k: int = 256,
@@ -79,6 +79,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         self.model_path = model_path
         self.upscaling_accelerator = kwargs.pop("upscaling_accelerator", None)
         self.upscaled_layers = set()  # Initialize before super().__init__()
+        self.oracle_mode = oracle_mode
 
         for key, value in kwargs.items():
             pylogger.warning(f"Unrecognized argument: {key}")
@@ -255,6 +256,8 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         self.test_acc = metric.clone()
 
     def __call__(self, inputs):
+        if self.oracle_mode:
+            return self.forward_oracle(inputs)
         return self.forward(inputs)
 
     def forward(self, inputs):
@@ -296,6 +299,10 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
                 all_outputs[sample_idx] = group_output[i]
 
         return pad_unbatched_output(all_outputs, self.output_classes)
+
+    def forward_oracle(self, inputs):
+        features = self.encoder(inputs)
+        return self.classification_heads[self.head_idx](features)
 
     def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
         """

@@ -1,22 +1,22 @@
 {
     "RESISC45": [
         {
-            "acc/test/RESISC45": 0.7287301421165466,
-            "loss/test/RESISC45": 1.1554042100906372,
-            "normalized_acc/test/RESISC45": 0.7646569013595581
+            "acc/test/RESISC45": 0.9520635008811951,
+            "loss/test/RESISC45": 0.20297525823116302,
+            "normalized_acc/test/RESISC45": 0.9990006685256958
         }
     ],
-    "KMNIST": [
+    "Cars": [
         {
-            "acc/test/KMNIST": 0.16689999401569366,
-            "loss/test/KMNIST": 2.6365010738372803,
-            "normalized_acc/test/KMNIST": 0.1700804978609085
+            "acc/test/Cars": 0.7987812757492065,
+            "loss/test/Cars": 0.7064458131790161,
+            "normalized_acc/test/Cars": 1.000779151916504
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.44781506806612015,
-            "normalized_acc/test/avg": 0.4673686996102333
+            "acc/test/avg": 0.8754223883152008,
+            "normalized_acc/test/avg": 0.9998899102210999
         }
     ]
 }
