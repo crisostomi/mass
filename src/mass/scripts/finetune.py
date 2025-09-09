@@ -67,7 +67,7 @@ def run(cfg: DictConfig):
 
     model.task_name = cfg.dataset.name
 
-    dataset = instantiate(cfg.dataset, preprocess_fn=zeroshot_encoder.val_preprocess)
+    dataset = instantiate(cfg.dataset, preprocess_fn=zeroshot_encoder.val_preprocess, batch_size=cfg.train.batch_size)
 
     model.freeze_head()
 
