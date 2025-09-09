@@ -4,15 +4,17 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - dev
+  #- TSVM, ISO-C, consensus
+  #- benchmark, dev
+  - static_merge
   
 defaults:
   - hydra: default
   - nn: default
   - train: default
-  - merger: tsv
-  - benchmark: N20
-  - override hydra/launcher: basic
+  - merger: tsv # iso-c, consensus
+  - benchmark: N20 # N14, N8
+  - override hydra/launcher: submitit_slurm # basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none
   - _self_ # as last argument to allow the override of parameters via this main config
@@ -35,6 +37,6 @@ misc:
   pretrained_checkpoint: ${misc.ckpt_path}/base/model.pt
   openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
   checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
-  svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
-  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/${nn.encoder.model_name}/accs.json"
+  svd_path: "${oc.env:MODELS_PATH}/svd_dict_${nn.encoder.model_name}.pt"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/accs.json"
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"

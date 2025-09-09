@@ -12,11 +12,12 @@ import torch
 
 class TaskSingularVectorsMerger(TaskVectorBasedMerger):
 
-    def __init__(self, svd_path, svd_compress_factor):
+    def __init__(self, svd_path, svd_compress_factor, non_matrix_params_aggregation):
         super().__init__()
 
         self.svd_path = svd_path
         self.svd_compress_factor = svd_compress_factor
+        self.non_matrix_params_aggregation = non_matrix_params_aggregation
 
     def merge(self, base_model, finetuned_models):
 
@@ -40,6 +41,7 @@ class TaskSingularVectorsMerger(TaskVectorBasedMerger):
         multi_task_vector = sum_svd(
             ref_state_dict=copy.deepcopy(base_model.state_dict()),
             svd_dicts=svd_dict,
+            non_matrix_params_aggregation=self.non_matrix_params_aggregation,
         )
 
         merged_encoder: ImageEncoder = copy.deepcopy(base_model)
