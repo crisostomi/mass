@@ -23,12 +23,9 @@ from mass.modules.encoder import ImageEncoder
 from mass.modules.heads import get_classification_head
 from mass.pl_module.image_classifier import ImageClassifier
 from mass.utils.io_utils import (
-    get_class,
-    load_model_from_artifact,
     load_model_from_hf,
     upload_model_to_hf,
 )
-from mass.utils.utils import build_callbacks
 from hydra.utils import instantiate
 
 pylogger = logging.getLogger(__name__)

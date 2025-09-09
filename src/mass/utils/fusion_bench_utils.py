@@ -30,6 +30,8 @@ TorchModelType = TypeVar("TorchModelType", bound=nn.Module)
 
 pylogger = logging.getLogger(__name__)
 
+# Code has been taken and adapted from: https://github.com/tanganke/fusion_bench
+
 
 def state_dict_avg(state_dicts: List[StateDictType]):
     """

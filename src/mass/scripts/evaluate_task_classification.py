@@ -36,14 +36,12 @@ from mass.task_vectors.task_singular_vectors import (
     sum_svd,
     get_svd_dict,
 )
-from mass.utils.io_utils import load_model_from_artifact, load_model_from_disk
+from mass.utils.io_utils import load_model_from_disk
 from mass.utils.utils import (
     compute_task_dict,
     apply_dict_to_model,
     build_callbacks,
     print_memory,
-    state_dict_to_vector,
-    vector_to_state_dict,
 )
 
 pylogger = logging.getLogger(__name__)
@@ -51,6 +49,7 @@ pylogger = logging.getLogger(__name__)
 torch.set_float32_matmul_precision("high")
 
 
+# TODO: import this now
 def boilerplate(cfg):
     cfg.core.tags = enforce_tags(cfg.core.get("tags", None))
 
