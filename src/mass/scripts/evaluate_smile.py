@@ -2,7 +2,7 @@
 from hmac import new
 import logging
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 from mass.pl_module.smile import SmileUpscalingAlgorithm
 import wandb
 
@@ -26,7 +26,6 @@ from mass.modules.heads import get_classification_head
 from mass.scripts.evaluate_pipeline import boilerplate
 from mass.utils.io_utils import (
     get_classification_heads,
-    load_model_from_disk,
     load_model_from_hf,
 )
 from mass.utils.plots import plot_interactive_radar_chart
@@ -67,7 +66,9 @@ def run(cfg: DictConfig) -> str:
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
 
     # upperbound accuracies, used for logging the normalized accuracy
-    finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)
+    finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
+        cfg.misc.finetuned_accuracy_path
+    )[cfg.nn.encoder.model_name]
 
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
         model_name=cfg.nn.encoder.model_name

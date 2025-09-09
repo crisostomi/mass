@@ -37,6 +37,7 @@ pylogger = logging.getLogger(__name__)
 torch.set_float32_matmul_precision("high")
 
 
+# TODO: import this now
 def boilerplate(cfg):
     cfg.core.tags = enforce_tags(cfg.core.get("tags", None))
 

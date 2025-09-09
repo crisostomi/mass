@@ -99,15 +99,6 @@ def compute_avg_accuracy(results) -> Dict:
         "normalized_acc/test/avg": average_normalized_acc,
     }
 
-
-def torch_load_old(save_path, device=None):
-    with open(save_path, "rb") as f:
-        classifier = pickle.load(f)
-    if device is not None:
-        classifier = classifier.to(device)
-    return classifier
-
-
 def torch_save(model, save_path):
     if os.path.dirname(save_path) != "":
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -135,41 +126,11 @@ def get_probs(inputs, classifier):
     logits = get_logits(inputs, classifier)
     return logits.softmax(dim=1)
 
-
+# TODO: use this in WeMoE
 def print_params_summary(model: torch.nn.Module):
     print(
         f"Number of trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}, ({sum(p.numel() for p in model.parameters() if p.requires_grad) / sum(p.numel() for p in model.parameters()) * 100}%)"
     )
-
-
-def print_mask_summary(model: torch.nn.Module, mask_mode):
-    pct_masked = {}
-
-    for name, module in model.named_modules():
-        if not hasattr(module, "weight"):
-            continue
-
-        pct_masked[name] = (
-            round(1.0 - torch.mean(module.weight_mask).item(), 2)
-            if hasattr(module, "weight_mask")
-            else 0.0
-        )
-
-    print("Percentage of masked weights in each layer:")
-    from rich import pretty
-
-    pretty.pprint(pct_masked)
-
-    # TODO remove this when one of the two (basically equivalent) methods, when a choice has been taken
-    if mask_mode == "by_layer":
-        print(
-            f"% of masked weights across the entire network: {round(torch.as_tensor(data=list(pct_masked.values()), dtype=torch.float32).mean().item(), 2)}"
-        )
-    elif mask_mode == "by_nn":
-        print(
-            f"Sum percentage of masked weights across the entire network: {round(torch.as_tensor(data=list(pct_masked.values()), dtype=torch.float32).mean().item(), 2)}"
-        )
-
 
 class LabelSmoothing(torch.nn.Module):
     def __init__(self, smoothing=0.0):
@@ -206,7 +167,7 @@ def build_callbacks(cfg: ListConfig, *args: Callback, verbose=False) -> List[Cal
 
     return callbacks
 
-
+# TODO: unify with the below
 def pad_unbatched_output(outputs, output_classes):
     """
     Trims a list of unbatched output tensors to match the specified number of output classes,
@@ -236,7 +197,7 @@ def pad_unbatched_output(outputs, output_classes):
 
     return torch.stack(trimmed_outputs, dim=0)
 
-
+# TODO: unify with the above
 def pad_output(outputs, output_classes):
     """
     Trims a list of output tensors to match the specified number of output classes.
@@ -332,37 +293,6 @@ def reconstruct_tv_from_svddict(svd_dict, device="cuda"):
     return tv
 
 
-def state_dict_to_vector(state_dict, remove_keys=[]):
-    shared_state_dict = copy.deepcopy(state_dict)
-    for key in remove_keys:
-        if key in shared_state_dict:
-            del shared_state_dict[key]
-    sorted_shared_state_dict = OrderedDict(sorted(shared_state_dict.items()))
-    return torch.nn.utils.parameters_to_vector(
-        [value.reshape(-1) for key, value in sorted_shared_state_dict.items()]
-    )
-
-
-def vector_to_state_dict(vector, state_dict, remove_keys=[]):
-    # create a reference dict to define the order of the vector
-    reference_dict = copy.deepcopy(state_dict)
-    for key in remove_keys:
-        if key in reference_dict:
-            del reference_dict[key]
-    sorted_reference_dict = OrderedDict(sorted(reference_dict.items()))
-
-    # create a shared state dict using the refence dict
-    torch.nn.utils.vector_to_parameters(vector, sorted_reference_dict.values())
-
-    # add back the encoder and decoder embedding weights.
-    if "transformer.shared.weight" in sorted_reference_dict:
-        for key in remove_keys:
-            sorted_reference_dict[key] = sorted_reference_dict[
-                "transformer.shared.weight"
-            ]
-    return sorted_reference_dict
-
-
 def apply_dict_to_model(task_vector_dict, model, coefficient: float = 1.0):
     """
     Applies a task vector dictionary to a model. The ressulting model is the deep copy of the input model
@@ -430,32 +360,6 @@ def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
         torch.stack(us) if get_u else None,
     )
 
-
-def is_layer_to_merge(layer_key: str) -> bool:
-    """
-    Check if layer_key contains 'mlp' or 'attn' and 'resblocks.'
-    """
-
-    return (
-        layer_key.endswith(".attn")
-        or layer_key.endswith(".c_fc")
-        or layer_key.endswith(".c_proj")
-    )
-
-
-def align_layer_key(layer_key: str) -> str:
-    if layer_key.startswith(
-        "model.visual.transformer.resblocks."
-    ) and layer_key.endswith(".attn"):
-        return layer_key + ".in_proj_weight"
-    elif layer_key.startswith(
-        "model.visual.transformer.resblocks."
-    ) and layer_key.endswith(".out_proj"):
-        return layer_key + ".weight"
-    else:
-        return layer_key
-
-
 def is_supported_layer(layer_key: str) -> bool:
     """
     Check if layer_key contains 'mlp' or 'attn' and 'resblocks.'
@@ -470,22 +374,6 @@ def is_supported_layer(layer_key: str) -> bool:
         and not ("c_fc" in layer_key)
     )
 
-
-def is_supported_layer_svd(layer_key: str) -> bool:
-    """
-    Keep layers inside resblocks, attn or mlp, but exclude only biases and layer norms.
-    """
-    return (
-        ("resblocks." in layer_key)
-        and (("attn" in layer_key) or ("mlp" in layer_key))
-        and not ("ln" in layer_key)
-        and not ("gelu" in layer_key)
-        and not ("bias" in layer_key)
-        and not ("c_proj" in layer_key)
-        and not ("out_proj" in layer_key)
-    )
-
-
 def router_key_from_layer(key, index):
     return f"encoder.model.visual.transformer.resblocks.{index}.{key}"
 
@@ -497,68 +385,12 @@ def svd_key_from_layer(key, index):
     elif "mlp" in key:
         return base + ".c_fc.weight"
 
-
 def from_router_to_svd_dict_key(key):
     key = key.replace("model.encoder.", "")
     if "attn" in key:
         return key + ".in_proj_weight"
     if "mlp" in key:
         return key + ".c_fc.weight"
-
-
-def layer_weights_key_to_module_key(layer_key: str) -> str:
-    if layer_key.endswith(".weight"):
-        return layer_key[: -len(".weight")]
-
-
-def svd_key_to_layer_key(svd_key: str) -> str:
-    if svd_key.endswith(".in_proj_weight"):
-        return svd_key[: -len(".in_proj_weight")]
-    elif svd_key.endswith(".c_fc.weight"):
-        return svd_key[: -len(".weight")]
-    elif svd_key.endswith(".c_proj.weight"):
-        return svd_key[: -len(".weight")]
-    elif svd_key.endswith(".out_proj.weight"):
-        return svd_key[: -len(".out_proj.weight")]
-    else:
-        return svd_key
-
-
-def is_layer_to_merge_parameters(layer_key: str) -> bool:
-    """
-    Check if layer_key contains 'mlp' or 'attn' and 'resblocks.'
-    """
-    # TODO: maybe we want also to add visual_proj? or other layers? Maybe all the matrix layers are a good idea?
-    return (
-        layer_key.endswith(".attn.in_proj_weight")
-        or layer_key.endswith(".c_fc.weight")
-        or layer_key.endswith(".c_proj.weight")
-        or layer_key.endswith(".out_proj.weight")
-    )
-
-
-def svd_key_to_router_key(svd_key: str) -> str:
-    if svd_key.endswith(".in_proj_weight"):
-        base = svd_key[: -len(".in_proj_weight")]
-    elif svd_key.endswith(".c_fc.weight"):
-        base = svd_key[: -len(".c_fc.weight")]
-    else:
-        raise ValueError(f"Invalid SVD format {svd_key!r}")
-
-    if not base.startswith("model.visual."):
-        raise ValueError(f"Not a valid prefix {base!r}")
-    return base.replace("model.visual.", "model.visual.transformer.", 1)
-
-
-def add_transformer_key(layer: str):
-    return layer.replace("model.visual.", "model.visual.transformer.", 1)
-
-
-def remove_transformer_key(layer: str):
-    if layer.startswith("model.visual.transformer."):
-        return layer.replace("model.visual.transformer.", "model.visual.", 1)
-    else:
-        return layer
 
 
 @torch.no_grad()

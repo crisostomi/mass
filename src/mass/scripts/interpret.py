@@ -16,6 +16,7 @@ from mass.clip_interpret.compute_text_set_projection import run_text_features
 pylogger = logging.getLogger(__name__)
 
 
+# TODO: import this now
 def boilerplate(cfg: DictConfig):
     """
     Full boilerplate initialization mimicking your larger script.

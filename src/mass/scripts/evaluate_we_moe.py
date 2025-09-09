@@ -24,11 +24,9 @@ from nn_core.serialization import NNCheckpointIO
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
 from mass.modules.encoder import ClassificationHead, ImageEncoder
-from mass.modules.heads import get_classification_head
 from mass.scripts.evaluate_pipeline import boilerplate
 from mass.utils.io_utils import (
     get_classification_heads,
-    load_model_from_disk,
     load_model_from_hf,
 )
 from mass.utils.plots import plot_interactive_radar_chart
@@ -69,7 +67,9 @@ def run(cfg: DictConfig) -> str:
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
 
     # upperbound accuracies, used for logging the normalized accuracy
-    finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)
+    finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
+        cfg.misc.finetuned_accuracy_path
+    )[cfg.nn.encoder.model_name]
 
     # only has vision encoder, no text transformer
     zeroshot_encoder: ImageEncoder = load_model_from_hf(

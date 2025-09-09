@@ -49,48 +49,24 @@ torch.set_float32_matmul_precision("high")
 
 def get_merged_base(
     cfg,
-    merging_method,
     zeroshot_encoder: ImageEncoder,
     svd_dicts: Dict[str, Any],
 ):
 
-    coefficient = 1
 
-    if merging_method == "isotropic":
-
-        multi_task_vector = isotropic_sum(
+    multi_task_vector = (
+        sum_svd_no_redundant_tasks( 
             ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
             svd_dict=svd_dicts,
+            similarity_threshold=cfg.similarity_threshold,
         )
-
-        model_name = cfg.nn.encoder.model_name
-
-        if (
-            model_name in cfg.optimal_alphas
-            and len(cfg.eval_datasets) in cfg.optimal_alphas[model_name]
-        ):
-            coefficient = cfg.optimal_alphas[model_name][len(cfg.eval_datasets)]
-
-    elif merging_method == "tsvm":
-
-        multi_task_vector = (
-            sum_svd_no_redundant_tasks(  # TODO: restore no redundancy for proj
-                ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
-                svd_dict=svd_dicts,
-                similarity_threshold=cfg.similarity_threshold,
-            )
-        )
-    elif merging_method == "zeroshot":
-        return zeroshot_encoder
-    else:
-        raise NotImplementedError
+    )
 
     merged_encoder: ImageEncoder = copy.deepcopy(zeroshot_encoder)
 
     merged_encoder = apply_dict_to_model(
         multi_task_vector,
         merged_encoder,
-        coefficient=coefficient,
     )
 
     return merged_encoder  # , svd_dicts
@@ -121,7 +97,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
     # upperbound accuracies, used for logging the normalized accuracy
     finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
         cfg.misc.finetuned_accuracy_path
-    )
+    )[cfg.nn.encoder.model_name]
 
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
         model_name=cfg.nn.encoder.model_name

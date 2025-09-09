@@ -38,6 +38,13 @@ class MultiHeadImageClassifier(pl.LightningModule):
             metric, val, on_step=False, on_epoch=True
         )
         self.freeze_head()
+        
+    def change_encoder(self, new_encoder):
+        del self.encoder
+        self.encoder = new_encoder
+        if self.encoder is not None:
+            self.train_preprocess = self.encoder.train_preprocess
+            self.val_preprocess = self.encoder.val_preprocess
 
     def freeze_head(self):
         for idx in range(len(self.classification_heads)):

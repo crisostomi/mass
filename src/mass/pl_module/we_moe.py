@@ -17,8 +17,7 @@ from nn_core.common import PROJECT_ROOT
 
 from mass.merger.arithmetic_merger import TaskArithmeticMerger
 from mass.modules.encoder import ImageEncoder
-from mass.modules.heads import get_classification_head
-from mass.modules.smile_gates import ExpertNotTrainedError, SmileMoELinear
+from mass.modules.smile_gates import ExpertNotTrainedError
 from mass.modules.we_moe import WeightEnsemblingMoE
 from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
 
@@ -26,14 +25,12 @@ from mass.utils.fusion_bench_utils import (
     InfiniteDataLoader,
     get_attr,
     get_device,
-    replace_attention_with_linear,
     set_attr,
-    simple_average,
 )
 
 from open_clip import CLIP
 
-from mass.utils.utils import pad_unbatched_output
+from mass.utils.utils import pad_unbatched_output, print_params_summary
 
 pylogger = logging.getLogger(__name__)
 
@@ -85,7 +82,6 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         self.pretrained_model = pretrained_model
         self.finetuned_models = finetuned_models
 
-        self.zeroshot_heads = {}
         pylogger.info(
             "Fusing models using WeightEnsembling Mixture of Experts modules."
         )
@@ -94,12 +90,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         )
         moe_model = self.construct_moe_model(pretrained_model, finetuned_models)
 
-        pylogger.info(
-            f"MoE models has {sum(p.numel() for p in moe_model.parameters() if p.requires_grad)} trainable parameters"
-        )
-        pylogger.info(
-            f"MoE model has {sum(p.numel() for p in moe_model.parameters())} parameters in total"
-        )
+        print_params_summary(moe_model)
 
         if self.hparams.checkpoint:
             pylogger.info(
@@ -114,7 +105,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
                 torch.save({"model": moe_model}, self.hparams.save_checkpoint_path)
 
         moe_model.batch_reduce = False
-        super().__init__(moe_model, classification_heads)
+        self.change_encoder(moe_model)
 
     def load_checkpoint(self, model: Any, checkpoint: Any):
         """
@@ -144,17 +135,14 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         """
 
         name_list = name.split(".")
-        pylogger.info(f"Layer name {name}")
         try:
             module = get_attr(pretrained_model, name_list)
         except AttributeError as e:
             pylogger.warning(
                 f"Failed to get attribute {name} from pretrained model: {e}"
             )
-            set_attr(pretrained_model, name_list, None)
-            return
+            exit(1)
 
-        pylogger.info(f"Upscaling layer {name} of type {type(module)}")
         original_device = get_device(module)
         module = module.to(self.device, non_blocking=True)
         experts = [
@@ -162,7 +150,6 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
             for m in finetuned_models
         ]
         try:
-            pylogger.info(f"Model hidden size {module[0].in_features}")
             moe_linear = WeightEnsemblingMoE(
                 hidden_size=module[0].in_features,
                 base_model=module,
@@ -176,10 +163,10 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
             pylogger.info(f"Successfully upscaled layer: {name}")
         except ExpertNotTrainedError:
             pylogger.info(f"skip {name} because the experts are not trained.")
-            return
+            exit(1)
         except Exception as e:
             pylogger.error(f"Failed to upscale layer {name}: {e}")
-            return
+            exit(1)
         set_attr(moe_model, name_list, moe_linear)
 
     def construct_moe_model(
@@ -201,16 +188,13 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         ).requires_grad_(False)
 
         # Up-scale MLP modules
-
         for name, module in tqdm(
             tuple(pretrained_model.named_modules()),
             tqdm_desc,
             leave=False,
             dynamic_ncols=True,
         ):
-            pylogger.info(f"{name}, {module}")
             if isinstance(module, self._mlp_class):
-                pylogger.info(f"Upscaling linear layer: {name}")
                 self._upscale_linear_layer(
                     pretrained_model, moe_model, finetuned_models, name
                 )
@@ -263,10 +247,7 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
             self.hparams["optimizer"],
             params=[p for p in module.parameters() if p.requires_grad],
         )
-        pylogger.info(
-            f"Using {sum(p.numel() for p in module.parameters() if p.requires_grad)} parameters in total"
-        )
-
+        print_params_summary(module)
         module.train()
 
         pbar = tqdm(
@@ -353,7 +334,6 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         for head_idx, sample_indices in head_groups.items():
 
             group_features = features[sample_indices]
-            # TODO: rollback to selected head by voting.
             group_output = self.classification_heads[
                 head_idx
             ](group_features)
