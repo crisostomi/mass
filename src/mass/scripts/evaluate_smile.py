@@ -2,7 +2,7 @@
 from hmac import new
 import logging
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 from mass.pl_module.smile import SmileUpscalingAlgorithm
 import wandb
 
@@ -67,7 +67,9 @@ def run(cfg: DictConfig) -> str:
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
 
     # upperbound accuracies, used for logging the normalized accuracy
-    finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)
+    finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
+        cfg.misc.finetuned_accuracy_path
+    )[cfg.nn.encoder.model_name]
 
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
         model_name=cfg.nn.encoder.model_name

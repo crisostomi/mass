@@ -121,7 +121,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
     # upperbound accuracies, used for logging the normalized accuracy
     finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
         cfg.misc.finetuned_accuracy_path
-    )
+    )[cfg.nn.encoder.model_name]
 
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
         model_name=cfg.nn.encoder.model_name

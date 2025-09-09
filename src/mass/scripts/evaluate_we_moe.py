@@ -69,7 +69,9 @@ def run(cfg: DictConfig) -> str:
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
 
     # upperbound accuracies, used for logging the normalized accuracy
-    finetuned_accuracies = get_finetuning_accuracies(cfg.misc.finetuned_accuracy_path)
+    finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
+        cfg.misc.finetuned_accuracy_path
+    )[cfg.nn.encoder.model_name]
 
     # only has vision encoder, no text transformer
     zeroshot_encoder: ImageEncoder = load_model_from_hf(
