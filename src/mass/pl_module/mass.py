@@ -17,6 +17,7 @@ from mass.utils.plots import (
     plot_interactive_coefficients_std,
 )
 from mass.utils.utils import (
+    print_memory,
     reconstruct_tv_from_svddict,
     pad_output,
 )
@@ -32,7 +33,7 @@ num_of_tasks_to_scaling_coeff = {
 }
 
 
-class delta(MultiHeadImageClassifier):
+class MASS(MultiHeadImageClassifier):
     def __init__(
         self,
         router,
@@ -41,6 +42,7 @@ class delta(MultiHeadImageClassifier):
         classification_heads,
         svd_dicts,
         oracle_mode,
+        tv_device="cpu",
         **kwargs,
     ):
         """
@@ -58,9 +60,16 @@ class delta(MultiHeadImageClassifier):
         self.svd_dicts = svd_dicts
         self.output_classes = None
         self.oracle_mode = oracle_mode
+        if self.oracle_mode:
+            pylogger.warning(
+                "Oracle mode enabled: using ground-truth task labels for routing."
+            )
 
+        # TODO: changed this
         self.aggregator = instantiate(
-            self.hparams.aggregator, zeroshot_model=zeroshot_model.cuda()
+            self.hparams.aggregator,
+            zeroshot_model=zeroshot_model.to(tv_device),
+            tv_device=tv_device,
         )
         self.heads_selection_critieria = (
             torch.mean if self.hparams.heads_selection_method == "avg" else torch.max
@@ -83,7 +92,7 @@ class delta(MultiHeadImageClassifier):
         self.coeffs_to_log = []
         self.task_act_to_log = {}
 
-        self.max_num_tvs_to_keep = 8
+        self.max_num_tvs_to_keep = 1
 
     def set_metrics(self, num_classes):
 
@@ -145,12 +154,7 @@ class delta(MultiHeadImageClassifier):
                 assigned_sample_idxs
             )  # Ensure assigned_sample_idxs is also a tensor
 
-            merged_model = self._apply_tv(
-                list(dataset_group),
-                coefficients=dataset_coeffs[
-                    assigned_sample_idxs[:, None], dataset_group_idxs
-                ].mean(dim=0),
-            )
+            merged_model = self._apply_tv(list(dataset_group))
 
             # (num_samples_in_group, C, H, W)
             group_images = images[assigned_sample_idxs]
@@ -175,7 +179,8 @@ class delta(MultiHeadImageClassifier):
 
     @torch.no_grad()
     def forward(self, images: torch.Tensor):
-
+        pylogger.info("Cached contains: " + str(len(self.cached_tvs)))
+        print_memory("forward")
         selected_dataset_idxs, dataset_coeffs, dataset_group_to_samples = self.router(
             images
         )
@@ -223,17 +228,13 @@ class delta(MultiHeadImageClassifier):
                 assigned_sample_idxs
             )  # Ensure assigned_sample_idxs is also a tensor
 
-            merged_model = self._apply_tv(
-                list(dataset_group),
-                coefficients=dataset_coeffs[
-                    assigned_sample_idxs[:, None], dataset_group_idxs
-                ].mean(dim=0),
-            )
+            merged_model = self._apply_tv(list(dataset_group))
 
             # (num_samples_in_group, C, H, W)
             group_images = images[assigned_sample_idxs]
 
             # (num_samples_in_group, embedding_dim)
+            merged_model.to(images.device)
             group_output = merged_model(group_images)
 
             for j, idx in enumerate(assigned_sample_idxs):
@@ -271,11 +272,13 @@ class delta(MultiHeadImageClassifier):
         assert (
             self.output_classes is not None
         ), "Output classes not set. Use set_metrics() method to set them."
+        pylogger.info("Cached contains: " + str(len(self.cached_tvs)))
+        print_memory("After forward")
 
         return pad_output(outputs, self.output_classes)
 
     @torch.no_grad()
-    def _apply_tv(self, dataset_names, coefficients):
+    def _apply_tv(self, dataset_names):
         """Apply the aggregated task vector to the model."""
 
         dataset_combo = "_".join(dataset_names)
@@ -317,9 +320,11 @@ class delta(MultiHeadImageClassifier):
                 {
                     dataset_name: self.svd_dicts[dataset_name]
                     for dataset_name in dataset_names
-                },
-                coefficients,
+                }
             )
+
+            if len(self.cached_tvs) > self.max_num_tvs_to_keep:
+                self.flush_cache()
 
             self.cached_tvs[dataset_combo] = aggregated
 

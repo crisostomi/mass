@@ -1,4 +1,5 @@
 import copy
+from hmac import new
 import os
 from typing import Tuple
 
@@ -96,7 +97,9 @@ def sum_svd(
 
     for layer_name in tqdm(layer_names, desc="Summing SVD"):
         is_matrix = aggregated_model_dict[layer_name].dim() == 2
-        new_key = layer_name.replace(".transformer", "")
+        # TODO: modified
+        # new_key = layer_name.replace(".transformer", "")
+        new_key = layer_name
         offset = 0
 
         for i, dataset in enumerate(datasets):
@@ -255,7 +258,9 @@ def compress_tv(task_dicts, compress_rate: float, compress_ratio_per_task=None):
 
             for key, layer in task_dict.items():
                 # Remove ".transformer" from the key but keep the layer
-                new_key = key.replace(".transformer", "")
+                # TODO: check here
+                # new_key = key.replace(".transformer", "")
+                new_key = key
 
                 if is_matrix(layer):
                     # Use dataset-specific compression ratio if provided

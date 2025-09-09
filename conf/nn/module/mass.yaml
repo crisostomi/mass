@@ -1,8 +1,7 @@
 
 defaults:
   - _self_
-  - encoder: b32 #b16, b32, l14
-  - router: linear # linear, nn, proj
+  - router: proj # linear, nn, proj
   - aggregator: tsvm
 
 _target_: mass.pl_module.mass.MASS
@@ -16,6 +15,8 @@ heads_selection_method: max # avg, max
 
 image_encoder: ??  
 classification_heads: ??
+oracle_mode: false
+tv_device: cuda  
 
 
 optimizer:

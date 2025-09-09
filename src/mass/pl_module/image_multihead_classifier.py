@@ -9,7 +9,6 @@ from mass.data.dataset import maybe_dictionarize
 from mass.utils.utils import torch_load, torch_save
 
 
-
 class MultiHeadImageClassifier(pl.LightningModule):
     def __init__(
         self,

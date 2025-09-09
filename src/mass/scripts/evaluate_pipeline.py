@@ -14,12 +14,9 @@ import pytorch_lightning as pl
 import torch
 from hydra.utils import instantiate
 from lightning.pytorch import Callback
-from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
-from nn_core.callbacks import NNTemplateCore
 from nn_core.common import PROJECT_ROOT
 from nn_core.common.utils import enforce_tags, seed_index_everything
-from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
@@ -28,7 +25,8 @@ from mass.modules.encoder import ClassificationHead, ImageEncoder
 from mass.modules.router import AbstractRouter
 from mass.utils.io_utils import (
     boilerplate,
-    load_model_from_disk,
+    get_classification_heads,
+    load_model_from_hf,
 )
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
@@ -65,7 +63,7 @@ def get_merged_base(
             svd_dict=svd_dicts,
         )
 
-        model_name = cfg.nn.module.encoder.model_name
+        model_name = cfg.nn.encoder.model_name
 
         if (
             model_name in cfg.optimal_alphas
@@ -76,7 +74,7 @@ def get_merged_base(
     elif merging_method == "tsvm":
 
         multi_task_vector = (
-            sum_svd_no_redundant_tasks_simple(  # TODO: restore no redundancy for proj
+            sum_svd_no_redundant_tasks(  # TODO: restore no redundancy for proj
                 ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
                 svd_dict=svd_dicts,
                 similarity_threshold=cfg.similarity_threshold,
@@ -98,6 +96,7 @@ def get_merged_base(
     return merged_encoder  # , svd_dicts
 
 
+@torch.no_grad()
 def run(cfg: omegaconf.DictConfig) -> str:
     """Generic train loop.
 
@@ -124,33 +123,24 @@ def run(cfg: omegaconf.DictConfig) -> str:
         cfg.misc.finetuned_accuracy_path
     )
 
-    # only has vision encoder, no text transformer
-    zeroshot_encoder: ImageEncoder = load_model_from_disk(
-        cfg.misc.pretrained_checkpoint, model_name=cfg.nn.module.encoder.model_name
+    zeroshot_encoder: ImageEncoder = load_model_from_hf(
+        model_name=cfg.nn.encoder.model_name
     )
 
-    finetuned_name = (
-        lambda name: Path(cfg.misc.ckpt_path) / f"{name}Val" / "nonlinear_finetuned.pt"
-    )
     finetuned_models = {
-        dataset: load_model_from_disk(
-            finetuned_name(dataset), model_name=cfg.nn.module.encoder.model_name
-        ).state_dict()
-        for dataset in cfg.task_vectors.to_apply
+        dataset: load_model_from_hf(
+            model_name=cfg.nn.encoder.model_name, dataset_name=dataset
+        )
+        for dataset in cfg.benchmark.datasets
     }
 
     pylogger.info(f"Number of tasks: {cfg.num_tasks}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
 
-    if cfg.nn.module.oracle_mode:
-        pylogger.warning(
-            f"You are using the oracle mode, if this is not intended, please set oracle_mode to False"
-        )
-
     task_dicts = {}
-    for dataset in cfg.task_vectors.to_apply:
+    for dataset in cfg.benchmark.datasets:
         task_dicts[dataset] = compute_task_dict(
-            zeroshot_encoder.state_dict(), finetuned_models[dataset]
+            zeroshot_encoder.state_dict(), finetuned_models[dataset].state_dict()
         )
         del finetuned_models[dataset]  # Delete one model at a time
         torch.cuda.empty_cache()
@@ -158,7 +148,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
     print_memory("after computing task dicts")
 
     svd_dict = get_svd_dict(
-        task_dicts, cfg.eval_datasets, cfg.misc.svd_path, cfg.svd_compress_factor
+        task_dicts, cfg.benchmark.datasets, cfg.misc.svd_path, cfg.svd_compress_factor
     )
 
     if (
@@ -170,19 +160,21 @@ def run(cfg: omegaconf.DictConfig) -> str:
             task_dicts,
             cfg.nn.module.router.constant_compressed_ratio,
             svd_key_from_layer(
-                cfg.nn.module.encoder.layer_to_hook,
-                cfg.nn.module.encoder.layer_num_to_hook,
+                cfg.nn.encoder.layer_to_hook,
+                cfg.nn.encoder.layer_num_to_hook,
             ),
         )
     else:
         un_compressed_routing_weights = None
+
+    del task_dicts
 
     print_memory("after computing svd dict")
 
     merged_encoder = get_merged_base(
         cfg, cfg.nn.module.base_merging_method, zeroshot_encoder, svd_dict
     )
-
+    print_memory("before router")
     router: AbstractRouter = instantiate(
         cfg.nn.module.router,
         encoder=merged_encoder,
@@ -192,6 +184,8 @@ def run(cfg: omegaconf.DictConfig) -> str:
         _recursive_=False,
     )
 
+    print_memory("after router")
+
     if cfg.nn.module.router.name == "linear":
         linear_path = os.path.join(
             os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename),
@@ -200,7 +194,10 @@ def run(cfg: omegaconf.DictConfig) -> str:
         state_dict = torch.load(linear_path)["state_dict"]["router"]
         router.load_state_dict(state_dict, True)
 
+    print_memory("before heads")
     classification_heads: List[ClassificationHead] = get_classification_heads(cfg)
+
+    print_memory("after heads")
 
     model = instantiate(
         cfg.nn.module,
@@ -212,11 +209,14 @@ def run(cfg: omegaconf.DictConfig) -> str:
         _recursive_=False,
     )
 
+    print_memory("after MASS")
+
     logger.log_configuration(model, cfg)
 
     results = {}
+    torch.cuda.empty_cache()
     print_memory("before eval")
-    for dataset_name in cfg.eval_datasets:
+    for dataset_name in cfg.benchmark.datasets:
 
         dataset_cfg = omegaconf.OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
@@ -226,6 +226,8 @@ def run(cfg: omegaconf.DictConfig) -> str:
             dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
         )
 
+        print_memory("after data load")
+
         model.set_metrics(len(dataset.classnames))
         model.set_task(dataset_name)
         model.set_finetuning_accuracy(
@@ -234,7 +236,11 @@ def run(cfg: omegaconf.DictConfig) -> str:
             ]
         )
 
+        print_memory("after matrics")
+
         callbacks: List[Callback] = build_callbacks(cfg.train.callbacks, template_core)
+
+        print_memory("after callbacks")
 
         trainer = pl.Trainer(
             default_root_dir=cfg.core.storage_dir,
@@ -246,6 +252,8 @@ def run(cfg: omegaconf.DictConfig) -> str:
             ),
             **cfg.train.trainer,
         )
+
+        print_memory("after trainer")
 
         if cfg.eval_on_train:
             pylogger.error("For now evaluation supported only on val-set")
@@ -269,7 +277,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     results_path = Path(cfg.misc.results_path)
     results_path.mkdir(parents=True, exist_ok=True)
-    with open(results_path / f"{len(cfg.eval_datasets)}.json", "w+") as f:
+    with open(results_path / f"{len(cfg.benchmark.datasets)}.json", "w+") as f:
         json.dump(results, f, indent=4)
 
     radarchart = plot_interactive_radar_chart(results, title="Radar Chart")
@@ -279,7 +287,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     logger.experiment.log_artifact(
         wandb.Artifact(
-            f"results_{cfg.nn.module.encoder.model_name}_{num_tasks}",
+            f"results_{cfg.nn.encoder.model_name}_{num_tasks}",
             type="results",
             metadata={"results": results_path},
         )

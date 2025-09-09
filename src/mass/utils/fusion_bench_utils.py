@@ -218,7 +218,7 @@ def replace_attention_with_linear(
 ):
     # Import here to avoid circular import
     from mass.modules.linear_attention import LinearMultiheadAttention
-    
+
     _attn_layer_cls = (nn.MultiheadAttention,)
 
     for name, module in tqdm.tqdm(
@@ -249,7 +249,8 @@ def replace_attention_with_linear(
             # remove the original module from fine-tuned models to save memory
             for m, expert in zip(finetuned_models, experts):
                 set_attr(m, name_list, LinearMultiheadAttention(expert))
-                
+
+
 class InfiniteDataLoader:
     """
     A wrapper class for DataLoader to create an infinite data loader.
