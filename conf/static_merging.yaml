@@ -4,16 +4,15 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  #- TSVM, ISO-C, consensus
-  #- benchmark, dev
   - static_merge
+  - dev
   
 defaults:
   - hydra: default
   - nn: default
   - train: default
-  - merger: tsv # iso-c, consensus
-  - benchmark: N20 # N14, N8
+  - merger: weight_avg # iso-c, consensus
+  - benchmark: N8 # N14, N8
   - override hydra/launcher: submitit_slurm # basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none
