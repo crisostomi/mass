@@ -7,12 +7,13 @@ core:
   - TaskArithmetic # TSVM, consensus, ISO-C
   - benchmark # dev
   - static_merge
+  - dev
   
 defaults:
   - hydra: default
   - nn: default
   - train: default
-  - merger: ta # isotropic #tsv # consensus
+  - merger: ta # isotropic # tsv # consensus # iso-cts
   - benchmark: N20 # N14, N8
   - override hydra/launcher: submitit_slurm # basic
   - override hydra/job_logging: none

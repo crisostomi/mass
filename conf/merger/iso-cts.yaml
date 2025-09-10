@@ -1,0 +1,18 @@
+_target_: mass.merger.isotropic_merger.IsotropicCommonTaskSpecificMerger
+device: ${device}
+optimal_alphas:
+  ViT-B-32:
+    8: 1.00
+    14: 1.00
+    20: 0.90
+  ViT-B-16:
+    8: 1.40
+    14: 1.20
+    20: 1.00
+  ViT-L-14:
+    8: 1.50
+    14: 1.30
+    20: 1.00
+
+model_name: ${nn.encoder.model_name}
+common_space_fraction: 0.8

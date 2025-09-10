@@ -17,3 +17,6 @@ optimal_alphas:
 #svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
 #svd_compress_factor: null
 model_name: ${nn.encoder.model_name}
+svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
+svd_compress_factor: null 
+device: ${device}
