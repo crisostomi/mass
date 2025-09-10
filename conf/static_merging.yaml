@@ -11,7 +11,7 @@ defaults:
   - hydra: default
   - nn: default
   - train: default
-  - merger: weight_avg # iso-c, consensus
+  - merger: iso-cts # iso-c, consensus
   - benchmark: N8 # N14, N8
   - override hydra/launcher: submitit_slurm # basic
   - override hydra/job_logging: none
