@@ -73,12 +73,14 @@ class IsotropicCommonTaskSpecificMerger(TaskVectorBasedMerger):
         self,
         common_space_fraction,
         optimal_alphas,
+        model_name,
         device,
     ):
         super().__init__()
 
         self.common_space_fraction = common_space_fraction
         self.optimal_alphas = optimal_alphas
+        self.model_name = model_name
         self.device = device
 
     @torch.no_grad()
@@ -99,14 +101,16 @@ class IsotropicCommonTaskSpecificMerger(TaskVectorBasedMerger):
             torch.cuda.empty_cache()
 
         pylogger.info("Computing SVD...")
-        for key in task_dicts[0].vector:
-            shape_ = task_dicts[0].vector[key].shape
+        ref_task_dict = task_dicts[datasets[0]]
+        for key in ref_task_dict:
+            shape_ = ref_task_dict[key].shape
 
             is_2d_matrix = (len(shape_) == 2) and ("text_projection" not in key)
             if not is_2d_matrix:
-                print(f"Combining by avg {key}...")
-                for i, (task_vector, dataset) in enumerate(zip(task_dicts, datasets)):
-                    vec = task_vector.vector[key].to(self.device)
+                pylogger.info(f"Combining by avg {key}...")
+
+                for i, (dataset, task_dict) in enumerate(task_dicts.items()):
+                    vec = task_dict[key].to(self.device)
                     if i == 0:
                         multi_task_vector[key] = vec.clone()
                     else:
@@ -115,9 +119,9 @@ class IsotropicCommonTaskSpecificMerger(TaskVectorBasedMerger):
                         )
                 continue
 
-            print(f"Computing common space using sum for {key}...")
+            pylogger.info(f"Computing common space using sum for {key}...")
             combined_w = sum(
-                [task_vector.vector[key].to(self.device) for task_vector in task_dicts]
+                [task_dict[key].to(self.device) for task_dict in task_dicts.values()]
             )
 
             ### Calculate the common space size (making sure that task specific space is equally divisible) ###
@@ -135,8 +139,8 @@ class IsotropicCommonTaskSpecificMerger(TaskVectorBasedMerger):
 
             ### Calculate task specific space ###
             n_dims_per_task = int((min(shape_) - common_space_index_s) / num_tasks)
-            for i, task_vector in enumerate(task_dicts):
-                w = task_vector.vector[key].to(self.device)
+            for i, task_dict in enumerate(task_dicts.values()):
+                w = task_dict[key].to(self.device)
 
                 # calculate the projection onto task specific space to remove the common space
                 w_ts = w - common_space_u @ common_space_u.T @ w
@@ -196,8 +200,7 @@ class IsotropicCommonTaskSpecificMerger(TaskVectorBasedMerger):
                 )
             )
 
-        model_name = self.cfg.nn.encoder.model_name
-        coefficient = self.optimal_alphas[model_name][num_tasks]
+        coefficient = self.optimal_alphas[self.model_name][num_tasks]
 
         merged_encoder: ImageEncoder = copy.deepcopy(base_model)
 
@@ -207,4 +210,4 @@ class IsotropicCommonTaskSpecificMerger(TaskVectorBasedMerger):
             coefficient=coefficient,
         )
 
-        return multi_task_vector
+        return merged_encoder

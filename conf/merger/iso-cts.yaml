@@ -1,5 +1,5 @@
-_target_: mass.merger.isotropic.IsotropicMerger
-
+_target_: mass.merger.isotropic_merger.IsotropicCommonTaskSpecificMerger
+device: ${device}
 optimal_alphas:
   ViT-B-32:
     8: 1.00
@@ -14,6 +14,5 @@ optimal_alphas:
     14: 1.30
     20: 1.00
 
-svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
-svd_compress_factor: null 
-device: ${device}
+model_name: ${nn.encoder.model_name}
+common_space_fraction: 0.8
