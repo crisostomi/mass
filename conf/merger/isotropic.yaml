@@ -14,5 +14,6 @@ optimal_alphas:
     14: 1.30
     20: 1.00
 
-svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
-svd_compress_factor: null 
+#svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
+#svd_compress_factor: null
+model_name: ${nn.encoder.model_name}

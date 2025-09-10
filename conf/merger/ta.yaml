@@ -1,2 +1,5 @@
 _target_: mass.merger.arithmetic_merger.TaskArithmeticMerger
-optimal_alpha: ??
+optimal_alpha: 
+  8: 0.30
+  14: 0.20
+  20: 0.10
