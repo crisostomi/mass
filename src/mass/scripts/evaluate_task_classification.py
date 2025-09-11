@@ -26,8 +26,7 @@ from nn_core.serialization import NNCheckpointIO
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
 from mass.data.datamodule import MetaData
-from mass.data.datasets.registry import get_dataset, get_task_evaluation_dataset
-from mass.data.datasets.templates import get_dataset_to_label
+from mass.data.dataset import get_task_evaluation_dataset
 from mass.modules.encoder import ImageEncoder
 from mass.pl_module.router_task_classifier import RouterTaskClassifier
 from mass.modules.heads import build_task_classification_head, get_classification_head

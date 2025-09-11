@@ -1,6 +1,8 @@
 import numpy as np
+from nn_core.common import PROJECT_ROOT
 from typing import Optional, Sequence, Dict, Union, Callable
-from torch.utils.data import Dataset, DataLoader
+import omegaconf
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from datasets import (
     Dataset as HFDataset,
     DatasetDict,
@@ -10,6 +12,9 @@ from datasets import (
 )
 from hydra.utils import instantiate
 import torchvision
+from tqdm import tqdm
+
+from mass.data.templates import get_dataset_label
 
 
 def convert(x):
@@ -250,3 +255,80 @@ def maybe_dictionarize(batch, x_key, y_key):
         raise ValueError(f"Unexpected number of elements: {len(batch)}")
 
     return batch
+
+class GenericDataset(object):
+    def __init__(self):
+        self.train_dataset = None
+        self.train_loader = None
+        self.test_dataset = None
+        self.test_loader = None
+        self.classnames = None
+
+    def __len__(self):
+        return len(self.train_dataset)
+
+class TaskDataset(Dataset):
+    """Wraps a dataset to replace labels with a dataset-specific task index."""
+
+    def __init__(self, dataset, task_index):
+        self.dataset = dataset
+        self.task_index = task_index
+
+    def __getitem__(self, index):
+        img, _ = self.dataset[index]
+        return img, self.task_index
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+def get_task_evaluation_dataset(
+    dataset_names, preprocess_fn, batch_size=128, num_workers=8, seed=42
+):
+    train_datasets = []
+    test_datasets = []
+
+    for dataset_name in tqdm(dataset_names, desc="Loading Datasets"):
+        dataset_cfg = omegaconf.OmegaConf.load(
+            PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
+        )
+        
+        dataset = instantiate(
+            dataset_cfg, preprocess_fn=preprocess_fn, batch_size=batch_size
+        )
+        if dataset is None:
+            continue
+
+        train_dataset = dataset.train_dataset
+        test_dataset = dataset.test_dataset
+
+        task_index = get_dataset_label(dataset_name)
+
+        train_datasets.append(TaskDataset(train_dataset, task_index))
+        test_datasets.append(TaskDataset(test_dataset, task_index))
+
+    unified_train_dataset = ConcatDataset(train_datasets)
+    unified_test_dataset = ConcatDataset(test_datasets)
+
+    unified_train_loader = DataLoader(
+        unified_train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+    )
+    unified_test_loader = DataLoader(
+        unified_test_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+    )
+
+    unified_dataset = GenericDataset()
+    unified_dataset.train_dataset = unified_train_dataset
+    unified_dataset.test_dataset = unified_test_dataset
+    unified_dataset.train_loader = unified_train_loader
+    unified_dataset.test_loader = unified_test_loader
+
+    unified_dataset.classnames = None
+
+    return unified_dataset

@@ -5,7 +5,7 @@ name: proj
 routing_mode: 'topk' # top1, topk or weighted # ⚠️
 threshold: 0.2
 temperature: 1
-norm: l2 # mahalanobis, l1, l2
+norm: l2 
 
 layer_to_hook: ${nn.encoder.layer_to_hook}
 layer_num_to_hook: ${nn.encoder.layer_num_to_hook}

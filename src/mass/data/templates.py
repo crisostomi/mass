@@ -317,29 +317,54 @@ dataset_descriptions = {
 }
 
 
+# DATASET_TO_LABEL = {
+#     "Cars": 0,
+#     "DTD": 1,
+#     "EuroSAT": 2,
+#     "GTSRB": 3,
+#     "MNIST": 4,
+#     "RESISC45": 5,
+#     "SUN397": 6,
+#     "SVHN": 7,
+#     # end of 8 tasks
+#     "CIFAR100": 8,
+#     "STL10": 9,
+#     "Flowers102": 10,
+#     "OxfordIIITPet": 11,
+#     "PCAM": 12,
+#     "FER2013": 13,
+#     # end of 14 tasks
+#     "EMNIST": 14,
+#     "CIFAR10": 15,
+#     "Food101": 16,
+#     "FashionMNIST": 17,
+#     "RenderedSST2": 18,
+#     "KMNIST": 19,
+# }
+
 DATASET_TO_LABEL = {
-    "Cars": 0,
-    "DTD": 1,
-    "EuroSAT": 2,
-    "GTSRB": 3,
-    "MNIST": 4,
-    "RESISC45": 5,
-    "SUN397": 6,
-    "SVHN": 7,
+    "SUN397": 0,
+    "Cars": 1,
+    "RESISC45": 2,
+    "EuroSAT": 3,
+    "SVHN": 4,
+    "GTSRB": 5,
+    "MNIST": 6,
+    "DTD": 7,
     # end of 8 tasks
-    "CIFAR100": 8,
-    "STL10": 9,
-    "Flowers102": 10,
+    "Flowers102": 8,
+    "PCAM": 9,
+    "FER2013": 10,
     "OxfordIIITPet": 11,
-    "PCAM": 12,
-    "FER2013": 13,
+    "STL10": 12,
+    "CIFAR100": 13,
     # end of 14 tasks
-    "EMNIST": 14,
-    "CIFAR10": 15,
-    "Food101": 16,
-    "FashionMNIST": 17,
-    "RenderedSST2": 18,
-    "KMNIST": 19,
+    "CIFAR10": 14,
+    "Food101": 15,
+    "FashionMNIST": 16,
+    "EMNIST": 17,
+    "KMNIST": 18,
+    "RenderedSST2": 19,
 }
 
 

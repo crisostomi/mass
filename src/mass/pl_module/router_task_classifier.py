@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import torchmetrics
 
-from mass.data.datasets.common import maybe_dictionarize
+from mass.data.dataset import maybe_dictionarize
 from mass.utils.utils import torch_load, torch_save
 
 

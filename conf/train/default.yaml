@@ -15,7 +15,7 @@ trainer:
 
 restore:
   ckpt_or_run_path: null
-  mode: finetune # null, finetune, hotstart, continue
+  mode: null # null, finetune, hotstart, continue
 
 monitor:
   metric: 'acc/val'
@@ -24,25 +24,27 @@ monitor:
 callbacks:
   - _target_: pytorch_lightning.callbacks.LearningRateMonitor
     logging_interval: "step"
-    log_momentum: False
+    log_momentum: false
 
   - _target_: pytorch_lightning.callbacks.progress.tqdm_progress.TQDMProgressBar
     refresh_rate: 20
-  # - _target_: pytorch_lightning.callbacks.EarlyStopping
-  #   patience: 42
-  #   verbose: False
-  #   monitor: ${train.monitor.metric}
-  #   mode: ${train.monitor.mode}
 
-  # - _target_: pytorch_lightning.callbacks.ModelCheckpoint
-  #   dirpath: ${misc.checkpoint_dir} 
-  #   filename: "${nn.encoder.model_name}_${num_tasks}tasks"
-  #   save_top_k: 1 
-  #   save_last: False  
-  #   verbose: False
-  #   monitor: ${train.monitor.metric}
-  #   mode: ${train.monitor.mode}
-  #   save_on_train_epoch_end: False 
+  - _target_: pytorch_lightning.callbacks.EarlyStopping
+    patience: 5
+    verbose: false
+    monitor: ${train.monitor.metric}
+    mode: ${train.monitor.mode}
+
+  - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: ${misc.checkpoint_dir}/{nn.encoder.model_name}/${num_tasks}
+    filename: "linear_router"
+    save_top_k: 1 
+    save_last: false  
+    verbose: false
+    monitor: ${train.monitor.metric}
+    mode: ${train.monitor.mode}
+    save_on_train_epoch_end: false 
+    auto_insert_metric_name: true
 
 logging:
   upload:

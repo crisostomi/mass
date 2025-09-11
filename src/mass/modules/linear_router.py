@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -54,6 +55,12 @@ class LinearRouter(AbstractRouter):
             nn.Dropout(p=dropout_prob),
             nn.Linear(hidden_dim, len(dataset_names)),
         )
+
+        if os.path.exists(cfg.nn.module.router.filename): 
+            self.mlp_router.load_state_dict(torch.load(cfg.nn.module.router.filename + ".pt", map_location=device))
+            pylogger.info(f"Loaded linear router from {cfg.nn.module.router.filename}")
+        else:
+            pylogger.info(f"Did not find linear router at {cfg.nn.module.router.filename}, training from scratch")
 
     def parameters(self):
         return self.mlp_router.parameters()

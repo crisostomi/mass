@@ -21,7 +21,7 @@ class MultiHeadImageClassifier(pl.LightningModule):
         """ """
         super().__init__()
 
-        self.save_hyperparameters(logger=False, ignore=("metadata",))
+        self.save_hyperparameters(logger=False, ignore=("metadata", "encoder", "router"))
 
         self.encoder = encoder
         if self.encoder is not None:

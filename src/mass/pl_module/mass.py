@@ -217,12 +217,6 @@ class MASS(MultiHeadImageClassifier):
         sample_embeddings = [None] * batch_size
 
         for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
-            dataset_group_idxs = torch.tensor(
-                [
-                    self.dataset_name_to_idx[dataset_name]
-                    for dataset_name in dataset_group
-                ]
-            )  # Convert to a PyTorch tensor
 
             assigned_sample_idxs = torch.tensor(
                 assigned_sample_idxs

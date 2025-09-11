@@ -1,7 +1,7 @@
 ## Imports
 import copy
 import logging
-from typing import List
+from typing import Any, Dict, List
 
 import hydra
 import omegaconf
@@ -19,11 +19,12 @@ from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
-from mass.data.datasets.registry import get_task_evaluation_dataset
+from mass.data.dataset import get_task_evaluation_dataset
 from mass.modules.encoder import ImageEncoder
 from mass.pl_module.router_task_classifier import RouterTaskClassifier
 from mass.modules.router import AbstractRouter
-from mass.utils.io_utils import load_model_from_disk
+from mass.scripts.evaluate_task_classification import boilerplate
+from mass.utils.io_utils import load_model_from_disk, load_model_from_hf
 from mass.utils.utils import (
     compute_task_dict,
     apply_dict_to_model,
@@ -36,19 +37,28 @@ pylogger = logging.getLogger(__name__)
 
 torch.set_float32_matmul_precision("high")
 
+def get_merged_base(
+    cfg,
+    zeroshot_encoder: ImageEncoder,
+    svd_dicts: Dict[str, Any],
+):
 
-# TODO: import this now
-def boilerplate(cfg):
-    cfg.core.tags = enforce_tags(cfg.core.get("tags", None))
-
-    template_core = NNTemplateCore(
-        restore_cfg=cfg.train.get("restore", None),
+    multi_task_vector = (
+        sum_svd_no_redundant_tasks_simple( 
+            ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
+            svd_dict=svd_dicts,
+            similarity_threshold=cfg.similarity_threshold,
+        )
     )
-    logger: NNLogger = NNLogger(
-        logging_cfg=cfg.train.logging, cfg=cfg, resume_id=template_core.resume_id
+
+    merged_encoder: ImageEncoder = copy.deepcopy(zeroshot_encoder)
+
+    merged_encoder = apply_dict_to_model(
+        multi_task_vector,
+        merged_encoder,
     )
 
-    return logger, template_core
+    return merged_encoder  # , svd_dicts
 
 
 def run(cfg: DictConfig) -> str:
@@ -65,71 +75,50 @@ def run(cfg: DictConfig) -> str:
 
     logger, template_core = boilerplate(cfg)
 
-    ntasks = len(cfg.eval_datasets)
+    num_tasks = len(cfg.eval_datasets)
 
     # Temporarily disable struct mode to allow dynamic update
     omegaconf.OmegaConf.set_struct(cfg, False)
-    cfg.ntasks = ntasks  # Now we can safely update it
+    cfg.num_tasks = num_tasks  # Now we can safely update it
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
 
-    pylogger.info(f"Number of tasks (ntasks): {cfg.ntasks}")
+    pylogger.info(f"Number of tasks (num_tasks): {cfg.num_tasks}")
 
-    # only has vision encoder, no text transformer
-    zeroshot_encoder_statedict = load_model_from_disk(cfg.misc.pretrained_checkpoint)
-
-    finetuned_name = (
-        lambda name: cfg.misc.ckpt_path
-        + "/"
-        + name
-        + "Val"
-        + "/"
-        + "nonlinear_finetuned.pt"
+    zeroshot_encoder: ImageEncoder = load_model_from_hf(
+        model_name=cfg.nn.encoder.model_name
     )
+
     finetuned_models = {
-        dataset: load_model_from_disk(finetuned_name(dataset))
-        for dataset in cfg.task_vectors.to_apply
+        dataset: load_model_from_hf(
+            model_name=cfg.nn.encoder.model_name, dataset_name=dataset
+        )
+        for dataset in cfg.benchmark.datasets
     }
 
-    pylogger.info(f"Checkpoint saving to: {cfg.misc.checkpoint_dir}")
-    # pylogger.info(f"Number of finetuned models: {len(finetuned_models)}")
+    pylogger.info(f"Number of tasks: {cfg.num_tasks}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
 
     task_dicts = {}
-    for dataset in cfg.task_vectors.to_apply:
+    for dataset in cfg.benchmark.datasets:
         task_dicts[dataset] = compute_task_dict(
-            zeroshot_encoder_statedict, finetuned_models[dataset]
+            zeroshot_encoder.state_dict(), finetuned_models[dataset].state_dict()
         )
         del finetuned_models[dataset]  # Delete one model at a time
         torch.cuda.empty_cache()
 
-    print_memory("after computing task dicts")
 
-    svd_dict = get_svd_dict(task_dicts, cfg.eval_datasets, cfg.misc.svd_path)
-    print_memory("after computing svd dict")
-
-    multi_task_vector = sum_svd(
-        ref_state_dict=copy.deepcopy(zeroshot_encoder_statedict),
-        svd_dicts=svd_dict,
+    svd_dict = get_svd_dict(
+        task_dicts, cfg.benchmark.datasets, cfg.misc.svd_path, cfg.svd_compress_factor
     )
-    print_memory("after computing merged vector")
 
-    seed_index_everything(cfg)
-    pylogger.info(f"Training {cfg.nn.module.router.name}-delta")
+    del task_dicts
 
-    assert (
-        cfg.nn.module.router.name == "linear"
-    ), "The only trainable router is the linear one!"
-
-    zeroshot_encoder: ImageEncoder = instantiate(
-        cfg.nn.module.encoder
-    )  # the second pass backbone
-    zeroshot_encoder.load_state_dict(zeroshot_encoder_statedict, strict=False)
-
-    merged_encoder: ImageEncoder = copy.deepcopy(
-        zeroshot_encoder
-    )  # the first pass backbone
-    merged_encoder = apply_dict_to_model(multi_task_vector, merged_encoder)
-
+    pylogger.info(f"Retrieving merged model")
+    merged_encoder = get_merged_base(
+        cfg, zeroshot_encoder, svd_dict
+    )
+    
+    pylogger.info(f"Instantiating router")
     router: AbstractRouter = instantiate(
         cfg.nn.module.router,
         encoder=merged_encoder,
@@ -152,12 +141,13 @@ def run(cfg: DictConfig) -> str:
     dataset = get_task_evaluation_dataset(
         cfg.eval_datasets,
         preprocess_fn=zeroshot_encoder.train_preprocess,
-        location=cfg.nn.data.data_path,
-        batch_size=cfg.nn.data.batch_size.train,
+        batch_size=cfg.data_batch_size,
     )
 
     callbacks: List[Callback] = build_callbacks(cfg.train.callbacks, template_core)
 
+    pylogger.info(callbacks)
+    
     logger: NNLogger = NNLogger(
         logging_cfg=cfg.train.logging, cfg=cfg, resume_id=template_core.resume_id
     )
@@ -167,7 +157,7 @@ def run(cfg: DictConfig) -> str:
         logger=logger,
         callbacks=callbacks,
         limit_train_batches=cfg.number_of_train_batches * len(cfg.eval_datasets),
-        limit_val_batches=cfg.number_of_val_batches * len(cfg.eval_datasets) // 5,
+        limit_val_batches=cfg.number_of_val_batches * len(cfg.eval_datasets),
         **cfg.train.trainer,
     )
 

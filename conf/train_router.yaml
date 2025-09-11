@@ -4,6 +4,7 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
+  - dev
   - train
 
 
@@ -12,23 +13,25 @@ defaults:
   - hydra: default
   - nn: default
   - train: default
-  - override hydra/launcher: submitit_slurm
+  - benchmark: n8
+  - override hydra/launcher: basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none
   - _self_ # as last argument to allow the override of parameters via this main config
 
 seed_index: 0
 num_tasks: 0
-similarity_threshold: 0.4
-number_of_train_batches: 400 # number of batches of the val set, used for grid search
-number_of_val_batches: 100
+similarity_threshold: 0.3
+data_batch_size: 128
+number_of_train_batches: 10 # number of batches of the val set, used for grid search
+number_of_val_batches: 2
 device: 'cuda'
 
 conventions:
   x_key: 'x'
   y_key: 'y'
 
-eval_datasets: ${benchmark.datasets.tasks}
+eval_datasets: ${benchmark.datasets}
 
 # compression_ratio = 1 / svd_compress_factor, if null the ratio is set to 1 / num_tasks
 svd_compress_factor: null
@@ -51,7 +54,7 @@ misc:
   ckpt_path: ${oc.env:MODELS_PATH}/${nn.encoder.model_name}
   pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
   openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
-  checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
+  checkpoint_dir: ${oc.env:PROJECT_ROOT}/checkpoints/linear_router
   svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
   finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/single/${nn.encoder.model_name}/nonlinear_ft_accuracies.json"
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.module.router.name}/${nn.encoder.model_name}/"
