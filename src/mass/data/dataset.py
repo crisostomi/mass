@@ -212,8 +212,8 @@ def load_dataset(
     hf_dataset,
     preprocess_fn,
     ft_epochs,
+    batch_size,
     split_map=None,
-    batch_size=128,
     label_map=None,
     classnames_override=None,
 ):

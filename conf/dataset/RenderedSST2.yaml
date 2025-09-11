@@ -2,6 +2,7 @@ _target_: mass.data.dataset.load_dataset
 name: RenderedSST2
 ft_epochs: 39
 preprocess_fn: ???
+batch_size: 128
 hf_dataset: 
   _target_: datasets.load_dataset
   path: nateraw/rendered-sst2

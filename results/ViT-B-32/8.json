@@ -1,64 +1,80 @@
 {
     "SUN397": [
         {
-            "acc/test/SUN397": 0.7043324708938599,
-            "loss/test/SUN397": 1.6357940435409546,
-            "normalized_acc/test/SUN397": 0.9406579732894897
+            "task_accuracy/SUN397": 0.9757179021835327,
+            "task_survival/SUN397": 0.992443323135376,
+            "acc/test/SUN397": 0.7303778529167175,
+            "loss/test/SUN397": 1.3012959957122803,
+            "normalized_acc/test/SUN397": 0.9754423499107361
         }
     ],
     "Cars": [
         {
-            "acc/test/Cars": 0.7836090326309204,
-            "loss/test/Cars": 0.7788782119750977,
-            "normalized_acc/test/Cars": 0.9817700982093811
+            "task_accuracy/Cars": 0.9983832836151123,
+            "task_survival/Cars": 0.9997512698173523,
+            "acc/test/Cars": 0.785847544670105,
+            "loss/test/Cars": 0.7672706246376038,
+            "normalized_acc/test/Cars": 0.9845746755599976
         }
     ],
     "RESISC45": [
         {
-            "acc/test/RESISC45": 0.9342857003211975,
-            "loss/test/RESISC45": 0.37553834915161133,
-            "normalized_acc/test/RESISC45": 0.9803464412689209
+            "task_accuracy/RESISC45": 0.9539682269096375,
+            "task_survival/RESISC45": 0.9903174638748169,
+            "acc/test/RESISC45": 0.8965079188346863,
+            "loss/test/RESISC45": 1.1593284606933594,
+            "normalized_acc/test/RESISC45": 0.940706193447113
         }
     ],
     "EuroSAT": [
         {
-            "acc/test/EuroSAT": 0.9677777886390686,
-            "loss/test/EuroSAT": 0.2270430475473404,
-            "normalized_acc/test/EuroSAT": 0.9750000238418579
+            "task_accuracy/EuroSAT": 0.9381481409072876,
+            "task_survival/EuroSAT": 0.9981481432914734,
+            "acc/test/EuroSAT": 0.863703727722168,
+            "loss/test/EuroSAT": 1.4039976596832275,
+            "normalized_acc/test/EuroSAT": 0.8701493144035339
         }
     ],
     "SVHN": [
         {
-            "acc/test/SVHN": 0.9593192934989929,
-            "loss/test/SVHN": 0.18101608753204346,
-            "normalized_acc/test/SVHN": 0.9924097657203674
+            "task_accuracy/SVHN": 0.9382683038711548,
+            "task_survival/SVHN": 0.9961201548576355,
+            "acc/test/SVHN": 0.9500614404678345,
+            "loss/test/SVHN": 0.2269306182861328,
+            "normalized_acc/test/SVHN": 0.9828325510025024
         }
     ],
     "GTSRB": [
         {
-            "acc/test/GTSRB": 0.9870942234992981,
-            "loss/test/GTSRB": 0.056502509862184525,
-            "normalized_acc/test/GTSRB": 0.9977591037750244
+            "task_accuracy/GTSRB": 0.9992082118988037,
+            "task_survival/GTSRB": 1.0,
+            "acc/test/GTSRB": 0.97751384973526,
+            "loss/test/GTSRB": 0.14345963299274445,
+            "normalized_acc/test/GTSRB": 0.9880752563476562
         }
     ],
     "MNIST": [
         {
-            "acc/test/MNIST": 0.9955000281333923,
-            "loss/test/MNIST": 0.02207789570093155,
-            "normalized_acc/test/MNIST": 1.0010055303573608
+            "task_accuracy/MNIST": 1.0,
+            "task_survival/MNIST": 1.0,
+            "acc/test/MNIST": 0.9951000213623047,
+            "loss/test/MNIST": 0.019992832094430923,
+            "normalized_acc/test/MNIST": 1.0006033182144165
         }
     ],
     "DTD": [
         {
-            "acc/test/DTD": 0.7771276831626892,
-            "loss/test/DTD": 1.3031375408172607,
-            "normalized_acc/test/DTD": 0.9938775897026062
+            "task_accuracy/DTD": 0.9835106134414673,
+            "task_survival/DTD": 0.9968085289001465,
+            "acc/test/DTD": 0.7670212984085083,
+            "loss/test/DTD": 1.3516817092895508,
+            "normalized_acc/test/DTD": 0.9809524416923523
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.8886307775974274,
-            "normalized_acc/test/avg": 0.9828533157706261
+            "acc/test/avg": 0.870766706764698,
+            "normalized_acc/test/avg": 0.9654170125722885
         }
     ]
 }

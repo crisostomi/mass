@@ -4,7 +4,8 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - wemoe
+  - benchmark
+  - higher_bs
 
 
 defaults:
@@ -12,13 +13,14 @@ defaults:
   - nn: default
   - train: default
   - benchmark: N2
-  - override hydra/launcher: basic
+  - hydra/launcher: basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none
   - _self_ # as last argument to allow the override of parameters via this main config
 
 seed_index: 0
 num_tasks: 0
+data_batch_size: 128
 similarity_threshold: 0.3
 eval_on_train: false
 number_of_train_batches: -1 # number of batches of the val set, used for grid search
@@ -53,7 +55,7 @@ misc:
   openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
   checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
   svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
-  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/${nn.encoder.model_name}/accs.json"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/accs.json"
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"
 
 

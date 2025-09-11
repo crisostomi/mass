@@ -47,7 +47,6 @@ class ProjectionRouter(AbstractRouter):
         temperature,
         routing_mode: str,
         norm,
-        routing_weights,
         debug_residuals,
         debug_layer_impact,
         openclip_cachedir=None,
@@ -82,12 +81,9 @@ class ProjectionRouter(AbstractRouter):
         self.svd_key = svd_key_from_layer(layer_to_hook, layer_num_to_hook)
         self.feature_key = router_key_from_layer(layer_to_hook, layer_num_to_hook)
 
-        if routing_weights is None:
-            routing_weights, sigma, u = get_routing_weights(
-                svd_dict, self.svd_key, get_sigma=True, get_u=True
-            )
-        else:
-            routing_weights, sigma, u = routing_weights
+        routing_weights, sigma, u = get_routing_weights(
+            svd_dict, self.svd_key, get_sigma=True, get_u=True
+        )
 
         self.register_buffer("routing_weights", routing_weights)
         self.register_buffer("routing_singular_values", sigma)

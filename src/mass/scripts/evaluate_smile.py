@@ -55,6 +55,13 @@ def run(cfg: DictConfig) -> str:
     """
 
     seed_index_everything(cfg)
+    
+    cfg.core.tags.append("smile")
+    cfg.core.tags.append(f"k{cfg.nn.module.k}")
+    if cfg.nn.module.oracle_mode:
+        cfg.core.tags.append("head_oracle")
+    else:
+        cfg.core.tags.append("head_inference")
 
     logger, template_core = boilerplate(cfg)
 
@@ -63,6 +70,7 @@ def run(cfg: DictConfig) -> str:
     # Temporarily disable struct mode to allow dynamic update
     omegaconf.OmegaConf.set_struct(cfg, False)
     cfg.ntasks = ntasks  # Now we can safely update it
+
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
 
     # upperbound accuracies, used for logging the normalized accuracy
@@ -106,9 +114,10 @@ def run(cfg: DictConfig) -> str:
         dataset_cfg = OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
         )
-
+        
+        
         dataset = instantiate(
-            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
+            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess, batch_size=cfg.data_batch_size
         )
 
         model.set_metrics(len(dataset.classnames))

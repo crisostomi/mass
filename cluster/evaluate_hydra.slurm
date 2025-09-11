@@ -1,15 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=evaluate
-#SBATCH --time=24:00:00
+#SBATCH --job-name=evaluate_smile_l14_14_20
+#SBATCH --time=8:00:00
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --account=IscrC_MGNTC
+#SBATCH --account=IscrC_SLEY
 #SBATCH --partition=boost_usr_prod
 #SBATCH --mem=2G
 
-cd ..
 
-./shell_scripts/flush.sh
+pwd
+
+export http_proxy='http://login05:3140'
+export https_proxy='http://login05:3140'
 
 source ./.venv/bin/activate
 
@@ -17,8 +19,5 @@ source ./.venv/bin/activate
 
 nvidia-smi
 
-wandb offline
+HYDRA_FULL_ERROR=1 uv run smile -m 'hydra/launcher=submitit_slurm' 'benchmark=N14,N20' 'nn/module=smile' 'nn.module.k=32,128' 'nn/encoder=l14' 'data_batch_size=4'
 
-HYDRA_FULL_ERROR=1 HF_HUB_OFFLINE=1 uv run evaluate -m 'nn/benchmark=twenty' 'nn/module/encoder=b16,b32,l14' 'nn/module/aggregator=tsvm' 'nn.module.router.threshold=0.2'
-
-# 'eval_on_train=true' 'number_of_train_batches=10'

@@ -343,7 +343,7 @@ def sum_svd_no_redundant_tasks_simple(
 
     for layer_name in tqdm(layer_names, desc="Summing SVD"):
         # check if this layer is 2D (weight matrix) or not
-        new_key = layer_name.replace(".transformer", "")
+        new_key = layer_name
         is_layer_matrix = aggregated_model_dict[layer_name].dim() == 2
         offset = 0
 

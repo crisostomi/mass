@@ -126,11 +126,11 @@ def get_probs(inputs, classifier):
     logits = get_logits(inputs, classifier)
     return logits.softmax(dim=1)
 
-# TODO: use this in WeMoE
 def print_params_summary(model: torch.nn.Module):
-    print(
+    pylogger.info(
         f"Number of trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}, ({sum(p.numel() for p in model.parameters() if p.requires_grad) / sum(p.numel() for p in model.parameters()) * 100}%)"
     )
+    pylogger.info(f"Total number of parameters: {sum(p.numel() for p in model.parameters())}")
 
 class LabelSmoothing(torch.nn.Module):
     def __init__(self, smoothing=0.0):

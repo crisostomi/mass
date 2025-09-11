@@ -69,6 +69,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             **kwargs: Additional arguments.
         """
         # Store parameters (avoiding conflict with pl.LightningModule.device property)
+        # TODO: super.__init__ here and use self.hparams
         self.merge_device = device
         self.full_matrices = full_matrices
         self.gate_k = gate_k
@@ -301,6 +302,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         return pad_unbatched_output(all_outputs, self.output_classes)
 
     def forward_oracle(self, inputs):
+        pylogger.warning("Using oracle forward pass")
         features = self.encoder(inputs)
         return self.classification_heads[self.head_idx](features)
 

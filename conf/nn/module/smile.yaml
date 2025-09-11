@@ -11,7 +11,7 @@ image_encoder: ??
 finetuned_models: ??
 classification_heads: ??
 
-oracle_mode: true
+oracle_mode: false
 
 device: cuda
 full_matrices: true

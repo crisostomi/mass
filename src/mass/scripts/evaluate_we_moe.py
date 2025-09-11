@@ -57,6 +57,8 @@ def run(cfg: DictConfig) -> str:
 
     seed_index_everything(cfg)
 
+    cfg.core.tags.append("wemoe")
+    
     logger, template_core = boilerplate(cfg)
 
     ntasks = len(cfg.benchmark.datasets)
@@ -110,9 +112,9 @@ def run(cfg: DictConfig) -> str:
         dataset_cfg = OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
         )
-
+        
         dataset = instantiate(
-            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
+            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess, batch_size=cfg.data_batch_size
         )
 
         model.set_metrics(len(dataset.classnames))

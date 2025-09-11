@@ -16,7 +16,7 @@ from hydra.utils import instantiate
 from lightning.pytorch import Callback
 
 from nn_core.common import PROJECT_ROOT
-from nn_core.common.utils import enforce_tags, seed_index_everything
+from nn_core.common.utils import seed_index_everything
 from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
@@ -35,8 +35,6 @@ from mass.utils.utils import (
     build_callbacks,
     get_finetuning_accuracies,
     compute_avg_accuracy,
-    print_memory,
-    svd_key_from_layer,
 )
 from mass.task_vectors.task_singular_vectors import *
 import json
@@ -53,9 +51,8 @@ def get_merged_base(
     svd_dicts: Dict[str, Any],
 ):
 
-
     multi_task_vector = (
-        sum_svd_no_redundant_tasks( 
+        sum_svd_no_redundant_tasks_simple( 
             ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
             svd_dict=svd_dicts,
             similarity_threshold=cfg.similarity_threshold,
@@ -82,7 +79,8 @@ def run(cfg: omegaconf.DictConfig) -> str:
     Returns:
         the run directory inside the storage_dir used by the current experiment
     """
-
+    cfg.core.tags.append("mass")
+    pylogger.info(f"Starting MASS eval")
     seed_index_everything(cfg)
 
     logger, template_core = boilerplate(cfg)
@@ -121,46 +119,27 @@ def run(cfg: omegaconf.DictConfig) -> str:
         del finetuned_models[dataset]  # Delete one model at a time
         torch.cuda.empty_cache()
 
-    print_memory("after computing task dicts")
 
     svd_dict = get_svd_dict(
         task_dicts, cfg.benchmark.datasets, cfg.misc.svd_path, cfg.svd_compress_factor
     )
 
-    if (
-        cfg.nn.module.router.name == "proj"
-        and cfg.nn.module.router.use_constant_compressed_routing_weights
-    ):
-        pylogger.info("Using constant compression for routing weights")
-        un_compressed_routing_weights = get_uncompressed_weights(
-            task_dicts,
-            cfg.nn.module.router.constant_compressed_ratio,
-            svd_key_from_layer(
-                cfg.nn.encoder.layer_to_hook,
-                cfg.nn.encoder.layer_num_to_hook,
-            ),
-        )
-    else:
-        un_compressed_routing_weights = None
-
     del task_dicts
 
-    print_memory("after computing svd dict")
-
+    pylogger.info(f"Retrieving merged model")
     merged_encoder = get_merged_base(
-        cfg, cfg.nn.module.base_merging_method, zeroshot_encoder, svd_dict
+        cfg, zeroshot_encoder, svd_dict
     )
-    print_memory("before router")
+    
+    pylogger.info(f"Instantiating router")
     router: AbstractRouter = instantiate(
         cfg.nn.module.router,
         encoder=merged_encoder,
         svd_dict=svd_dict,
-        routing_weights=un_compressed_routing_weights,
         cfg=cfg,
         _recursive_=False,
     )
 
-    print_memory("after router")
 
     if cfg.nn.module.router.name == "linear":
         linear_path = os.path.join(
@@ -170,11 +149,9 @@ def run(cfg: omegaconf.DictConfig) -> str:
         state_dict = torch.load(linear_path)["state_dict"]["router"]
         router.load_state_dict(state_dict, True)
 
-    print_memory("before heads")
     classification_heads: List[ClassificationHead] = get_classification_heads(cfg)
 
-    print_memory("after heads")
-
+    pylogger.info(f"Instantiating final model")
     model = instantiate(
         cfg.nn.module,
         encoder=merged_encoder,
@@ -185,24 +162,21 @@ def run(cfg: omegaconf.DictConfig) -> str:
         _recursive_=False,
     )
 
-    print_memory("after MASS")
 
     logger.log_configuration(model, cfg)
 
     results = {}
     torch.cuda.empty_cache()
-    print_memory("before eval")
+    pylogger.info(f"Starting evaluation")
     for dataset_name in cfg.benchmark.datasets:
 
         dataset_cfg = omegaconf.OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
         )
-
+        
         dataset = instantiate(
-            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
+            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess, batch_size=cfg.data_batch_size
         )
-
-        print_memory("after data load")
 
         model.set_metrics(len(dataset.classnames))
         model.set_task(dataset_name)
@@ -212,11 +186,8 @@ def run(cfg: omegaconf.DictConfig) -> str:
             ]
         )
 
-        print_memory("after matrics")
-
         callbacks: List[Callback] = build_callbacks(cfg.train.callbacks, template_core)
 
-        print_memory("after callbacks")
 
         trainer = pl.Trainer(
             default_root_dir=cfg.core.storage_dir,
@@ -228,8 +199,6 @@ def run(cfg: omegaconf.DictConfig) -> str:
             ),
             **cfg.train.trainer,
         )
-
-        print_memory("after trainer")
 
         if cfg.eval_on_train:
             pylogger.error("For now evaluation supported only on val-set")

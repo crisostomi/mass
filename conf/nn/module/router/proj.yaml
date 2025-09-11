@@ -10,7 +10,6 @@ norm: l2 # mahalanobis, l1, l2
 layer_to_hook: ${nn.encoder.layer_to_hook}
 layer_num_to_hook: ${nn.encoder.layer_num_to_hook}
 hook_type: input
-routing_weights: ???
 
 device: ${device}
 model_name: ${nn.encoder.model_name}

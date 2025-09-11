@@ -1,21 +1,20 @@
 #!/bin/bash
-
-##############################################################
-# SCRIPT MUST BE RUN FROM THE PROJECT DIRECTORY, NOT 'Cluster/'
-##############################################################
-#SBATCH -A IscrC_RDM                      # account, shared by all the project members
-#SBATCH --time 24:00:00                     # max time limit after which the job is killed, format: HH:MM:SS
-#SBATCH -N 1                                # ??? 1 node, should match the number of nodes in Pl.Trainer
-#SBATCH --ntasks-per-node=1                 # ??? 4 tasks out of 32, should match the number of devices in Pl.Trainer
-#SBATCH --gres=gpu:1                        # 1 gpus per node out of 4
-#SBATCH --mem=100g                        # memory per node out of 494000MB (481GB)
-#SBATCH --job-name=evaluate
-#SBATCH --error=logs/%j.err                    # standard error file
-#SBATCH --output=logs/%j.out                   # standard output file
+#SBATCH --job-name=evaluate_wemoe_b32_20
+#SBATCH --time=24:00:00
+#SBATCH --gres=gpu:1 
+#SBATCH --output=logs/%j.out
+#SBATCH --error=logs/%j.err
+#SBATCH --account=IscrC_SLEY
 #SBATCH --partition=boost_usr_prod
+#SBATCH --mem=250G
 
-echo $PWD
+export http_proxy='http://login07:3140'
+export https_proxy='http://login07:3140'
 
-source cluster/cluster.env
+source ./.venv/bin/activate
 
-srun uv run python src/mass/scripts/finetune.py -m dataset='SUN397,Cars,RESISC45,EuroSAT,SVHN,GTSRB,MNIST,DTD,Flowers102,PCAM,FER2013,OxfordIIITPet,STL10,CIFAR100,CIFAR10,Food101,FashionMNIST,EMNIST,KMNIST,RenderedSST2' 'nn/encoder=l14'
+. /leonardo/prod/spack/5.2/spack_sources/0.21.0_preprod_base/share/spack/setup-env.sh
+
+nvidia-smi
+
+HYDRA_FULL_ERROR=1 uv run wemoe -m 'benchmark=N20' 'nn/module=wemoe' 'nn/encoder=b32' 'data_batch_size=64' 'nn.module.init_lambda=0.1' 'nn.module.batch_size=8'
