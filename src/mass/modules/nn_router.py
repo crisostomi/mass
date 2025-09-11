@@ -1,12 +1,16 @@
+import omegaconf
 from tqdm import tqdm
 
 from torch import Tensor
 import torch
 
+from nn_core.common import PROJECT_ROOT
+
+from hydra.utils import instantiate
+
 import logging
 from mass.data.dataset import maybe_dictionarize
-from mass.data.datasets.registry import get_dataset
-from mass.data.datasets.templates import get_dataset_to_label
+from mass.data.templates import get_dataset_to_label
 from mass.modules.router import AbstractRouter
 
 pylogger = logging.getLogger(__name__)
@@ -51,7 +55,6 @@ class NNRouter(AbstractRouter):
             self.encoder,
             cfg.eval_datasets,
             cfg.nn.module,
-            cfg.nn.data.data_path,
             "cuda",
         )
         self._initialize_nnhead(nn_heads)
@@ -148,7 +151,7 @@ class NNhead(torch.nn.Module):
             raise ValueError(f"Unknown method: {self.method}")
 
     @classmethod
-    def build(cls, encoder, task_names, cfg, data_location, device):
+    def build(cls, encoder, task_names, cfg, device):
         DATASET_TO_LABEL = get_dataset_to_label(task_names)
 
         # sort task_names by task label
@@ -163,9 +166,14 @@ class NNhead(torch.nn.Module):
 
             for task_name in tqdm(task_names):
 
-                dataset = get_dataset(
-                    task_name, encoder.train_preprocess, location=data_location
+                dataset_cfg = omegaconf.OmegaConf.load(
+                    PROJECT_ROOT / "conf" / "dataset" / f"{task_name}.yaml"
                 )
+                
+                dataset = instantiate(
+                    dataset_cfg, preprocess_fn=encoder.train_preprocess
+                )
+                
                 batch = maybe_dictionarize(
                     next(iter(dataset.train_loader)), cfg.x_key, cfg.y_key
                 )
