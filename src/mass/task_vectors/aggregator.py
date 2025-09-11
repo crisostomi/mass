@@ -6,7 +6,8 @@ from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 import logging
 
-from mass.task_vectors.task_singular_vectors import isotropic_sum, sum_svd
+from mass.task_vectors.isotropic_merging import isotropic_sum
+from mass.task_vectors.task_singular_vectors import sum_svd
 
 pylogger = logging.getLogger(__name__)
 

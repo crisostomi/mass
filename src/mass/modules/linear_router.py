@@ -1,4 +1,5 @@
 import os
+import omegaconf
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -8,7 +9,6 @@ from mass.modules.router import AbstractRouter
 import logging
 
 pylogger = logging.getLogger(__name__)
-
 
 class LinearRouter(AbstractRouter):
     def __init__(
@@ -56,8 +56,11 @@ class LinearRouter(AbstractRouter):
             nn.Linear(hidden_dim, len(dataset_names)),
         )
 
-        if os.path.exists(cfg.nn.module.router.filename): 
-            self.mlp_router.load_state_dict(torch.load(cfg.nn.module.router.filename + ".pt", map_location=device))
+        if os.path.exists(cfg.nn.module.router.filename):
+            with torch.serialization.safe_globals([omegaconf.dictconfig.DictConfig]):
+                parameter = torch.load(cfg.nn.module.router.filename, weights_only=False, map_location=device)
+                # pylogger.info(f"{parameter}")
+                self.mlp_router.load_state_dict(parameter["state_dict"]["router"])
             pylogger.info(f"Loaded linear router from {cfg.nn.module.router.filename}")
         else:
             pylogger.info(f"Did not find linear router at {cfg.nn.module.router.filename}, training from scratch")

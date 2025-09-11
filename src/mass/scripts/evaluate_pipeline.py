@@ -140,15 +140,6 @@ def run(cfg: omegaconf.DictConfig) -> str:
         _recursive_=False,
     )
 
-
-    if cfg.nn.module.router.name == "linear":
-        linear_path = os.path.join(
-            os.path.join(cfg.misc.checkpoint_dir, cfg.nn.module.router.filename),
-            "checkpoint.ckpt",
-        )
-        state_dict = torch.load(linear_path)["state_dict"]["router"]
-        router.load_state_dict(state_dict, True)
-
     classification_heads: List[ClassificationHead] = get_classification_heads(cfg)
 
     pylogger.info(f"Instantiating final model")

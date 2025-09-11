@@ -11,7 +11,7 @@ embedding_dims: 512
 hidden_dim: 1024
 dropout_prob: 0.5
 load: true
-filename: "${nn.encoder.model_name}/${num_tasks}tasks"
+filename: ${misc.checkpoint_dir}/${nn.encoder.model_name}/${num_tasks}/checkpoint.ckpt
 
 layer_to_hook: ${nn.encoder.layer_to_hook}
 layer_num_to_hook: ${nn.encoder.layer_num_to_hook}
