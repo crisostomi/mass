@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=evaluate_smile_l14_14_20
+#SBATCH --job-name=evaluate_nn
 #SBATCH --time=8:00:00
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
@@ -19,5 +19,5 @@ source ./.venv/bin/activate
 
 nvidia-smi
 
-HYDRA_FULL_ERROR=1 uv run smile -m 'hydra/launcher=submitit_slurm' 'benchmark=N14,N20' 'nn/module=smile' 'nn.module.k=32,128' 'nn/encoder=l14' 'data_batch_size=4'
+HYDRA_FULL_ERROR=1 uv run evaluate -m 'hydra/launcher=submitit_slurm' 'benchmark=n8,n14,n20' 'nn/module=mass' 'nn/module/router=nn' 'nn/encoder=b32,b16,l14'
 

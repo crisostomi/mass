@@ -5,7 +5,7 @@ core:
   version: 0.0.1
   tags: 
   - benchmark
-  - higher_bs
+  - nn
 
 
 defaults:
