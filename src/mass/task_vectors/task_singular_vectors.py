@@ -19,61 +19,6 @@ from mass.utils.utils import is_matrix
 
 pylogger = logging.getLogger(__name__)
 
-
-@torch.no_grad()
-def isotropic_sum(ref_state_dict, svd_dict, device="cuda"):
-    aggregated_model_dict = ref_state_dict
-    layer_names = list(aggregated_model_dict.keys())
-
-    datasets = list(svd_dict.keys())
-
-    for layer_name in tqdm(layer_names, desc="Summing SVD"):
-        is_matrix = aggregated_model_dict[layer_name].dim() == 2
-
-        for i, dataset in enumerate(datasets):
-
-            if "text_projection" in layer_name:
-                continue
-
-            if is_matrix:
-
-                delta_layer_svd = svd_dict[dataset][layer_name]
-
-                u, s, v = (
-                    delta_layer_svd["u"],
-                    delta_layer_svd["s"],
-                    delta_layer_svd["v"],
-                )
-                u, s, v = u.to(device), s.to(device), v.to(device)
-                delta = u @ torch.diag_embed(s) @ v
-
-                if i == 0:
-                    sum = torch.zeros_like(delta)
-
-                sum += delta
-
-            else:
-                delta_layer = svd_dict[datasets[i]][layer_name]["dim1"].to(device)
-
-                if i == 0:
-                    aggregated_model_dict[layer_name] = delta_layer
-                else:
-                    aggregated_model_dict[layer_name] += (
-                        delta_layer - aggregated_model_dict[layer_name]
-                    ) / (i + 1)
-
-        if "text_projection" in layer_name or not is_matrix:
-            continue
-
-        u, s, v = torch.linalg.svd(sum, full_matrices=False)
-
-        iso_factor = torch.mean(s)
-
-        aggregated_model_dict[layer_name] = iso_factor * u @ v
-
-    return aggregated_model_dict
-
-
 @torch.no_grad()
 def sum_svd(
     ref_state_dict, svd_dicts, device="cuda", non_matrix_params_aggregation="base_model"

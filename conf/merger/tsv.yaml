@@ -2,3 +2,4 @@
 _target_: mass.merger.tsv.TaskSingularVectorsMerger
 svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
 svd_compress_factor: null 
+non_matrix_params_aggregation: "mean" # "base_model"

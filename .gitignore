@@ -251,3 +251,5 @@ results/ViT-B-32/
 results/ViT-L-14/
 
 secrets.txt
+cluster/cluster.env
+results/*

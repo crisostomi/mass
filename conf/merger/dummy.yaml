@@ -1,0 +1,2 @@
+# Just returns the zero-shot model 
+_target_: mass.merger.dummy_merger.DummyMerger

@@ -295,7 +295,7 @@ def reconstruct_tv_from_svddict(svd_dict, device="cuda"):
 
 def apply_dict_to_model(task_vector_dict, model, coefficient: float = 1.0):
     """
-    Applies a task vector dictionary to a model. The ressulting model is the deep copy of the input model
+    Applies a task vector dictionary to a model. The resulting model is the deep copy of the input model
     on the GPU with the task vector applied to the weights.
     """
     with torch.no_grad():
