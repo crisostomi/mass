@@ -92,7 +92,7 @@ class MASS(MultiHeadImageClassifier):
         self.coeffs_to_log = []
         self.task_act_to_log = {}
 
-        self.max_num_tvs_to_keep = 1
+        self.max_num_tvs_to_keep = 10
 
     def set_metrics(self, num_classes):
 
@@ -179,8 +179,6 @@ class MASS(MultiHeadImageClassifier):
 
     @torch.no_grad()
     def forward(self, images: torch.Tensor):
-        pylogger.info("Cached contains: " + str(len(self.cached_tvs)))
-        print_memory("forward")
         selected_dataset_idxs, dataset_coeffs, dataset_group_to_samples = self.router(
             images
         )
@@ -281,8 +279,6 @@ class MASS(MultiHeadImageClassifier):
 
             return self.cached_tvs[dataset_combo]
 
-        pylogger.info(f"Reconstructing task vector for {dataset_combo}")
-
         if isinstance(self.aggregator, WeightedAggregator):
             single_scaling_coeff = num_of_tasks_to_scaling_coeff[len(dataset_names)]
 
@@ -299,7 +295,6 @@ class MASS(MultiHeadImageClassifier):
 
             aggregated = self.aggregator.aggregate(tvs, single_scaling_coeff)
 
-            pylogger.info(f"Storing dataset combo: {dataset_combo}")
             self.cached_tvs[dataset_combo] = aggregated
 
             return aggregated

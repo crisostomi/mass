@@ -1,56 +1,56 @@
 {
     "SUN397": [
         {
-            "task_accuracy/SUN397": 0.9757179021835327,
-            "task_survival/SUN397": 0.992443323135376,
-            "acc/test/SUN397": 0.7303778529167175,
-            "loss/test/SUN397": 1.3012959957122803,
-            "normalized_acc/test/SUN397": 0.9754423499107361
+            "task_accuracy/SUN397": 0.9718891978263855,
+            "task_survival/SUN397": 0.9929974675178528,
+            "acc/test/SUN397": 0.7299748063087463,
+            "loss/test/SUN397": 1.2798207998275757,
+            "normalized_acc/test/SUN397": 0.9749040603637695
         }
     ],
     "Cars": [
         {
-            "task_accuracy/Cars": 0.9983832836151123,
-            "task_survival/Cars": 0.9997512698173523,
-            "acc/test/Cars": 0.785847544670105,
-            "loss/test/Cars": 0.7672706246376038,
-            "normalized_acc/test/Cars": 0.9845746755599976
+            "task_accuracy/Cars": 0.9988807439804077,
+            "task_survival/Cars": 0.9998756647109985,
+            "acc/test/Cars": 0.7865937352180481,
+            "loss/test/Cars": 0.7642157673835754,
+            "normalized_acc/test/Cars": 0.9855095744132996
         }
     ],
     "RESISC45": [
         {
-            "task_accuracy/RESISC45": 0.9539682269096375,
-            "task_survival/RESISC45": 0.9903174638748169,
-            "acc/test/RESISC45": 0.8965079188346863,
-            "loss/test/RESISC45": 1.1593284606933594,
-            "normalized_acc/test/RESISC45": 0.940706193447113
+            "task_accuracy/RESISC45": 0.9841269850730896,
+            "task_survival/RESISC45": 0.9988889098167419,
+            "acc/test/RESISC45": 0.912063479423523,
+            "loss/test/RESISC45": 0.891546905040741,
+            "normalized_acc/test/RESISC45": 0.9570286273956299
         }
     ],
     "EuroSAT": [
         {
-            "task_accuracy/EuroSAT": 0.9381481409072876,
-            "task_survival/EuroSAT": 0.9981481432914734,
-            "acc/test/EuroSAT": 0.863703727722168,
-            "loss/test/EuroSAT": 1.4039976596832275,
-            "normalized_acc/test/EuroSAT": 0.8701493144035339
+            "task_accuracy/EuroSAT": 1.0,
+            "task_survival/EuroSAT": 1.0,
+            "acc/test/EuroSAT": 0.9611111283302307,
+            "loss/test/EuroSAT": 0.2987837791442871,
+            "normalized_acc/test/EuroSAT": 0.9682835936546326
         }
     ],
     "SVHN": [
         {
-            "task_accuracy/SVHN": 0.9382683038711548,
-            "task_survival/SVHN": 0.9961201548576355,
-            "acc/test/SVHN": 0.9500614404678345,
-            "loss/test/SVHN": 0.2269306182861328,
-            "normalized_acc/test/SVHN": 0.9828325510025024
+            "task_accuracy/SVHN": 0.9938921332359314,
+            "task_survival/SVHN": 0.9999616146087646,
+            "acc/test/SVHN": 0.9640442728996277,
+            "loss/test/SVHN": 0.15210659801959991,
+            "normalized_acc/test/SVHN": 0.9972977042198181
         }
     ],
     "GTSRB": [
         {
-            "task_accuracy/GTSRB": 0.9992082118988037,
+            "task_accuracy/GTSRB": 0.9983372688293457,
             "task_survival/GTSRB": 1.0,
-            "acc/test/GTSRB": 0.97751384973526,
-            "loss/test/GTSRB": 0.14345963299274445,
-            "normalized_acc/test/GTSRB": 0.9880752563476562
+            "acc/test/GTSRB": 0.9785431623458862,
+            "loss/test/GTSRB": 0.11660125106573105,
+            "normalized_acc/test/GTSRB": 0.9891156554222107
         }
     ],
     "MNIST": [
@@ -64,17 +64,17 @@
     ],
     "DTD": [
         {
-            "task_accuracy/DTD": 0.9835106134414673,
-            "task_survival/DTD": 0.9968085289001465,
-            "acc/test/DTD": 0.7670212984085083,
-            "loss/test/DTD": 1.3516817092895508,
-            "normalized_acc/test/DTD": 0.9809524416923523
+            "task_accuracy/DTD": 0.9893617033958435,
+            "task_survival/DTD": 0.9984042644500732,
+            "acc/test/DTD": 0.7723404169082642,
+            "loss/test/DTD": 1.2997677326202393,
+            "normalized_acc/test/DTD": 0.9877551198005676
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.870766706764698,
-            "normalized_acc/test/avg": 0.9654170125722885
+            "acc/test/avg": 0.8874713778495789,
+            "normalized_acc/test/avg": 0.9825622066855431
         }
     ]
 }

@@ -35,7 +35,7 @@ from mass.task_vectors.task_singular_vectors import (
     sum_svd,
     get_svd_dict,
 )
-from mass.utils.io_utils import load_model_from_disk
+from mass.utils.io_utils import boilerplate, load_model_from_disk
 from mass.utils.utils import (
     compute_task_dict,
     apply_dict_to_model,
@@ -46,20 +46,6 @@ from mass.utils.utils import (
 pylogger = logging.getLogger(__name__)
 
 torch.set_float32_matmul_precision("high")
-
-
-# TODO: import this now
-def boilerplate(cfg):
-    cfg.core.tags = enforce_tags(cfg.core.get("tags", None))
-
-    template_core = NNTemplateCore(
-        restore_cfg=cfg.train.get("restore", None),
-    )
-    logger: NNLogger = NNLogger(
-        logging_cfg=cfg.train.logging, cfg=cfg, resume_id=template_core.resume_id
-    )
-
-    return logger, template_core
 
 
 def run(cfg: DictConfig) -> str:

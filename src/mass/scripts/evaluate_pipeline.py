@@ -50,7 +50,7 @@ def get_merged_base(
     zeroshot_encoder: ImageEncoder,
     svd_dicts: Dict[str, Any],
 ):
-
+        
     multi_task_vector = (
         sum_svd_no_redundant_tasks_simple( 
             ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
@@ -80,6 +80,9 @@ def run(cfg: omegaconf.DictConfig) -> str:
         the run directory inside the storage_dir used by the current experiment
     """
     cfg.core.tags.append("mass")
+    if cfg.base == "zeroshot":
+        cfg.core.tags.append("zeroshot_base")
+        
     pylogger.info(f"Starting MASS eval")
     seed_index_everything(cfg)
 
@@ -126,11 +129,17 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     del task_dicts
 
-    pylogger.info(f"Retrieving merged model")
-    merged_encoder = get_merged_base(
-        cfg, zeroshot_encoder, svd_dict
-    )
+    pylogger.info(f"Retrieving merged model {cfg.base}")
     
+    if cfg.base == "tsvm":
+        merged_encoder = get_merged_base(
+            cfg, zeroshot_encoder, svd_dict
+        )
+    elif cfg.base == "zeroshot":
+        merged_encoder = copy.deepcopy(zeroshot_encoder)   
+    else:
+        raise ValueError(f"Unknown base {cfg.base}")
+
     pylogger.info(f"Instantiating router")
     router: AbstractRouter = instantiate(
         cfg.nn.module.router,
@@ -152,7 +161,6 @@ def run(cfg: omegaconf.DictConfig) -> str:
         classification_heads=classification_heads,
         _recursive_=False,
     )
-
 
     logger.log_configuration(model, cfg)
 

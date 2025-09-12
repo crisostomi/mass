@@ -5,14 +5,14 @@ core:
   version: 0.0.1
   tags: 
   - benchmark
-  - nn
+  - batched-proj
 
 
 defaults:
   - hydra: default
   - nn: default
   - train: default
-  - benchmark: N2
+  - benchmark: n8
   - hydra/launcher: basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none
@@ -21,6 +21,7 @@ defaults:
 seed_index: 0
 num_tasks: 0
 data_batch_size: 128
+base: tsvm
 similarity_threshold: 0.3
 eval_on_train: false
 number_of_train_batches: -1 # number of batches of the val set, used for grid search
@@ -52,9 +53,9 @@ task_vectors:
 misc:
   ckpt_path: ${oc.env:MODELS_PATH}/${nn.encoder.model_name}
   pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
-  openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
-  checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
-  svd_path: "${oc.env:MODELS_PATH}/svd_dict_${nn.encoder.model_name}.pt"
+  openclip_cachedir: "${oc.env:PROJECT_ROOT}/checkpoints/openclip_cache/"
+  checkpoint_dir: ${oc.env:PROJECT_ROOT}/checkpoints/linear_router
+  svd_path: "${oc.env:PROJECT_ROOT}/checkpoints/svd_dict_${nn.encoder.model_name}_${num_tasks}.pt"
   finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/accs.json"
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"
 

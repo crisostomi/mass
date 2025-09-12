@@ -213,10 +213,9 @@ def get_svd_dict(
     compression_factor = compression_factor or len(datasets)
     compression_ratio = 1 / compression_factor
     pylogger.info(f"Using compression ratio: {compression_ratio:.4f}")
-
-    svd_path = (
-        Path(svd_path).with_suffix("").as_posix() + f"_compress_{compression_factor}.pt"
-    )
+    pylogger.info(f"Saving in {svd_path}")
+    pylogger.info(f"Final SVD path: {svd_path}")
+    pylogger.info(f"{Path(svd_path)}")
 
     if Path(svd_path).exists():
         pylogger.info(f"Loading precomputed SVD dictionary from: {svd_path}")
