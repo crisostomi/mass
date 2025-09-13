@@ -5,7 +5,6 @@ core:
   version: 0.0.1
   tags: 
   - benchmark
-  - batched-proj
 
 
 defaults:
@@ -37,8 +36,8 @@ eval_datasets: ${benchmark.datasets}
 svd_compress_factor: null
 
 task_vectors:
-  to_apply: ${eval_datasets}
-
+  to_remove:
+    - "SVHN"
   scaling_coefficient: 1.0
 
   aggregator:

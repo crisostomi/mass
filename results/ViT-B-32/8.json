@@ -1,56 +1,56 @@
 {
     "SUN397": [
         {
-            "task_accuracy/SUN397": 0.9718891978263855,
-            "task_survival/SUN397": 0.9929974675178528,
-            "acc/test/SUN397": 0.7299748063087463,
-            "loss/test/SUN397": 1.2798207998275757,
-            "normalized_acc/test/SUN397": 0.9749040603637695
+            "task_accuracy/SUN397": 1.0,
+            "task_survival/SUN397": 1.0,
+            "acc/test/SUN397": 0.7448362708091736,
+            "loss/test/SUN397": 1.001463770866394,
+            "normalized_acc/test/SUN397": 0.994752049446106
         }
     ],
     "Cars": [
         {
-            "task_accuracy/Cars": 0.9988807439804077,
-            "task_survival/Cars": 0.9998756647109985,
-            "acc/test/Cars": 0.7865937352180481,
-            "loss/test/Cars": 0.7642157673835754,
-            "normalized_acc/test/Cars": 0.9855095744132996
+            "task_accuracy/Cars": 1.0,
+            "task_survival/Cars": 1.0,
+            "acc/test/Cars": 0.786842405796051,
+            "loss/test/Cars": 0.7648323178291321,
+            "normalized_acc/test/Cars": 0.9858211278915405
         }
     ],
     "RESISC45": [
         {
-            "task_accuracy/RESISC45": 0.9841269850730896,
-            "task_survival/RESISC45": 0.9988889098167419,
-            "acc/test/RESISC45": 0.912063479423523,
-            "loss/test/RESISC45": 0.891546905040741,
-            "normalized_acc/test/RESISC45": 0.9570286273956299
+            "task_accuracy/RESISC45": 1.0,
+            "task_survival/RESISC45": 1.0,
+            "acc/test/RESISC45": 0.9476190209388733,
+            "loss/test/RESISC45": 0.20309996604919434,
+            "normalized_acc/test/RESISC45": 0.9943370819091797
         }
     ],
     "EuroSAT": [
         {
             "task_accuracy/EuroSAT": 1.0,
             "task_survival/EuroSAT": 1.0,
-            "acc/test/EuroSAT": 0.9611111283302307,
-            "loss/test/EuroSAT": 0.2987837791442871,
-            "normalized_acc/test/EuroSAT": 0.9682835936546326
+            "acc/test/EuroSAT": 0.9881481528282166,
+            "loss/test/EuroSAT": 0.04673970118165016,
+            "normalized_acc/test/EuroSAT": 0.9955224394798279
         }
     ],
     "SVHN": [
         {
-            "task_accuracy/SVHN": 0.9938921332359314,
-            "task_survival/SVHN": 0.9999616146087646,
-            "acc/test/SVHN": 0.9640442728996277,
-            "loss/test/SVHN": 0.15210659801959991,
-            "normalized_acc/test/SVHN": 0.9972977042198181
+            "task_accuracy/SVHN": 1.0,
+            "task_survival/SVHN": 1.0,
+            "acc/test/SVHN": 0.9677704572677612,
+            "loss/test/SVHN": 0.12922674417495728,
+            "normalized_acc/test/SVHN": 1.0011523962020874
         }
     ],
     "GTSRB": [
         {
-            "task_accuracy/GTSRB": 0.9983372688293457,
+            "task_accuracy/GTSRB": 1.0,
             "task_survival/GTSRB": 1.0,
-            "acc/test/GTSRB": 0.9785431623458862,
-            "loss/test/GTSRB": 0.11660125106573105,
-            "normalized_acc/test/GTSRB": 0.9891156554222107
+            "acc/test/GTSRB": 0.989311158657074,
+            "loss/test/GTSRB": 0.04285874217748642,
+            "normalized_acc/test/GTSRB": 1.0
         }
     ],
     "MNIST": [
@@ -64,17 +64,17 @@
     ],
     "DTD": [
         {
-            "task_accuracy/DTD": 0.9893617033958435,
-            "task_survival/DTD": 0.9984042644500732,
-            "acc/test/DTD": 0.7723404169082642,
-            "loss/test/DTD": 1.2997677326202393,
-            "normalized_acc/test/DTD": 0.9877551198005676
+            "task_accuracy/DTD": 1.0,
+            "task_survival/DTD": 1.0,
+            "acc/test/DTD": 0.7824468016624451,
+            "loss/test/DTD": 1.117301106452942,
+            "normalized_acc/test/DTD": 1.0006803274154663
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.8874713778495789,
-            "normalized_acc/test/avg": 0.9825622066855431
+            "acc/test/avg": 0.9002592861652374,
+            "normalized_acc/test/avg": 0.996608592569828
         }
     ]
 }

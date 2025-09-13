@@ -19,4 +19,4 @@ source ./.venv/bin/activate
 
 nvidia-smi
 
-HYDRA_FULL_ERROR=1 uv run evaluate -m 'hydra/launcher=submitit_slurm' 'benchmark=n8,n14,n20' 'nn/module=mass' 'nn/module/router=batch-proj' 'nn/encoder=b32,b16,l14'
+HYDRA_FULL_ERROR=1 uv run evaluate -m 'hydra/launcher=submitit_slurm' 'benchmark=n8,n14,n20' 'nn/module=mass' 'nn/module/router=batch-proj' 'nn/encoder=l14'
