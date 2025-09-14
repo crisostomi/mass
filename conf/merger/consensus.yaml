@@ -1,0 +1,25 @@
+_target_: mass.merger.consensus.ConsensusMerger
+model_name: ${nn.encoder.model_name}
+prun_thre_k: 2
+# prun_thre_k: weight-pruning threhold, stands for the least number of activated tasks for a parameter to be preserved from pruning
+#      if prun_thre_k is set to 2: remove both catastrophic and selfish weights;
+#      if prun_thre_k is set to 1: remove only catastrophic weights;
+#      if prun_thre_k is set to 0: remove no weights -> reduce to TA or TIES
+#      if prun_thre_k is set to > num_tasks: remove all weights -> reduce to zero-shot
+
+load_mask: true
+mask_location: "${oc.env:MODELS_PATH}/tall_masks/"  # TALL_mask_{num_tasks}task.npy
+
+optimal_alphas:
+  ViT-B-32:
+    8: 0.60
+    14: 0.40
+    20: 0.30
+  ViT-B-16:
+    8: 0.70
+    14: 0.40
+    20: 0.30
+  ViT-L-14:
+    8: 0.70
+    14: 0.50
+    20: 0.40

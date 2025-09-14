@@ -98,9 +98,7 @@ def upload_model_to_hf(model, model_name, dataset_name):
         hf_token = f.readline().strip()
 
     repo_id = f"crisostomi/{model_name}-{dataset_name}"
-    create_repo(
-        repo_id, repo_type="model", private=False, exist_ok=True, token=hf_token
-    )
+    create_repo(repo_id, repo_type="model", private=False, exist_ok=True, token=hf_token)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         weights_path = os.path.join(tmpdir, "pytorch_model.bin")
@@ -115,4 +113,3 @@ def upload_model_to_hf(model, model_name, dataset_name):
         )
 
     print(f"✅ Uploaded to https://huggingface.co/{repo_id}")
-    

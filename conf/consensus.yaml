@@ -5,7 +5,7 @@ core:
   version: 0.0.1
   tags: 
   - Consensus # TSVM, consensus, ISO-C
-  - dev #benchmark # dev
+  - benchmark # dev
   - static_merge
   
 defaults:
@@ -13,7 +13,7 @@ defaults:
   - nn: default
   - train: default
   - merger: consensus # isotropic # tsv # consensus # iso-cts
-  - benchmark: N20 # N14, N8
+  - benchmark: N8 # N14, N10
   - override hydra/launcher: submitit_slurm # basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none

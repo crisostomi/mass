@@ -18,7 +18,6 @@ class IsotropicMerger(TaskVectorBasedMerger):
         self.optimal_alphas = optimal_alphas
 
         self.model_name = model_name
-        # self.svd_compress_factor = svd_compress_factor
 
     def merge(self, base_model, finetuned_models, device="cuda"):
 
@@ -37,10 +36,6 @@ class IsotropicMerger(TaskVectorBasedMerger):
             torch.cuda.empty_cache()
 
         print_memory("after computing task dicts")
-
-        # svd_dict = get_svd_dict(
-        #     task_dicts, datasets, self.svd_path, self.svd_compress_factor
-        # )
 
         multi_task_vector = isotropic_sum(
             cumulative_dict=cumulative_dict,

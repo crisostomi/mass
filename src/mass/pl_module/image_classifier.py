@@ -33,9 +33,7 @@ class ImageClassifier(pl.LightningModule):
         self.metadata = metadata
         self.num_classes = classifier.out_features
 
-        metric = torchmetrics.Accuracy(
-            task="multiclass", num_classes=self.num_classes, top_k=1
-        )
+        metric = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_classes, top_k=1)
         self.train_acc = metric.clone()
         self.val_acc = metric.clone()
         self.test_acc = metric.clone()
@@ -43,9 +41,7 @@ class ImageClassifier(pl.LightningModule):
         self.encoder = encoder
         self.classification_head = classifier
 
-        self.log_fn = lambda metric, val: self.log(
-            metric, val, on_step=False, on_epoch=True
-        )
+        self.log_fn = lambda metric, val: self.log(metric, val, on_step=False, on_epoch=True)
 
         self.finetuning_accuracy = None
 
@@ -69,9 +65,7 @@ class ImageClassifier(pl.LightningModule):
 
         self.num_classes = num_classes
 
-        metric = torchmetrics.Accuracy(
-            task="multiclass", num_classes=num_classes, top_k=1
-        )
+        metric = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes, top_k=1)
 
         self.train_acc = metric.clone()
         self.val_acc = metric.clone()
@@ -168,10 +162,17 @@ class ImageClassifier(pl.LightningModule):
     def on_test_epoch_end(self):
 
         if self.finetuning_accuracy is not None:
-            accuracy = (
-                self.trainer.callback_metrics[f"acc/test/{self.task_name}"].cpu().item()
-            )
+            accuracy = self.trainer.callback_metrics[f"acc/test/{self.task_name}"].cpu().item()
 
             normalized_acc = accuracy / self.finetuning_accuracy
 
             self.log_fn(f"normalized_acc/test/{self.task_name}", normalized_acc)
+
+    def on_validation_epoch_end(self):
+
+        if self.finetuning_accuracy is not None:
+            accuracy = self.trainer.callback_metrics[f"acc/val/{self.task_name}"].cpu().item()
+
+            normalized_acc = accuracy / self.finetuning_accuracy
+
+            self.log_fn(f"normalized_acc/val/{self.task_name}", normalized_acc)
