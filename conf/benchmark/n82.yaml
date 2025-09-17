@@ -1,0 +1,9 @@
+datasets:
+  - Cars
+  - DTD
+  - EMNIST
+  - Flowers102
+  - MNIST
+  - RenderedSST2
+  - SUN397
+  - SVHN

@@ -1,0 +1,9 @@
+datasets:
+  - CIFAR10
+  - CIFAR100
+  - FashionMNIST
+  - Flowers102
+  - GTSRB
+  - OxfordIIITPet
+  - RenderedSST2
+  - STL10
