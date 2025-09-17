@@ -37,7 +37,7 @@ svd_compress_factor: null
 
 task_vectors:
   to_remove:
-    - "SVHN"
+    - "DTD"
   scaling_coefficient: 1.0
 
   aggregator:

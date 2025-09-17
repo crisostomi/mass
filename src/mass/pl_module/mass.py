@@ -60,6 +60,7 @@ class MASS(MultiHeadImageClassifier):
         self.svd_dicts = svd_dicts
         self.output_classes = None
         self.oracle_mode = oracle_mode
+        self.head_idx = None
         if self.oracle_mode:
             pylogger.warning(
                 "Oracle mode enabled: using ground-truth task labels for routing."
@@ -105,50 +106,16 @@ class MASS(MultiHeadImageClassifier):
         self.train_acc = metric.clone()
         self.val_acc = metric.clone()
         self.test_acc = metric.clone()
-
+        
     @torch.no_grad()
     def forward_oracle(self, images: torch.Tensor, dataset_name: str):
 
         _, dataset_coeffs, dataset_group_to_samples = self.router(images)
 
-        # log coefficients
-        self.coeffs_to_log.append(dataset_coeffs.mean(dim=0).cpu().numpy())
-        # log task accuracy
-
-        pred_tasks = torch.max(dataset_coeffs, dim=1)[1]
-        gt_tasks = torch.full_like(pred_tasks, self.dataset_name_to_idx[self.task_name])
-
-        task_acc = self.task_accuracy(pred_tasks, gt_tasks)
-        self.log_fn(f"task_accuracy/{self.task_name}", task_acc)
-
-        # log task activation
-        active_tasks = torch.sum(dataset_coeffs > self.router.threshold, dim=1)
-
-        for active_num in active_tasks:
-            active = int(active_num.item())
-            if active not in self.task_act_to_log:
-                self.task_act_to_log[active] = 0
-            self.task_act_to_log[active] += 1
-
-        # task survival
-        correct_task_coeffs = dataset_coeffs[
-            :, self.dataset_name_to_idx[self.task_name]
-        ]
-        task_survival_count = torch.mean(
-            (correct_task_coeffs > self.router.threshold).float()
-        ).item()
-        self.log_fn(f"task_survival/{self.task_name}", task_survival_count)
-
         batch_size = images.shape[0]
         sample_embeddings = [None] * batch_size
 
         for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
-            dataset_group_idxs = torch.tensor(
-                [
-                    self.dataset_name_to_idx[dataset_name]
-                    for dataset_name in dataset_group
-                ]
-            )  # Convert to a PyTorch tensor
 
             assigned_sample_idxs = torch.tensor(
                 assigned_sample_idxs
@@ -167,7 +134,11 @@ class MASS(MultiHeadImageClassifier):
 
         sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
-        head = self.classification_heads[self.dataset_name_to_idx[dataset_name]]
+        if self.head_idx is None:
+            head = self.classification_heads[self.dataset_name_to_idx[dataset_name]]
+        else:
+            head = self.classification_heads[self.head_idx]
+            
         logits = head(sample_embeddings)
 
         assert (
@@ -375,6 +346,8 @@ class MASS(MultiHeadImageClassifier):
         )
 
     def plot_coeffs(self):
+        if self.oracle_mode:
+            return
         self.coeffs_to_log = np.array(self.coeffs_to_log)
 
         mean_coeffs = self.coeffs_to_log.mean(axis=0)

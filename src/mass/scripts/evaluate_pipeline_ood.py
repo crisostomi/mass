@@ -155,6 +155,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
         cfg.nn.module.router,
         encoder=merged_encoder,
         svd_dict=svd_dict,
+        dataset_names=to_apply,
         cfg=cfg,
         _recursive_=False,
     )
@@ -189,6 +190,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
         model.set_metrics(len(dataset.classnames))
         model.set_task(dataset_name)
+        model.set_head(cfg.eval_datasets.index(dataset_name))
         model.oracle_mode = True # we decide to use the oracle in this experiment just to test positive transfer
         model.set_finetuning_accuracy(
             finetuned_accuracies[
