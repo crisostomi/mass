@@ -62,6 +62,10 @@ def run(cfg: DictConfig) -> str:
         cfg.core.tags.append("head_oracle")
     else:
         cfg.core.tags.append("head_inference")
+    
+    num_tasks = len(cfg.benchmark.datasets)
+    cfg.core.tags.append(f"n{num_tasks}")
+    cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
 
     logger, template_core = boilerplate(cfg)
 

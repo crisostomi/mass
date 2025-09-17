@@ -1,0 +1,5 @@
+defaults:
+  - _self_
+  - module: smile
+  - encoder: t5
+  - task: sentence_classification

@@ -57,6 +57,10 @@ def run(cfg: DictConfig) -> str:
     Returns:
         the run directory inside the storage_dir used by the current experiment
     """
+    
+    num_tasks = len(cfg.benchmark.datasets)
+    cfg.core.tags.append(f"n{num_tasks}")
+    cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
 
     logger, template_core = boilerplate(cfg)
 

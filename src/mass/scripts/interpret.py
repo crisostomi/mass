@@ -42,6 +42,11 @@ def boilerplate(cfg: DictConfig):
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="clip_interpret.yaml")
 def main(cfg: DictConfig):
     # Initialize boilerplate (advanced logging, tags, etc.)
+    
+    num_tasks = len(cfg.benchmark.datasets)
+    cfg.core.tags.append(f"n{num_tasks}")
+    cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
+    
     logger, template_core = boilerplate(cfg)
 
     # Log the resolved configuration

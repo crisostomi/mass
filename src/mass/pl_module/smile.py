@@ -18,7 +18,6 @@ from mass.modules.smile_gates import (
     ExpertNotTrainedError,
     SmileMoELinear,
 )
-from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
 from mass.utils.fusion_bench_utils import (
     get_attr,
     get_device,
@@ -32,16 +31,15 @@ from mass.utils.utils import pad_unbatched_output
 pylogger = logging.getLogger(__name__)
 
 
-class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
+class SmileUpscalingAlgorithm():
     # _linear_layer_cls = (nn.Linear,) avoid hard coding
     _linear_layer_cls = (nn.Linear,)
     _upscaled_layer_cls = (SmileMoELinear,)
 
     def __init__(
         self,
-        pretrained_model,
+        zeroshot_model,
         finetuned_models,
-        classification_heads: List[nn.Module],
         oracle_mode: bool = False,
         device: str = "cuda",
         full_matrices: bool = True,
@@ -99,19 +97,19 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
                 pylogger.info(f"Using finetuned_models as list")
                 finetuned_models_list = finetuned_models
             pylogger.info("Creating SMILE model...")
-            model = self.merge(pretrained_model, finetuned_models_list)
+            model = self.merge(zeroshot_model, finetuned_models_list)
 
         # self.pylogger.info_profile_summary()  # TODO: implement profiling
         if model_path is not None:
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             pylogger.info(f"Saving model to {model_path}")
             torch.save(model, model_path)
-
-        super().__init__(model, classification_heads)
+            
+        self.model = model
 
     def merge(
         self,
-        pretrained_model: nn.Module,
+        zeroshot_model: nn.Module,
         finetuned_models: List[nn.Module],
         in_place: bool = True,
     ) -> nn.Module:
@@ -119,7 +117,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         Merges the pretrained model with the fine-tuned models to create an upscaled model.
 
         Args:
-            pretrained_model (nn.Module): The pretrained model.
+            zeroshot_model (nn.Module): The pretrained model.
             finetuned_models (List[nn.Module]): A list of fine-tuned models.
             in_place (bool): If True, modifies the pretrained model in place. Otherwise, creates a copy.
 
@@ -127,16 +125,16 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             nn.Module: The merged model.
         """
         if in_place:
-            model = pretrained_model
+            model = zeroshot_model
         else:
-            model = deepcopy(pretrained_model)
+            model = deepcopy(zeroshot_model)
 
         self._upscale_submodules(model, finetuned_models)
         return model
 
     def _upscale_linear_layer(
         self,
-        pretrained_model,
+        zeroshot_model,
         finetuned_models,
         name: str,
     ):
@@ -144,7 +142,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         Upscale a linear layer by merging it with the corresponding layers from the fine-tuned models.
 
         Args:
-            pretrained_model (nn.Module): The pretrained model.
+            zeroshot_model (nn.Module): The pretrained model.
             finetuned_models (List[nn.Module]): A list of fine-tuned models.
             name (str): The name of the linear layer to upscale.
         """
@@ -152,12 +150,12 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         name_list = name.split(".")
         pylogger.info(f"Layer name {name}")
         try:
-            module = get_attr(pretrained_model, name_list)
+            module = get_attr(zeroshot_model, name_list)
         except AttributeError as e:
             pylogger.warning(
                 f"Failed to get attribute {name} from pretrained model: {e}"
             )
-            set_attr(pretrained_model, name_list, None)
+            set_attr(zeroshot_model, name_list, None)
             self.upscaled_layers.discard(name)  # Remove from upscaled layers set
             return
 
@@ -190,7 +188,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             pylogger.error(f"Failed to upscale layer {name}: {e}")
             self.upscaled_layers.discard(name)  # Remove from upscaled layers set
             return
-        set_attr(pretrained_model, name_list, moe_linear)
+        set_attr(zeroshot_model, name_list, moe_linear)
         # remove the original module from fine-tuned models to save memory
         for m in finetuned_models:
             set_attr(m, name_list, None)
@@ -211,7 +209,7 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
 
     def _upscale_submodules(
         self,
-        pretrained_model: nn.Module,
+        zeroshot_model: nn.Module,
         finetuned_models: List[nn.Module],
         tqdm_desc: str = "Upscaling Linear Modules",
     ):
@@ -219,15 +217,15 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
         Upscales the submodules of the pretrained model by merging them with the corresponding submodules from the fine-tuned models.
 
         Args:
-            pretrained_model (nn.Module): The pretrained model.
+            zeroshot_model (nn.Module): The pretrained model.
             finetuned_models (List[nn.Module]): A list of fine-tuned models.
             tqdm_desc (str): Description for the tqdm progress bar.
         """
-        replace_attention_with_linear(pretrained_model, finetuned_models)
-        pylogger.info(f"{pretrained_model}")
+        # TODO: do we need this still?
+        replace_attention_with_linear(zeroshot_model, finetuned_models)
 
         for name, module in tqdm(
-            tuple(pretrained_model.named_modules()),
+            tuple(zeroshot_model.named_modules()),
             tqdm_desc,
             leave=False,
             dynamic_ncols=True,
@@ -235,91 +233,91 @@ class SmileUpscalingAlgorithm(MultiHeadImageClassifier):
             if isinstance(module, self._linear_layer_cls):
                 pylogger.info(f"Upscaling linear layer: {name}")
                 self._upscale_linear_layer(
-                    pretrained_model=pretrained_model,
+                    zeroshot_model=zeroshot_model,
                     finetuned_models=finetuned_models,
                     name=name,
                 )
             elif self.average_experts and len(tuple(module.named_modules())) == 1:
                 pylogger.info(f"Averaging experts for leaf module: {name}")
                 # if the module is a leaf module, we perform a parameter average
-                self._average_experts(pretrained_model, finetuned_models, name)
+                self._average_experts(zeroshot_model, finetuned_models, name)
 
-    def set_metrics(self, num_classes):
+    # def set_metrics(self, num_classes):
 
-        self.output_classes = num_classes
+    #     self.output_classes = num_classes
 
-        metric = torchmetrics.Accuracy(
-            task="multiclass", num_classes=num_classes, top_k=1
-        )
+    #     metric = torchmetrics.Accuracy(
+    #         task="multiclass", num_classes=num_classes, top_k=1
+    #     )
 
-        self.train_acc = metric.clone()
-        self.val_acc = metric.clone()
-        self.test_acc = metric.clone()
+    #     self.train_acc = metric.clone()
+    #     self.val_acc = metric.clone()
+    #     self.test_acc = metric.clone()
 
-    def __call__(self, inputs):
-        if self.oracle_mode:
-            return self.forward_oracle(inputs)
-        return self.forward(inputs)
+    # def __call__(self, inputs):
+    #     if self.oracle_mode:
+    #         return self.forward_oracle(inputs)
+    #     return self.forward(inputs)
 
-    def forward(self, inputs):
-        votes = []
-        collected_layers = set()
+    # def forward(self, inputs):
+    #     votes = []
+    #     collected_layers = set()
 
-        features = self.encoder(inputs)
+    #     features = self.encoder(inputs)
 
-        for name, module in self.encoder.named_modules():
-            pylogger.debug(f"Module {name}")
-            if isinstance(module, SmileMoELinear) and hasattr(
-                module, "last_selected_experts"
-            ):
-                collected_layers.add(name)
-                if module.last_selected_experts is None:
-                    pylogger.warning(f"Module {name} has no last selected experts")
-                else:
-                    votes.append(module.last_selected_experts)
+    #     for name, module in self.encoder.named_modules():
+    #         pylogger.debug(f"Module {name}")
+    #         if isinstance(module, SmileMoELinear) and hasattr(
+    #             module, "last_selected_experts"
+    #         ):
+    #             collected_layers.add(name)
+    #             if module.last_selected_experts is None:
+    #                 pylogger.warning(f"Module {name} has no last selected experts")
+    #             else:
+    #                 votes.append(module.last_selected_experts)
 
-        if votes:
-            votes = torch.stack(votes)
-            majority_vote = torch.mode(votes, dim=0).values
-        else:
-            majority_vote = torch.zeros(
-                inputs.size(0), dtype=torch.long, device=inputs.device
-            )
+    #     if votes:
+    #         votes = torch.stack(votes)
+    #         majority_vote = torch.mode(votes, dim=0).values
+    #     else:
+    #         majority_vote = torch.zeros(
+    #             inputs.size(0), dtype=torch.long, device=inputs.device
+    #         )
 
-        head_groups = self.group_samples_by_selected_head(majority_vote)
+    #     head_groups = self.group_samples_by_selected_head(majority_vote)
 
-        all_outputs = [None] * inputs.size(0)
+    #     all_outputs = [None] * inputs.size(0)
 
-        for head_idx, sample_indices in head_groups.items():
+    #     for head_idx, sample_indices in head_groups.items():
 
-            group_features = features[sample_indices]
+    #         group_features = features[sample_indices]
 
-            group_output = self.classification_heads[head_idx](group_features)
+    #         group_output = self.classification_heads[head_idx](group_features)
 
-            for i, sample_idx in enumerate(sample_indices):
-                all_outputs[sample_idx] = group_output[i]
+    #         for i, sample_idx in enumerate(sample_indices):
+    #             all_outputs[sample_idx] = group_output[i]
 
-        return pad_unbatched_output(all_outputs, self.output_classes)
+    #     return pad_unbatched_output(all_outputs, self.output_classes)
 
-    def forward_oracle(self, inputs):
-        pylogger.warning("Using oracle forward pass")
-        features = self.encoder(inputs)
-        return self.classification_heads[self.head_idx](features)
+    # def forward_oracle(self, inputs):
+    #     pylogger.warning("Using oracle forward pass")
+    #     features = self.encoder(inputs)
+    #     return self.classification_heads[self.head_idx](features)
 
-    def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
-        """
-        Group samples that share the same selected head to be processed together for efficiency
+    # def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
+    #     """
+    #     Group samples that share the same selected head to be processed together for efficiency
 
-        Args:
-            selected_heads: Tensor of shape (batch_size,) containing head indices for each sample
+    #     Args:
+    #         selected_heads: Tensor of shape (batch_size,) containing head indices for each sample
 
-        Returns:
-            Dict mapping head_idx to list of sample indices
-        """
-        head_group_to_samples = {}
+    #     Returns:
+    #         Dict mapping head_idx to list of sample indices
+    #     """
+    #     head_group_to_samples = {}
 
-        for sample_idx, head_idx in enumerate(selected_heads.cpu().numpy()):
-            head_idx = int(head_idx)
-            head_group_to_samples.setdefault(head_idx, []).append(sample_idx)
+    #     for sample_idx, head_idx in enumerate(selected_heads.cpu().numpy()):
+    #         head_idx = int(head_idx)
+    #         head_group_to_samples.setdefault(head_idx, []).append(sample_idx)
 
-        return head_group_to_samples
+    #     return head_group_to_samples

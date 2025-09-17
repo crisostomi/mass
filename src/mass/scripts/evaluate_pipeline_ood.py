@@ -86,6 +86,10 @@ def run(cfg: omegaconf.DictConfig) -> str:
         
     pylogger.info(f"Starting MASS eval with OOD tasks")
     seed_index_everything(cfg)
+    
+    num_tasks = len(cfg.benchmark.datasets)
+    cfg.core.tags.append(f"n{num_tasks}")
+    cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
 
     logger, template_core = boilerplate(cfg)
 

@@ -184,6 +184,7 @@ mass = { workspace = true }
 
 [project.scripts]
 evaluate = "mass.scripts.evaluate_pipeline:main"
+evaluate_language = "mass.scripts.evaluate_llms:main"
 get_ft_accs = "mass.scripts.get_finetuned_accs:main"
 train = "mass.scripts.train_router:main"
 interpret = "mass.scripts.interpret:main"

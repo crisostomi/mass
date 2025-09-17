@@ -1,4 +1,5 @@
 defaults:
   - _self_
   - module: default
-  - encoder: ???
+  - encoder: b32
+  - task:
