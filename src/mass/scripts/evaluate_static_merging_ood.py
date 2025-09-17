@@ -108,15 +108,24 @@ def run(cfg: DictConfig) -> str:
         model_name=cfg.nn.encoder.model_name
     )
 
+    to_apply = [dataset for dataset in cfg.eval_datasets if dataset not in cfg.task_vectors.to_remove]
+    
+    pylogger.info(f"Datasets to apply: {to_apply}")
+    pylogger.info(f"Datasets to remove: {cfg.task_vectors.to_remove}")
+    
+    assert len(to_apply) != len(cfg.eval_datasets), "You need to remove at least one dataset to run this experiment"
+
     finetuned_models = {
         dataset: load_model_from_hf(
             model_name=cfg.nn.encoder.model_name, dataset_name=dataset
         ).state_dict() # TODO: uniform to use both without state_dict()
-        for dataset in cfg.benchmark.datasets
+        for dataset in to_apply
     }
 
     pylogger.info(f"Number of tasks: {cfg.num_tasks}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
+    
+    assert cfg.num_tasks != len(finetuned_models), "You need to remove at least one dataset to run this experiment"
 
     merger = instantiate(cfg.merger)
 
@@ -126,7 +135,7 @@ def run(cfg: DictConfig) -> str:
 
     results = {}
     print_memory("before eval")
-    for dataset_name in cfg.benchmark.datasets:
+    for dataset_name in cfg.task_vectors.to_remove:
 
         dataset_cfg = OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
