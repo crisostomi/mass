@@ -22,7 +22,7 @@ import mass  # noqa
 from mass.data.dataset import get_task_evaluation_dataset
 from mass.modules.encoder import ImageEncoder
 from mass.pl_module.router_task_classifier import RouterTaskClassifier
-from mass.modules.router import AbstractRouter
+from mass.modules.mass_gate import AbstractRouter
 from mass.utils.io_utils import boilerplate, load_model_from_disk, load_model_from_hf
 from mass.utils.utils import (
     compute_task_dict,

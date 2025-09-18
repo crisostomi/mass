@@ -11,7 +11,7 @@ from hydra.utils import instantiate
 import logging
 from mass.data.dataset import maybe_dictionarize
 from mass.data.templates import get_dataset_to_label
-from mass.modules.router import AbstractRouter
+from mass.modules.mass_gate import AbstractRouter
 
 pylogger = logging.getLogger(__name__)
 

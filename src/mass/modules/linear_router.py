@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
-from mass.modules.router import AbstractRouter
+from mass.modules.mass_gate import AbstractRouter
 
 import logging
 

@@ -33,15 +33,14 @@ num_of_tasks_to_scaling_coeff = {
 }
 
 
-class MASS(MultiHeadImageClassifier):
+class MASS():
     def __init__(
         self,
         router,
         encoder,
         zeroshot_model,
-        classification_heads,
         svd_dicts,
-        oracle_mode,
+        merger,
         tv_device="cpu",
         **kwargs,
     ):
@@ -52,28 +51,15 @@ class MASS(MultiHeadImageClassifier):
         zeroshot_model:
         classification_heads: list of classification heads, one for each dataset
         """
-        super().__init__(
-            encoder=encoder, classification_heads=classification_heads, **kwargs
-        )
 
         self.router = router
         self.svd_dicts = svd_dicts
-        self.output_classes = None
-        self.oracle_mode = oracle_mode
-        self.head_idx = None
-        if self.oracle_mode:
-            pylogger.warning(
-                "Oracle mode enabled: using ground-truth task labels for routing."
-            )
 
         # TODO: changed this
         self.aggregator = instantiate(
-            self.hparams.aggregator,
+            merger,
             zeroshot_model=zeroshot_model.to(tv_device),
             tv_device=tv_device,
-        )
-        self.heads_selection_critieria = (
-            torch.mean if self.hparams.heads_selection_method == "avg" else torch.max
         )
 
         self.dataset_names = list(svd_dicts.keys())
@@ -95,58 +81,6 @@ class MASS(MultiHeadImageClassifier):
 
         self.max_num_tvs_to_keep = 10
 
-    def set_metrics(self, num_classes):
-
-        self.output_classes = num_classes
-
-        metric = torchmetrics.Accuracy(
-            task="multiclass", num_classes=num_classes, top_k=1
-        )
-
-        self.train_acc = metric.clone()
-        self.val_acc = metric.clone()
-        self.test_acc = metric.clone()
-        
-    @torch.no_grad()
-    def forward_oracle(self, images: torch.Tensor, dataset_name: str):
-
-        _, dataset_coeffs, dataset_group_to_samples = self.router(images)
-
-        batch_size = images.shape[0]
-        sample_embeddings = [None] * batch_size
-
-        for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
-
-            assigned_sample_idxs = torch.tensor(
-                assigned_sample_idxs
-            )  # Ensure assigned_sample_idxs is also a tensor
-
-            merged_model = self._apply_tv(list(dataset_group))
-
-            # (num_samples_in_group, C, H, W)
-            group_images = images[assigned_sample_idxs]
-
-            # (num_samples_in_group, embedding_dim)
-            group_output = merged_model(group_images)
-
-            for j, idx in enumerate(assigned_sample_idxs):
-                sample_embeddings[idx] = group_output[j : j + 1]
-
-        sample_embeddings = torch.cat(sample_embeddings, dim=0)
-
-        if self.head_idx is None:
-            head = self.classification_heads[self.dataset_name_to_idx[dataset_name]]
-        else:
-            head = self.classification_heads[self.head_idx]
-            
-        logits = head(sample_embeddings)
-
-        assert (
-            self.output_classes is not None
-        ), "Output classes not set. Use set_metrics() first."
-
-        outputs = [logits[i : i + 1] for i in range(batch_size)]
-        return pad_output(outputs, self.output_classes)
 
     @torch.no_grad()
     def forward(self, images: torch.Tensor):
@@ -222,7 +156,7 @@ class MASS(MultiHeadImageClassifier):
             ]
             # for each dataset, get the heads_selection_criteria score
             candidate_scores = [
-                self.heads_selection_critieria(logits).item()
+                 torch.mean(logits).item()
                 for logits in candidate_logits
             ]  ## try with the max mean (trained with contrastive loss)
             # get the index of the best score among the datasets

@@ -30,7 +30,7 @@ from mass.data.dataset import get_task_evaluation_dataset
 from mass.modules.encoder import ImageEncoder
 from mass.pl_module.router_task_classifier import RouterTaskClassifier
 from mass.modules.heads import build_task_classification_head, get_classification_head
-from mass.modules.router import AbstractRouter
+from mass.modules.mass_gate import AbstractRouter
 from mass.task_vectors.task_singular_vectors import (
     sum_svd,
     get_svd_dict,

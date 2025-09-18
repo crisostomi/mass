@@ -1,19 +1,17 @@
 import logging
 import os
 from copy import deepcopy
+import re
 from typing import (
     Any,
     List,
-)  # noqa: F401
+)
 
 import torch
-import torch.nn.functional as F
-from omegaconf import OmegaConf
 from torch import Tensor, nn
-import torchmetrics
 from tqdm.auto import tqdm
+import pytorch_lightning as pl
 
-from mass.modules.linear_attention import LinearMultiheadAttention
 from mass.modules.smile_gates import (
     ExpertNotTrainedError,
     SmileMoELinear,
@@ -25,7 +23,6 @@ from mass.utils.fusion_bench_utils import (
     set_attr,
     simple_average,
 )
-from mass.utils.utils import pad_unbatched_output
 
 
 pylogger = logging.getLogger(__name__)
@@ -66,8 +63,7 @@ class SmileUpscalingAlgorithm():
             model_path (str): The path to save/load the model.
             **kwargs: Additional arguments.
         """
-        # Store parameters (avoiding conflict with pl.LightningModule.device property)
-        # TODO: super.__init__ here and use self.hparams
+
         self.merge_device = device
         self.full_matrices = full_matrices
         self.gate_k = gate_k
@@ -77,7 +73,7 @@ class SmileUpscalingAlgorithm():
         self.average_experts = average_experts
         self.model_path = model_path
         self.upscaling_accelerator = kwargs.pop("upscaling_accelerator", None)
-        self.upscaled_layers = set()  # Initialize before super().__init__()
+        self.upscaled_layers = set()  
         self.oracle_mode = oracle_mode
 
         for key, value in kwargs.items():
@@ -106,7 +102,7 @@ class SmileUpscalingAlgorithm():
             torch.save(model, model_path)
             
         self.model = model
-
+       
     def merge(
         self,
         zeroshot_model: nn.Module,
@@ -241,6 +237,7 @@ class SmileUpscalingAlgorithm():
                 pylogger.info(f"Averaging experts for leaf module: {name}")
                 # if the module is a leaf module, we perform a parameter average
                 self._average_experts(zeroshot_model, finetuned_models, name)
+                
 
     # def set_metrics(self, num_classes):
 

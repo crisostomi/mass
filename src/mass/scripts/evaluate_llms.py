@@ -1,6 +1,7 @@
 ## Imports
 
 import logging
+from typing import List
 
 
 import open_clip
@@ -11,7 +12,9 @@ import omegaconf
 import torch
 
 from hydra.utils import instantiate
+from nn_core.serialization import NNCheckpointIO
 
+import pytorch_lightning as pl
 
 from nn_core.common import PROJECT_ROOT
 from nn_core.common.utils import seed_index_everything
@@ -22,6 +25,7 @@ import mass  # noqa
 import os
 
 from mass.utils.io_utils import boilerplate
+from mass.utils.utils import print_memory, build_callbacks
 
 pylogger = logging.getLogger(__name__)
 
@@ -42,10 +46,10 @@ def run(cfg: omegaconf.DictConfig) -> str:
     cfg.num_tasks = num_tasks  # Now we can safely update it
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
     
-    zeroshot_encoder = instantiate(cfg.nn.encoder)
+    zeroshot_encoder = instantiate(cfg.nn.encoder.model)
     
     finetuned_models = {
-        dataset: instantiate(cfg.nn.encoder, pretrained_model_name_or_path=cfg.nn.encoder.pretrained_model_name_or_path.replace("google/", f"tanganke/") + f"_glue-{dataset}",
+        dataset: instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=cfg.nn.encoder.model.pretrained_model_name_or_path.replace("google/", f"tanganke/") + f"_glue-{dataset}",
         )
         for dataset in cfg.benchmark.datasets
     }
@@ -59,6 +63,12 @@ def run(cfg: omegaconf.DictConfig) -> str:
         zeroshot_model=zeroshot_encoder,
         finetuned_models=finetuned_models_list,
     )
+
+    tokenizer = instantiate(cfg.nn.tokenizer)
+    
+    task_model = instantiate(cfg.nn.task, moe_model=moerging, tokenizer=tokenizer)
+
+    moerging.cuda()
     
     # TODO: add task specific layer
     
@@ -72,8 +82,29 @@ def run(cfg: omegaconf.DictConfig) -> str:
         )
         
         dataset = instantiate(
-            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess, batch_size=cfg.data_batch_size
+            dataset_cfg, tokenizer=tokenizer) #cache_dir="~/.cache/huggingface/datasets/glue")
+        
+        pylogger.info(f"Dataset {dataset_name} loaded: {dataset}")
+        pylogger.info(f"{type(dataset)}")
+        
+        callbacks = build_callbacks(cfg.train.callbacks, template_core)
+
+        # TODO: check if this would work
+        task_model.set_metrics()
+        task_model.set_task(dataset_name)
+
+        trainer = pl.Trainer(
+            default_root_dir=cfg.core.storage_dir,
+            plugins=[NNCheckpointIO(jailing_dir=logger.run_dir)],
+            logger=logger,
+            callbacks=callbacks,
+            limit_test_batches=None,
+            **cfg.train.trainer,
         )
+
+        test_results = trainer.test(model=task_model, dataloaders=dataset.val_loader)
+        
+        pylogger.info(f"Test results on {dataset_name}: {test_results}")    
     
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="eval_language.yaml")

@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import wandb
 
-from mass.modules.router import AbstractRouter
+from mass.modules.mass_gate import AbstractRouter
 from mass.utils.routing_methods import (
     compute_residual_norm,
 )

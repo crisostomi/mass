@@ -1,2 +1,4 @@
-_target_: transformers.AutoModelForSeq2SeqLM.from_pretrained
-pretrained_model_name_or_path: google/flan-t5-base
+model_name: t5-base
+model:
+  _target_: transformers.AutoModelForSeq2SeqLM.from_pretrained
+  pretrained_model_name_or_path: google/flan-t5-base
