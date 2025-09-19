@@ -210,6 +210,7 @@ def get_svd_dict(
         dict: The SVD dictionary.
     """
 
+    pylogger.info(f"Datasets: {datasets}")
     compression_factor = compression_factor or len(datasets)
     compression_ratio = 1 / compression_factor
     pylogger.info(f"Using compression ratio: {compression_ratio:.4f}")

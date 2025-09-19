@@ -1,26 +1,19 @@
-import numpy as np
+from copy import deepcopy
+
 from hydra.utils import instantiate
-import wandb
+
 import torch
+import torch.nn as nn
 
-import mass
-from mass.pl_module.image_multihead_classifier import MultiHeadImageClassifier
+from mass.merger.tsv import TaskSingularVectorsMerger
+from mass.modules.mass_gate import MassGate
 
-import torchmetrics
-from mass.task_vectors.aggregator import (
-    IsotropicAggregator,
-    TaskSingularVectorAggregator,
-    WeightedAggregator,
-)
-from mass.utils.plots import (
-    plot_interactive_coefficients_barchart,
-    plot_interactive_coefficients_std,
-)
+from mass.task_vectors.task_singular_vectors import get_svd_dict
+from mass.utils.fusion_bench_utils import get_attr, set_attr
+
 from mass.utils.utils import (
-    print_memory,
-    reconstruct_tv_from_svddict,
-    pad_output,
-)
+    compute_task_dict,
+    get_routing_weights)
 import logging
 
 pylogger = logging.getLogger(__name__)
@@ -33,16 +26,21 @@ num_of_tasks_to_scaling_coeff = {
 }
 
 
-class MASS():
+class MassAlgorithm():
+    
+    _linear_layer_cls = (nn.Linear,)
     def __init__(
         self,
-        router,
-        encoder,
-        zeroshot_model,
-        svd_dicts,
         merger,
-        tv_device="cpu",
-        **kwargs,
+        base_merger,
+        zeroshot_model,
+        finetuned_models,
+        dataset_names,
+        routing_mode,
+        layer_to_hook,
+        max_num_tasks_to_select,
+        device: str = "cuda",
+        svd_path: str = None,
     ):
         """
 
@@ -51,72 +49,132 @@ class MASS():
         zeroshot_model:
         classification_heads: list of classification heads, one for each dataset
         """
+        self.dataset_names = dataset_names
+        self.routing_mode = routing_mode
+        self.layer_to_hook = layer_to_hook
+        self.max_num_tasks_to_select = max_num_tasks_to_select
+        
+        self.merger = merger
+        self.base_merger = base_merger
+        
+        task_dicts = {}
+        for dataset in dataset_names:
+            task_dicts[dataset] = compute_task_dict(
+                zeroshot_model.state_dict(), finetuned_models[dataset].state_dict()
+            )
+            torch.cuda.empty_cache()
 
-        self.router = router
+
+        self.svd_dict = get_svd_dict(
+            task_dicts, 
+            self.dataset_names, 
+            svd_path,
+        )
+
+        pylogger.info(f"SVD dict keys: {self.svd_dict['cola'].keys()}")
+
+        del task_dicts
+        
+        self.zeroshot_model = zeroshot_model
+        merged_encoder = self.base_merger.merge(zeroshot_model, {dataset: finetuned_models[dataset].state_dict() for dataset in dataset_names})
+        
+        finetuned_models_list = list(finetuned_models.values())
+        del finetuned_models
+        merged_encoder = self.merge(merged_encoder, finetuned_models_list, in_place=True)
+        
+        self.model = MassInferenceWrapper(
+            layer_to_hook,
+            merged_encoder,
+            zeroshot_model,
+            self.svd_dict,
+            self.merger,
+        ).to(device)
+        
+        pylogger.info(f"{type(get_attr(self.model.base_model, self.layer_to_hook.split('.')))}")
+        
+        
+    
+    def merge(self, base_model, finetuned_models, in_place=True):
+        if in_place:
+            model = base_model
+        else:
+            model = deepcopy(base_model)
+
+        self._upscale_submodules(model, self.layer_to_hook)
+        return model
+    
+    def _upscale_submodules(
+        self,
+        base_model: nn.Module,
+        name: str,
+    ):
+        """
+        Upscales the submodules of the pretrained model by merging them with the corresponding submodules from the fine-tuned models.
+
+        Args:
+            zeroshot_model (nn.Module): The pretrained model.
+            finetuned_models (List[nn.Module]): A list of fine-tuned models.
+            tqdm_desc (str): Description for the tqdm progress bar.
+        """
+        # TODO: do we need this still?
+        # replace_attention_with_linear(zeroshot_model, finetuned_models)
+        name_list = name.split(".")
+        pylogger.info(f"Layer name {name}")
+        module = get_attr(base_model, name_list)
+        
+        try:
+            pylogger.info(f"Svd dict keys: {self.svd_dict.keys()}")
+            # TODO: can we fix once for all this layer key mess
+            pylogger.info(get_routing_weights(self.svd_dict, self.layer_to_hook + ".weight"))
+            
+            pylogger.info(f"Creating MassGate for layer {self.layer_to_hook}")
+            mass_gate = MassGate(
+                module,
+                get_routing_weights(self.svd_dict, self.layer_to_hook + ".weight"),
+                self.dataset_names,
+                self.routing_mode, 
+                self.max_num_tasks_to_select,
+            )
+        except Exception as e:
+            pylogger.error(f"Error creating MassGate: {e}")
+            return
+        set_attr(base_model, name_list, mass_gate)
+        pylogger.info(f"Layer type:{type(get_attr(base_model, name_list))}")
+
+
+
+class MassInferenceWrapper(nn.Module):
+    def __init__(
+        self, 
+        layer_to_hook: str,
+        base_model,
+        zeroshot_model: nn.Module,
+        svd_dicts: dict,
+        merger: TaskSingularVectorsMerger,
+    ):
+        super().__init__()
+        self.base_model = base_model
+        self.zeroshot_model = zeroshot_model
         self.svd_dicts = svd_dicts
-
-        # TODO: changed this
-        self.aggregator = instantiate(
-            merger,
-            zeroshot_model=zeroshot_model.to(tv_device),
-            tv_device=tv_device,
-        )
-
-        self.dataset_names = list(svd_dicts.keys())
-        self.dataset_idx_to_name = {
-            i: name for i, name in enumerate(self.dataset_names)
-        }
-        self.dataset_name_to_idx = {
-            name: i for i, name in enumerate(self.dataset_names)
-        }
-
-        self.task_accuracy = torchmetrics.Accuracy(
-            task="multiclass", num_classes=len(self.dataset_names), top_k=1
-        )
-
+        self.merger = merger
+        
+        self.layer_to_hook = layer_to_hook
+        
+        self.max_num_tvs_to_keep = 1
         self.cached_tvs = {}
+        
+        
+    def collect_output(self):
+        mass = get_attr(self.base_model, self.layer_to_hook.split("."))
+        return mass.output
+    
+    def generate(self, batch, max_length):
+        pylogger.info(f"Batch size: {batch.shape[0]}")
+        self.base_model.generate(batch, max_length=max_length)
+        
+        _, _, dataset_group_to_samples = self.collect_output()
 
-        self.coeffs_to_log = []
-        self.task_act_to_log = {}
-
-        self.max_num_tvs_to_keep = 10
-
-
-    @torch.no_grad()
-    def forward(self, images: torch.Tensor):
-        selected_dataset_idxs, dataset_coeffs, dataset_group_to_samples = self.router(
-            images
-        )
-
-        # log coefficients
-        self.coeffs_to_log.append(dataset_coeffs.mean(dim=0).cpu().numpy())
-        # log task accuracy
-
-        pred_tasks = torch.max(dataset_coeffs, dim=1)[1]
-        gt_tasks = torch.full_like(pred_tasks, self.dataset_name_to_idx[self.task_name])
-
-        task_acc = self.task_accuracy(pred_tasks, gt_tasks)
-        self.log_fn(f"task_accuracy/{self.task_name}", task_acc)
-
-        # log task activation
-        active_tasks = torch.sum(dataset_coeffs > self.router.threshold, dim=1)
-
-        for active_num in active_tasks:
-            active = int(active_num.item())
-            if active not in self.task_act_to_log:
-                self.task_act_to_log[active] = 0
-            self.task_act_to_log[active] += 1
-
-        # task survival
-        correct_task_coeffs = dataset_coeffs[
-            :, self.dataset_name_to_idx[self.task_name]
-        ]
-        task_survival_count = torch.mean(
-            (correct_task_coeffs > self.router.threshold).float()
-        ).item()
-        self.log_fn(f"task_survival/{self.task_name}", task_survival_count)
-
-        batch_size = images.shape[0]
+        batch_size = batch.shape[0]
         sample_embeddings = [None] * batch_size
 
         for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
@@ -128,10 +186,10 @@ class MASS():
             merged_model = self._apply_tv(list(dataset_group))
 
             # (num_samples_in_group, C, H, W)
-            group_images = images[assigned_sample_idxs]
+            group_images = batch[assigned_sample_idxs]
 
             # (num_samples_in_group, embedding_dim)
-            merged_model.to(images.device)
+            merged_model.to(batch.device)
             group_output = merged_model(group_images)
 
             for j, idx in enumerate(assigned_sample_idxs):
@@ -139,40 +197,8 @@ class MASS():
 
         sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
-        outputs = []
-
-        for sample_routed_datasets, sample_embedding in zip(
-            selected_dataset_idxs, sample_embeddings
-        ):
-
-            assert isinstance(
-                sample_routed_datasets, (int, list, tuple)
-            ), f"Unexpected type for routing indices: {type(sample_routed_datasets)}"
-
-            # logits for each dataset the sample was routed to, so a tensor for each routed_dataset in len(sample_routed_datasets)
-            candidate_logits = [
-                self.classification_heads[j](sample_embedding.unsqueeze(0))
-                for j in sample_routed_datasets
-            ]
-            # for each dataset, get the heads_selection_criteria score
-            candidate_scores = [
-                 torch.mean(logits).item()
-                for logits in candidate_logits
-            ]  ## try with the max mean (trained with contrastive loss)
-            # get the index of the best score among the datasets
-            best_idx = candidate_scores.index(max(candidate_scores))
-            # get the logits of the best dataset
-            logits = candidate_logits[best_idx]
-
-            outputs.append(logits)
-
-        assert (
-            self.output_classes is not None
-        ), "Output classes not set. Use set_metrics() method to set them."
-        pylogger.info("Cached contains: " + str(len(self.cached_tvs)))
-        print_memory("After forward")
-
-        return pad_output(outputs, self.output_classes)
+        return sample_embeddings
+    
 
     @torch.no_grad()
     def _apply_tv(self, dataset_names):
@@ -184,33 +210,10 @@ class MASS():
 
             return self.cached_tvs[dataset_combo]
 
-        if isinstance(self.aggregator, WeightedAggregator):
-            single_scaling_coeff = num_of_tasks_to_scaling_coeff[len(dataset_names)]
+        if isinstance(self.merger, TaskSingularVectorsMerger):
 
-            tvs = []
-
-            for dataset_name in dataset_names:
-
-                # eventually offload the cache to the RAM
-                tv = reconstruct_tv_from_svddict(
-                    self.svd_dicts[dataset_name], device="cpu"
-                )
-
-                tvs.append(tv)
-
-            aggregated = self.aggregator.aggregate(tvs, single_scaling_coeff)
-
-            self.cached_tvs[dataset_combo] = aggregated
-
-            return aggregated
-
-        elif isinstance(self.aggregator, TaskSingularVectorAggregator) or isinstance(
-            self.aggregator, IsotropicAggregator
-        ):
-
-            single_scaling_coeff = 1.0
-
-            aggregated = self.aggregator.aggregate(
+            aggregated = self.merger.merge(
+                self.zeroshot_model,
                 {
                     dataset_name: self.svd_dicts[dataset_name]
                     for dataset_name in dataset_names
@@ -226,82 +229,11 @@ class MASS():
 
         else:
             raise NotImplementedError
-
-    def __call__(self, images):
-        if self.oracle_mode:
-            return self.forward_oracle(images, self.task_name)
-        return self.forward(images)
-
-    def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
-        if len(self.cached_tvs) > self.max_num_tvs_to_keep:
-            self.flush_cache()
-
-        return super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx)
-
+        
     def flush_cache(self):
-        for k, v in self.cached_tvs.items():
-            del v
-
         self.cached_tvs = {}
+        torch.cuda.empty_cache()
 
-    def on_test_epoch_end(self):
 
-        self.flush_cache()
 
-        self.cached_tvs = {}
-
-        self.plot_coeffs()
-        self.plot_task_activation()
-
-        # router stats logging
-        self.router.logging(self.trainer.logger, self.task_name)
-
-        self.reset_log_stats()
-
-        return super().on_test_epoch_end()
-
-    def plot_task_activation(self):
-
-        x_values = sorted(self.task_act_to_log.keys())
-        total_samples = sum(self.task_act_to_log.values())
-
-        y_values = [self.task_act_to_log[x] / total_samples for x in x_values]
-
-        fig = plot_interactive_coefficients_barchart(
-            y_values,
-            x_values,
-            title="Activated tasks",
-            x_label="Number of Activated Tasks",
-            y_label="Percentage of Samples",
-        )
-
-        self.trainer.logger.experiment.log(
-            {f"activated_tasks/{self.task_name}": wandb.Plotly(fig)}
-        )
-
-    def plot_coeffs(self):
-        if self.oracle_mode:
-            return
-        self.coeffs_to_log = np.array(self.coeffs_to_log)
-
-        mean_coeffs = self.coeffs_to_log.mean(axis=0)
-        std_coeffs = self.coeffs_to_log.std(axis=0)
-
-        fig_std = plot_interactive_coefficients_std(
-            mean_coeffs, std_coeffs, self.dataset_names
-        )
-
-        std_table = wandb.Table(columns=["Dataset", "Std Dev"])
-        for dataset, std in zip(self.dataset_names, std_coeffs):
-            std_table.add_data(dataset, std)
-
-        self.trainer.logger.experiment.log(
-            {
-                f"coefficients/{self.task_name}": wandb.Plotly(fig_std),
-                f"coefficients_std/{self.task_name}_table": std_table,
-            }
-        )
-
-    def reset_log_stats(self):
-        self.coeffs_to_log = []
-        self.task_act_to_log = {}
+    

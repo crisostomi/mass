@@ -7,7 +7,7 @@ _target_: mass.pl_module.we_moe.WeightEnsemblingMoEAlgorithm
 
 x_key: ${conventions.x_key}
 y_key: ${conventions.y_key}
-dataset_names: {eval_dataset}
+dataset_names: ${eval_datasets}
 
 image_encoder: ??  
 finetuned_models: ??

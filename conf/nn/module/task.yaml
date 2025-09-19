@@ -9,7 +9,7 @@ _target_: mass.pl_module.router_task_classifier.RouterTaskClassifier
 
 x_key: ${conventions.x_key}
 y_key: ${conventions.y_key}
-dataset_names: {eval_dataset}
+dataset_names: ${eval_datasets}
 base_merging_method: tsvm # isotropic, tsvm, zeroshot
 heads_selection_method: max # avg, max 
 

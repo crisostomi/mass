@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - module: smile
+  - module: mass
   - encoder: t5
-  - task: lang_regression
+  - task: lang_classification
   - tokenizer: t5

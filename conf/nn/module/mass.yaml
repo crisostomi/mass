@@ -1,33 +1,28 @@
+_target_: mass.pl_module.mass.MassAlgorithm
 
-defaults:
-  - _self_
-  - router: proj # linear, nn, proj
-  - aggregator: tsvm
+merger: 
+  _target_: mass.merger.tsv.TaskSingularVectorsMerger
+  svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
+  svd_compress_factor: null 
+  non_matrix_params_aggregation: "mean" # "base_model"
 
-_target_: mass.pl_module.mass.MASS
+base_merger: 
+  _target_: mass.merger.tsv.TaskSingularVectorsMerger
+  svd_path: "${oc.env:MODELS_PATH}svd_dict_${nn.encoder.model_name}.pt"
+  svd_compress_factor: null 
+  non_matrix_params_aggregation: 0.3
+
+zeroshot_model: ??
+finetuned_models: ??
+dataset_names: ${eval_datasets}
+
+routing_mode: topk
+
+layer_to_hook: "encoder.block.11.layer.1.DenseReluDense.wi_1"
+max_num_tasks_to_select: 3
+
+svd_path: ${misc.svd_path}
 
 
-x_key: ${conventions.x_key}
-y_key: ${conventions.y_key}
-dataset_names: {eval_dataset}
-base_merging_method: tsvm # isotropic, tsvm, zeroshot
-heads_selection_method: max # avg, max 
-
-image_encoder: ??  
-classification_heads: ??
-oracle_mode: false
-tv_device: cuda  
 
 
-optimizer:
-  _target_: torch.optim.AdamW
-  lr: 1e-5
-  weight_decay: 0.1
-  # _target_: torch.optim.SGD
-  # lr: 0.1
-  # momentum: 0.9
-  # weight_decay: 1e-4
-
-lr_scheduler:
-  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
-  T_max: 10

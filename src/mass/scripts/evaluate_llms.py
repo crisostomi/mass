@@ -54,21 +54,19 @@ def run(cfg: omegaconf.DictConfig) -> str:
         for dataset in cfg.benchmark.datasets
     }
     
-    finetuned_models_list = list(finetuned_models.values())
-    
     pylogger.info(f"Finetuned models: {finetuned_models.keys()}")
+    
+    pylogger.info(f"{cfg.eval_datasets}")
     
     moerging = instantiate(
         cfg.nn.module,
         zeroshot_model=zeroshot_encoder,
-        finetuned_models=finetuned_models_list,
+        finetuned_models=finetuned_models,
     )
 
     tokenizer = instantiate(cfg.nn.tokenizer)
     
-    task_model = instantiate(cfg.nn.task, moe_model=moerging, tokenizer=tokenizer)
-
-    moerging.cuda()
+    task_model = instantiate(cfg.nn.task, moe_model=moerging.model.cuda(), tokenizer=tokenizer)
     
     # TODO: add task specific layer
     

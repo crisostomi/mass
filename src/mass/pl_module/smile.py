@@ -31,7 +31,6 @@ pylogger = logging.getLogger(__name__)
 class SmileUpscalingAlgorithm():
     # _linear_layer_cls = (nn.Linear,) avoid hard coding
     _linear_layer_cls = (nn.Linear,)
-    _upscaled_layer_cls = (SmileMoELinear,)
 
     def __init__(
         self,
@@ -75,6 +74,8 @@ class SmileUpscalingAlgorithm():
         self.upscaling_accelerator = kwargs.pop("upscaling_accelerator", None)
         self.upscaled_layers = set()  
         self.oracle_mode = oracle_mode
+        
+        finetuned_models_list = list(finetuned_models.values())
 
         for key, value in kwargs.items():
             pylogger.warning(f"Unrecognized argument: {key}")
@@ -86,12 +87,7 @@ class SmileUpscalingAlgorithm():
         else:
             # finetuned_models should already be a list of model objects
             pylogger.info(f"Received finetuned_models as {type(finetuned_models)}")
-            if isinstance(finetuned_models, dict):
-                pylogger.info("Converting finetuned_models dict to list...")
-                finetuned_models_list = list(finetuned_models.values())
-            else:
-                pylogger.info(f"Using finetuned_models as list")
-                finetuned_models_list = finetuned_models
+            finetuned_models_list = list(finetuned_models.values())
             pylogger.info("Creating SMILE model...")
             model = self.merge(zeroshot_model, finetuned_models_list)
 

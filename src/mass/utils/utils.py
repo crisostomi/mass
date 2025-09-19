@@ -305,14 +305,14 @@ def apply_dict_to_model(task_vector_dict, model, coefficient: float = 1.0):
         )  # Get model's state_dict (reference, not a copy)
 
         for key, value in task_vector_dict.items():
-            new_key = key.replace("encoder.", "")
-            if new_key not in new_state_dict:
+            # new_key = key.replace("encoder.", "")
+            if key not in new_state_dict:
                 pylogger.warning(
-                    f"Key {new_key} is present in the task vector but not in the model"
+                    f"Key {key} is present in the task vector but not in the model"
                 )
                 continue
             else:
-                new_state_dict[new_key] += coefficient * value.cuda()  # Update weight
+                new_state_dict[key] += coefficient * value.cuda()  # Update weight
 
         model.load_state_dict(new_state_dict, strict=False)  # Load updated parameters
     return model.cuda()
@@ -340,24 +340,37 @@ def is_matrix_dict(layer):
 
 def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
     """
-    Returns the right singular vectors
-    """
+    Returns the right singular vectors.
 
+    Args:
+        svd_dict (dict): Dictionary containing SVD components.
+        layer (str): Layer name to retrieve weights for.
+        get_sigma (bool): Whether to return singular values.
+        get_u (bool): Whether to return left singular vectors.
+
+    Returns:
+        tuple: Stacked right singular vectors, singular values (if requested), and left singular vectors (if requested).
+    """
     vs = []
     sigma = []
     us = []
 
     for dt in svd_dict.keys():
-        layer_key = layer.replace("encoder.", "")
+        if layer not in svd_dict[dt]:
+            raise KeyError(f"Layer '{layer}' not found in SVD dictionary for key '{dt}'.")
 
-        vs.append(svd_dict[dt][layer_key]["v"].cuda())
-        sigma.append(svd_dict[dt][layer_key]["s"].cuda())
-        us.append(svd_dict[dt][layer_key]["u"].cuda())
+        layer_data = svd_dict[dt][layer]
+        if not all(k in layer_data for k in ["v", "s", "u"]):
+            raise KeyError(f"Missing keys in SVD data for layer '{layer}' under key '{dt}'.")
+        
+        vs.append(layer_data["v"].to("cuda"))
+        sigma.append(layer_data["s"].to("cuda"))
+        us.append(layer_data["u"].to("cuda"))
 
     return (
-        torch.stack(vs),
-        torch.stack(sigma) if get_sigma else None,
-        torch.stack(us) if get_u else None,
+        torch.stack(vs) if vs else None,
+        torch.stack(sigma) if get_sigma and sigma else None,
+        torch.stack(us) if get_u and us else None,
     )
 
 def is_supported_layer(layer_key: str) -> bool:

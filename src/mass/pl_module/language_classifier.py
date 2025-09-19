@@ -68,7 +68,7 @@ class LanguageTester(pl.LightningModule):
 class SentenceClassification(LanguageTester):
     def _step(self, batch, split: str):
 
-        logits, acc = evaluate_accuracy(self.moe_model.model, batch, self.tokenizer)
+        logits, acc = evaluate_accuracy(self.moe_model, batch, self.tokenizer)
         
         # Update the MeanMetric with the batch accuracy
         metrics = getattr(self, f"{split}_acc")
@@ -82,7 +82,7 @@ class SentenceClassification(LanguageTester):
     
 class Regression(LanguageTester):
     def _step(self, batch, split: str):
-        logits, acc = evaluate_spearman_rho(self.moe_model.model, batch, self.tokenizer)
+        logits, acc = evaluate_spearman_rho(self.moe_model, batch, self.tokenizer)
         
         # Update the MeanMetric with the batch accuracy
         metrics = getattr(self, f"{split}_acc")
