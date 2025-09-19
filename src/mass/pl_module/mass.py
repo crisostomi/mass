@@ -53,6 +53,7 @@ class MassAlgorithm():
         self.routing_mode = routing_mode
         self.layer_to_hook = layer_to_hook
         self.max_num_tasks_to_select = max_num_tasks_to_select
+        self.device = device
         
         self.merger = merger
         self.base_merger = base_merger
@@ -134,7 +135,9 @@ class MassAlgorithm():
                 self.dataset_names,
                 self.routing_mode, 
                 self.max_num_tasks_to_select,
+                token_selection="mean"
             )
+            mass_gate.to(self.device)
         except Exception as e:
             pylogger.error(f"Error creating MassGate: {e}")
             return
@@ -186,11 +189,11 @@ class MassInferenceWrapper(nn.Module):
             merged_model = self._apply_tv(list(dataset_group))
 
             # (num_samples_in_group, C, H, W)
-            group_images = batch[assigned_sample_idxs]
+            group_batch = batch[assigned_sample_idxs]
 
             # (num_samples_in_group, embedding_dim)
             merged_model.to(batch.device)
-            group_output = merged_model(group_images)
+            group_output = merged_model.generate(group_batch, max_length=max_length)
 
             for j, idx in enumerate(assigned_sample_idxs):
                 sample_embeddings[idx] = group_output[j : j + 1]
@@ -212,7 +215,7 @@ class MassInferenceWrapper(nn.Module):
 
         if isinstance(self.merger, TaskSingularVectorsMerger):
 
-            aggregated = self.merger.merge(
+            aggregated = self.merger.merge_from_svd_dict(
                 self.zeroshot_model,
                 {
                     dataset_name: self.svd_dicts[dataset_name]

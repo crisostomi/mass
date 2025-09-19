@@ -9,22 +9,6 @@ import torch.nn as nn
 from mass.utils.routing_methods import (
     compute_residual_norm,
 )
-from mass.utils.utils import (
-    get_hook_fn,
-    get_hook_fn_impact,
-    get_routing_weights,
-    is_supported_layer,
-    router_key_from_layer,
-    svd_key_from_layer,
-    from_router_to_svd_dict_key,
-)
-
-from mass.utils.plots import (
-    plot_interactive_coefficients_std,
-    create_interactive_layer_task_residual_plot,
-    create_interactive_layer_task_accuracy_plot,
-    create_interactive_layer_impact_bar_chart,
-)
 
 import logging
 
@@ -65,7 +49,7 @@ class MassGate(nn.Module):
 
         # TODO: check if it works with LLMs
         self.select_token = lambda x: (
-            x[0, :] if token_selection == "cls" else x.mean(dim=0)
+            x[:, 0, :] if token_selection == "cls" else x.mean(dim=1)
         )  # CLS token or mean pooling = 'cls'
         
         self.dataset_idx_to_name = {
@@ -89,7 +73,6 @@ class MassGate(nn.Module):
         pylogger.info(f"MassGate forward, input shape: {x.shape}")
         dataset_coeffs = self._compute_tv_coefficients(x)
 
-        pylogger.info(f"Dataset coefficients: {dataset_coeffs}")
         # for each sample, select the datasets such that the router coeffs surpass the threshold (B, num_datasets)
         selected_dataset_idxs: List[List[int]] = self._filter_datasets(dataset_coeffs)
 
@@ -97,8 +80,6 @@ class MassGate(nn.Module):
         dataset_group_to_samples = self.group_images_by_selected_datasets(
             selected_dataset_idxs
         )
-
-        pylogger.info(f"Dataset group to samples: {dataset_group_to_samples}")
         self.output = selected_dataset_idxs, dataset_coeffs, dataset_group_to_samples
         return self.module(x)
 
@@ -163,8 +144,6 @@ class MassGate(nn.Module):
             if not idxs:
 
                 top_k = 1  # for now top 1, i.e. argmax
-
-                pylogger.info("Using the argmax, no coefficients above threshold")
                 _, idxs = torch.topk(coeff, k=top_k)
 
                 idxs = idxs.tolist()

@@ -55,3 +55,21 @@ class TaskSingularVectorsMerger(TaskVectorBasedMerger):
         )
 
         return merged_encoder
+    
+    def merge_from_svd_dict(self, base_model, svd_dict):
+        multi_task_vector = sum_svd(
+            ref_state_dict=copy.deepcopy(base_model.state_dict()),
+            svd_dicts=svd_dict,
+            non_matrix_params_aggregation=self.non_matrix_params_aggregation,
+            silent=True,
+        )
+
+        merged_encoder = copy.deepcopy(base_model)
+
+        pylogger.info(f"Applying multi-task vector to base model")
+        merged_encoder = apply_dict_to_model(
+            multi_task_vector,
+            merged_encoder,
+        )
+
+        return merged_encoder

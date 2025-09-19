@@ -21,7 +21,7 @@ pylogger = logging.getLogger(__name__)
 
 @torch.no_grad()
 def sum_svd(
-    ref_state_dict, svd_dicts, device="cuda", non_matrix_params_aggregation="base_model"
+    ref_state_dict, svd_dicts, device="cuda", non_matrix_params_aggregation="base_model", silent=False
 ):
     """
     Takes the (SVD) for each vector in the task_vectors, and concatenate the low-rank matrices.
@@ -40,7 +40,7 @@ def sum_svd(
 
     datasets = list(svd_dicts.keys())
 
-    for layer_name in tqdm(layer_names, desc="Summing SVD"):
+    for layer_name in (tqdm(layer_names, desc="Summing SVD") if not silent else layer_names):
         is_matrix = aggregated_model_dict[layer_name].dim() == 2
         # TODO: modified
         # new_key = layer_name.replace(".transformer", "")
