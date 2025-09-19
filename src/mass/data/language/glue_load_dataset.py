@@ -99,14 +99,14 @@ def load_glue_dataset(
     else:
         dataset = _load_glue_dataset(name, tokenizer)
 
-    return GlueDataset(dataset, batch_size=batch_size)
+    return GlueDataset(dataset, batch_size=batch_size, split=split)
     
 class GlueDataset:
     def __init__(
         self,
         dataset,
         batch_size: int = 16,
+        split: Optional[str] = "validation",
     ):
-        self.train_loader = torch.utils.data.DataLoader(dataset["train"], batch_size=batch_size, collate_fn=torch_default_data_collator)
-        self.val_loader = torch.utils.data.DataLoader(dataset["validation"], batch_size=batch_size, collate_fn=torch_default_data_collator)
-        self.test_loader = torch.utils.data.DataLoader(dataset["test"], batch_size=batch_size, collate_fn=torch_default_data_collator)
+        self.data_loader = torch.utils.data.DataLoader(dataset[split], batch_size=batch_size, collate_fn=torch_default_data_collator)
+

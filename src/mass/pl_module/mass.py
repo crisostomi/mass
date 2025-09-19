@@ -198,6 +198,7 @@ class MassInferenceWrapper(nn.Module):
             for j, idx in enumerate(assigned_sample_idxs):
                 sample_embeddings[idx] = group_output[j : j + 1]
 
+        # TODO: bug here about dimensions? Why?
         sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
         return sample_embeddings

@@ -1,9 +1,0 @@
-datasets:
-  - EMNIST
-  - EuroSAT
-  - FashionMNIST
-  - MNIST
-  - OxfordIIITPet
-  - PCAM
-  - STL10
-  - SVHN

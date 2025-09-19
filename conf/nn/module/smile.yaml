@@ -10,8 +10,8 @@ oracle_mode: false
 
 device: cuda
 full_matrices: true
-gate_k: 16                     
-k: 32                        
+gate_k: 4   # 16                   
+k: 16         # 32 SMILE-1 for images               
 top_k: 1                      
 routing_use_diff: true        
 average_experts: false         

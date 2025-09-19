@@ -1,9 +1,0 @@
-datasets:
-  - EuroSAT
-  - Food101
-  - GTSRB
-  - OxfordIIITPet
-  - PCAM
-  - RESISC45
-  - RenderedSST2
-  - STL10

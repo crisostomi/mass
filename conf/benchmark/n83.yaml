@@ -1,9 +1,0 @@
-datasets:
-  - Cars
-  - DTD
-  - EuroSAT
-  - Flowers102
-  - KMNIST
-  - OxfordIIITPet
-  - PCAM
-  - SVHN

@@ -100,7 +100,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
             **cfg.train.trainer,
         )
 
-        test_results = trainer.test(model=task_model, dataloaders=dataset.val_loader)
+        test_results = trainer.test(model=task_model, dataloaders=dataset.data_loader)
         
         pylogger.info(f"Test results on {dataset_name}: {test_results}")    
     

@@ -1,0 +1,6 @@
+_target_: mass.data.language.glue_load_dataset.load_glue_dataset
+name: mrpc
+tokenizer: ??
+batch_size: 128
+cache_dir: null
+split: validation 

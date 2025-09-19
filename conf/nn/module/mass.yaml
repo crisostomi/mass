@@ -16,7 +16,7 @@ zeroshot_model: ??
 finetuned_models: ??
 dataset_names: ${eval_datasets}
 
-routing_mode: topk
+routing_mode: top1
 
 layer_to_hook: "encoder.block.11.layer.1.DenseReluDense.wi_1"
 max_num_tasks_to_select: 3
