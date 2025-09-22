@@ -55,7 +55,6 @@ def run(cfg: omegaconf.DictConfig) -> str:
     
     pylogger.info(f"Finetuned models: {finetuned_models.keys()}")
     
-    pylogger.info(f"Datasets: {cfg.eval_datasets}")
     
     moerging = instantiate(
         cfg.nn.module,
@@ -112,6 +111,8 @@ def run(cfg: omegaconf.DictConfig) -> str:
         )
         
         results[dataset_name] = trainer.test(model=task_model, dataloaders=dataset.data_loader)
+        
+    pylogger.info(f"{results}")
         
     avg = compute_avg_accuracy(results)
     results["avg"] = [

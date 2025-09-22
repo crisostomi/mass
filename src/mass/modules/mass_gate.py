@@ -48,10 +48,10 @@ class MassGate(nn.Module):
 
         self.debug = debug
 
-        # TODO: check if it works with LLMs
+        # TODO: add an option for image case in which token is the first dimension
         self.select_token = lambda x: (
             x[:, 0, :] if token_selection == "cls" else x.mean(dim=1)
-        )  # CLS token or mean pooling = 'cls'
+        ) 
         
         self.dataset_idx_to_name = {
             i: name for i, name in enumerate(dataset_names)
@@ -87,6 +87,11 @@ class MassGate(nn.Module):
         norms = self._compute_logits(images)
 
         tv_coefficients = self._logits_to_coefficients(norms)
+
+        # Log task predictions if debug is enabled
+        if self.debug:
+            task_predictions = torch.argmax(tv_coefficients, dim=1)  # (B,)
+            self.layer_accuracy_to_log[self.name].append(task_predictions.cpu())
 
         return tv_coefficients
     

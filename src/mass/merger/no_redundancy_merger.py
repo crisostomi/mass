@@ -55,3 +55,20 @@ class TaskSingularVectorsMergerNoRedundancy(TaskVectorBasedMerger):
         )
 
         return merged_encoder
+    
+    def merge_from_svd_dict(self, base_model, svd_dict):
+        multi_task_vector = (sum_svd_no_redundant_tasks_simple( 
+            ref_state_dict=copy.deepcopy(base_model.state_dict()),
+            svd_dict=svd_dict,
+            similarity_threshold=self.similarity_threshold,
+        )
+    )
+
+        merged_encoder = copy.deepcopy(base_model)
+
+        merged_encoder = apply_dict_to_model(
+            multi_task_vector,
+            merged_encoder,
+        )
+
+        return merged_encoder
