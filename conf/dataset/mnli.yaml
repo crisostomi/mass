@@ -3,4 +3,4 @@ name: mnli
 tokenizer: ??
 batch_size: 128
 cache_dir: null
-split: validation_matched 
+split: validation_matched # validation_matched, validation_mismatched, test_matched, test_mismatched, test

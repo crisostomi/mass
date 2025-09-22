@@ -11,9 +11,7 @@ from mass.modules.mass_gate import MassGate
 from mass.task_vectors.task_singular_vectors import get_svd_dict
 from mass.utils.fusion_bench_utils import get_attr, set_attr
 
-from mass.utils.utils import (
-    compute_task_dict,
-    get_routing_weights)
+from mass.utils.utils import compute_task_dict, get_routing_weights
 import logging
 
 pylogger = logging.getLogger(__name__)
@@ -26,9 +24,10 @@ num_of_tasks_to_scaling_coeff = {
 }
 
 
-class MassAlgorithm():
-    
+class MassAlgorithm:
+
     _linear_layer_cls = (nn.Linear,)
+
     def __init__(
         self,
         merger,
@@ -54,10 +53,10 @@ class MassAlgorithm():
         self.layer_to_hook = layer_to_hook
         self.max_num_tasks_to_select = max_num_tasks_to_select
         self.device = device
-        
+
         self.merger = merger
         self.base_merger = base_merger
-        
+
         task_dicts = {}
         for dataset in dataset_names:
             task_dicts[dataset] = compute_task_dict(
@@ -65,24 +64,28 @@ class MassAlgorithm():
             )
             torch.cuda.empty_cache()
 
-
         self.svd_dict = get_svd_dict(
-            task_dicts, 
-            self.dataset_names, 
+            task_dicts,
+            self.dataset_names,
             svd_path,
         )
 
-        pylogger.info(f"SVD dict keys: {self.svd_dict['cola'].keys()}")
+        pylogger.info(f"SVD dict tasks keys: {self.svd_dict.keys()}")
+
+        pylogger.info(f"SVD dict keys for a task: {self.svd_dict[dataset_names[0]].keys()}")
 
         del task_dicts
-        
+
         self.zeroshot_model = zeroshot_model
-        merged_encoder = self.base_merger.merge(zeroshot_model, {dataset: finetuned_models[dataset].state_dict() for dataset in dataset_names})
-        
+        merged_encoder = self.base_merger.merge(
+            zeroshot_model,
+            {dataset: finetuned_models[dataset].state_dict() for dataset in dataset_names},
+        )
+
         finetuned_models_list = list(finetuned_models.values())
         del finetuned_models
         merged_encoder = self.merge(merged_encoder, finetuned_models_list, in_place=True)
-        
+
         self.model = MassInferenceWrapper(
             layer_to_hook,
             merged_encoder,
@@ -90,11 +93,9 @@ class MassAlgorithm():
             self.svd_dict,
             self.merger,
         ).to(device)
-        
+
         pylogger.info(f"{type(get_attr(self.model.base_model, self.layer_to_hook.split('.')))}")
-        
-        
-    
+
     def merge(self, base_model, finetuned_models, in_place=True):
         if in_place:
             model = base_model
@@ -103,7 +104,7 @@ class MassAlgorithm():
 
         self._upscale_submodules(model, self.layer_to_hook)
         return model
-    
+
     def _upscale_submodules(
         self,
         base_model: nn.Module,
@@ -122,20 +123,20 @@ class MassAlgorithm():
         name_list = name.split(".")
         pylogger.info(f"Layer name {name}")
         module = get_attr(base_model, name_list)
-        
+
         try:
             pylogger.info(f"Svd dict keys: {self.svd_dict.keys()}")
             # TODO: can we fix once for all this layer key mess
             pylogger.info(get_routing_weights(self.svd_dict, self.layer_to_hook + ".weight"))
-            
+
             pylogger.info(f"Creating MassGate for layer {self.layer_to_hook}")
             mass_gate = MassGate(
                 module,
                 get_routing_weights(self.svd_dict, self.layer_to_hook + ".weight"),
                 self.dataset_names,
-                self.routing_mode, 
+                self.routing_mode,
                 self.max_num_tasks_to_select,
-                token_selection="mean"
+                token_selection="mean",
             )
             mass_gate.to(self.device)
         except Exception as e:
@@ -145,10 +146,9 @@ class MassAlgorithm():
         pylogger.info(f"Layer type:{type(get_attr(base_model, name_list))}")
 
 
-
 class MassInferenceWrapper(nn.Module):
     def __init__(
-        self, 
+        self,
         layer_to_hook: str,
         base_model,
         zeroshot_model: nn.Module,
@@ -160,21 +160,20 @@ class MassInferenceWrapper(nn.Module):
         self.zeroshot_model = zeroshot_model
         self.svd_dicts = svd_dicts
         self.merger = merger
-        
+
         self.layer_to_hook = layer_to_hook
-        
+
         self.max_num_tvs_to_keep = 1
         self.cached_tvs = {}
-        
-        
+
     def collect_output(self):
         mass = get_attr(self.base_model, self.layer_to_hook.split("."))
         return mass.output
-    
+
     def generate(self, batch, max_length):
         pylogger.info(f"Batch size: {batch.shape[0]}")
         self.base_model.generate(batch, max_length=max_length)
-        
+
         _, _, dataset_group_to_samples = self.collect_output()
 
         batch_size = batch.shape[0]
@@ -196,13 +195,29 @@ class MassInferenceWrapper(nn.Module):
             group_output = merged_model.generate(group_batch, max_length=max_length)
 
             for j, idx in enumerate(assigned_sample_idxs):
+                # ensure shape [1, seq_len]
                 sample_embeddings[idx] = group_output[j : j + 1]
 
-        # TODO: bug here about dimensions? Why?
+        # Right-pad all sequences to the same length before concatenation
+        # Determine global max length across the batch
+        max_len = max(t.size(1) for t in sample_embeddings if t is not None)
+
+        # Try to read pad_token_id from the merged model config, else default to -100
+        pad_token_id = getattr(getattr(merged_model, "config", None), "pad_token_id", -100)
+        pad_value = pad_token_id if isinstance(pad_token_id, int) else -100
+        pylogger.info(f"Padding value: {pad_value}")
+
+        for i, t in enumerate(sample_embeddings):
+            seq_len = t.size(1)
+            if seq_len < max_len:
+                # F.pad pads as (pad_left, pad_right) for last dimension
+                sample_embeddings[i] = torch.nn.functional.pad(
+                    t, (0, max_len - seq_len), value=pad_value
+                )
+
         sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
         return sample_embeddings
-    
 
     @torch.no_grad()
     def _apply_tv(self, dataset_names):
@@ -218,10 +233,7 @@ class MassInferenceWrapper(nn.Module):
 
             aggregated = self.merger.merge_from_svd_dict(
                 self.zeroshot_model,
-                {
-                    dataset_name: self.svd_dicts[dataset_name]
-                    for dataset_name in dataset_names
-                }
+                {dataset_name: self.svd_dicts[dataset_name] for dataset_name in dataset_names},
             )
 
             if len(self.cached_tvs) > self.max_num_tvs_to_keep:
@@ -233,11 +245,7 @@ class MassInferenceWrapper(nn.Module):
 
         else:
             raise NotImplementedError
-        
+
     def flush_cache(self):
         self.cached_tvs = {}
         torch.cuda.empty_cache()
-
-
-
-    
