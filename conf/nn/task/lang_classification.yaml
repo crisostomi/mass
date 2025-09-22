@@ -1,6 +1,3 @@
-defaults:
-  - _self_
-
 _target_: mass.pl_module.language_classifier.SentenceClassification
 moe_model: ??
 tokenizer: ?? 

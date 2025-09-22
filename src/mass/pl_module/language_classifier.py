@@ -1,6 +1,7 @@
 from typing import (
     Any,
     List,
+    Optional,
 )
 
 import pytorch_lightning as pl
@@ -19,16 +20,36 @@ CLASSIFICATION_TASKS = [
 ]
 REGRESSION_TASKS = ["stsb", "glue-stsb"]
 
+
+def get_task_config_name(task_name: str) -> str:
+    """
+    Returns the appropriate task configuration name based on the task.
+    
+    Args:
+        task_name: Name of the task (e.g., 'cola', 'stsb')
+        
+    Returns:
+        Configuration name ('lang_classification' or 'lang_regression')
+    """
+    if task_name in REGRESSION_TASKS:
+        return "lang_regression"
+    else:
+        return "lang_classification"
+
 class LanguageTester(pl.LightningModule):
 
-    def __init__(self, moe_model, tokenizer):
+    def __init__(self, moe_model, tokenizer, custom_logger: Optional[Any] = None):
         super().__init__()
         self.moe_model = moe_model
         self.tokenizer = tokenizer
-        
+        self.custom_logger = custom_logger
+
         self.log_fn = lambda metric, val: self.log(
             metric, val, on_step=False, on_epoch=True
         )
+        
+    def set_task_name(self, task_name):
+        self.task_name = task_name
         
     def _step(self, batch, split: str):
         raise NotImplementedError
@@ -43,8 +64,17 @@ class LanguageTester(pl.LightningModule):
         return self._step(batch=batch, split="test")
 
     def on_test_epoch_end(self):
-        # TODO: add normalised accuracy
-        pass
+
+        if hasattr(self.moe_model, "logging"):
+            self.moe_model.logging(self.custom_logger, self.task_name)
+            
+        accuracy = (
+            self.trainer.callback_metrics[f"acc/test/{self.task_name}"].cpu().item()
+        )
+
+        normalized_acc = 0.0 # TODO: implement normalised accuracy for LLMs
+
+        self.log_fn(f"normalized_acc/test/{self.task_name}", normalized_acc)
 
     def __call__(self, inputs):
         return self.forward(inputs)

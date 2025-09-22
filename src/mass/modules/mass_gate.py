@@ -9,6 +9,7 @@ import torch.nn as nn
 from mass.utils.routing_methods import (
     compute_residual_norm,
 )
+from mass.utils.plots import plot_interactive_coefficients_std
 
 import logging
 
@@ -18,6 +19,7 @@ pylogger = logging.getLogger(__name__)
 class MassGate(nn.Module):
     def __init__(
         self,
+        name,
         module,
         routing_weights,
         dataset_names,
@@ -25,12 +27,12 @@ class MassGate(nn.Module):
         max_num_tasks_to_select,
         temperature: int = 1,
         threshold: float = 0.2,
-        debug_residuals: Optional[bool] = False,
-        debug_layer_impact: Optional[bool] = False,
+        debug: Optional[bool] = False,
         token_selection="mean",  # cls or mean
     ):
         super().__init__()
         
+        self.name = name
         self.module = module
         self.routing_mode = routing_mode
         self.threshold = threshold
@@ -44,8 +46,7 @@ class MassGate(nn.Module):
         self.register_buffer("routing_singular_values", s)
         self.register_buffer("routing_left_weights", u)
 
-        self.debug_residuals = debug_residuals
-        self.debug_layer_impact = debug_layer_impact
+        self.debug = debug
 
         # TODO: check if it works with LLMs
         self.select_token = lambda x: (
@@ -69,8 +70,6 @@ class MassGate(nn.Module):
         The overall forward pass of the router.
         Groups images based on selected task vectors.
         """
-
-        pylogger.info(f"MassGate forward, input shape: {x.shape}")
         dataset_coeffs = self._compute_tv_coefficients(x)
 
         # for each sample, select the datasets such that the router coeffs surpass the threshold (B, num_datasets)
@@ -99,10 +98,11 @@ class MassGate(nn.Module):
         )
 
         # logging stuff
-        # if self.debug_residuals:
-        #     self.log_layer_residuals()
-
-        # self.norms_to_log.append((norms.mean(dim=0)).cpu().numpy())
+        if self.debug:
+            if isinstance(self.norms_to_log, np.ndarray):
+                # Convert back to list if it was converted to array during logging
+                self.norms_to_log = self.norms_to_log.tolist()
+            self.norms_to_log.append((norms.mean(dim=0)).cpu().numpy())
 
         return -norms
 
@@ -178,80 +178,13 @@ class MassGate(nn.Module):
 
         return dataset_group_to_samples
     
-    # Logging functions
+    @property
+    def weight(self):
+        return self.module.weight
     
-    # def log_layer_residuals(self):
-
-    #     for layer_key, features in self.middle_features.items():
-    #         try:
-    #             x_layer = features[0].to(self.device)
-    #             v, s, _ = get_routing_weights(
-    #                 self.svd_dicts,
-    #                 layer=from_router_to_svd_dict_key(layer_key),
-    #                 get_sigma=True,
-    #                 get_u=False,
-    #             )
-
-    #             residual = compute_residual_norm(x_layer, v=v, s=s, norm=self.norm)
-    #             layer_pred_task = torch.argmin(residual, dim=1)  # (B, )
-    #             avg_vector = residual.mean(dim=0).cpu().numpy()
-
-    #             self.layer_residuals_to_log[layer_key].append(avg_vector)
-    #             self.layer_accuracy_to_log[layer_key].append(layer_pred_task)
-
-    #         except Exception as e:
-    #             pylogger.warning(
-    #                 f"Skipping logging for layer {layer_key} due to error: {e}"
-    #             )
-
-    # def logging(self, logger, current_task):
-    #     self.norms_to_log = np.array(self.norms_to_log)
-
-    #     mean_coeffs = self.norms_to_log.mean(axis=0)
-    #     std_coeffs = self.norms_to_log.std(axis=0)
-
-    #     dataset_names = list(self.dataset_names)
-
-    #     fig_std = plot_interactive_coefficients_std(
-    #         mean_coeffs, std_coeffs, dataset_names
-    #     )
-
-    #     logger.experiment.log(
-    #         {
-    #             f"norms/{current_task}": wandb.Plotly(fig_std),
-    #         }
-    #     )
-
-    #     if self.debug_residuals:
-    #         fig = create_interactive_layer_task_residual_plot(
-    #             self.layer_residuals_to_log, dataset_names
-    #         )
-
-    #         logger.experiment.log(
-    #             {f"average_residuals/{current_task}": wandb.Plotly(fig)}
-    #         )
-
-    #         fig = create_interactive_layer_task_accuracy_plot(
-    #             self.layer_accuracy_to_log,
-    #             dataset_names.index(current_task),
-    #             dataset_names,
-    #         )
-
-    #         logger.experiment.log(
-    #             {f"layer_task_accuracy/{current_task}": wandb.Plotly(fig)}
-    #         )
-
-    #     if self.debug_layer_impact:
-
-    #         fig = create_interactive_layer_impact_bar_chart(self.layer_impact_log)
-
-    #         logger.experiment.log({f"layer_impact/{current_task}": wandb.Plotly(fig)})
-
-    #     self.reset_log_stats()
-
-    # def reset_log_stats(self):
-    #     self.norms_to_log = []
-    #     self.layer_residuals_to_log = defaultdict(list)
-    #     self.layer_accuracy_to_log = defaultdict(list)
-    #     self.layer_impact_log = defaultdict(list)
+    def reset_to_log(self):
+        self.norms_to_log = []
+        self.layer_residuals_to_log = defaultdict(list)
+        self.layer_accuracy_to_log = defaultdict(list)
+        self.layer_impact_log = defaultdict(list)
 

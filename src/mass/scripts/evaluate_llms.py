@@ -1,8 +1,7 @@
 ## Imports
 
 import logging
-from typing import List
-
+from pathlib import Path
 
 import open_clip
 import wandb
@@ -22,10 +21,10 @@ from nn_core.common.utils import seed_index_everything
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
 
-import os
-
 from mass.utils.io_utils import boilerplate
-from mass.utils.utils import print_memory, build_callbacks
+from mass.utils.plots import plot_interactive_radar_chart
+from mass.utils.utils import compute_avg_accuracy, print_memory, build_callbacks
+from mass.pl_module.language_classifier import CLASSIFICATION_TASKS, REGRESSION_TASKS, get_task_config_name
 
 pylogger = logging.getLogger(__name__)
 
@@ -56,7 +55,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
     
     pylogger.info(f"Finetuned models: {finetuned_models.keys()}")
     
-    pylogger.info(f"{cfg.eval_datasets}")
+    pylogger.info(f"Datasets: {cfg.eval_datasets}")
     
     moerging = instantiate(
         cfg.nn.module,
@@ -66,13 +65,9 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     tokenizer = instantiate(cfg.nn.tokenizer)
     
-    task_model = instantiate(cfg.nn.task, moe_model=moerging.model.cuda(), tokenizer=tokenizer)
-    
-    # TODO: add task specific layer
-    
     pylogger.info(f"Model instantiated: {moerging}")
     
-    
+    results = {}
     for dataset_name in cfg.benchmark.datasets:
 
         dataset_cfg = omegaconf.OmegaConf.load(
@@ -83,7 +78,23 @@ def run(cfg: omegaconf.DictConfig) -> str:
             dataset_cfg, tokenizer=tokenizer) #cache_dir="~/.cache/huggingface/datasets/glue")
         
         pylogger.info(f"Dataset {dataset_name} loaded: {dataset}")
-        pylogger.info(f"{type(dataset)}")
+        
+        # Get appropriate task configuration and instantiate
+        task_config_name = get_task_config_name(dataset_name)
+        task_cfg = omegaconf.OmegaConf.load(
+            PROJECT_ROOT / "conf" / "nn" / "task" / f"{task_config_name}.yaml"
+        )
+        
+        task_model = instantiate(
+            task_cfg, 
+            moe_model=moerging.model.cuda(), 
+            tokenizer=tokenizer,
+            custom_logger=logger
+        )
+        
+        task_model.set_task_name(dataset_name)
+        
+        pylogger.info(f"Using {task_config_name} for {dataset_name}")
         
         callbacks = build_callbacks(cfg.train.callbacks, template_core)
 
@@ -99,10 +110,34 @@ def run(cfg: omegaconf.DictConfig) -> str:
             limit_test_batches=None,
             **cfg.train.trainer,
         )
-
-        test_results = trainer.test(model=task_model, dataloaders=dataset.data_loader)
         
-        pylogger.info(f"Test results on {dataset_name}: {test_results}")    
+        results[dataset_name] = trainer.test(model=task_model, dataloaders=dataset.data_loader)
+        
+    avg = compute_avg_accuracy(results)
+    results["avg"] = [
+        avg
+    ]  # as a list for consistency due to lightning logging stuff this way
+
+    logger.experiment.log(avg)
+    
+    pylogger.info(results)
+    
+    results_path = Path(cfg.misc.results_path)
+    
+    radarchart = plot_interactive_radar_chart(results, title="Radar Chart")
+    logger.experiment.log({"radar": wandb.Plotly(radarchart)})
+    
+    logger.experiment.log_artifact(
+        wandb.Artifact(
+            f"results_{cfg.nn.encoder.model_name}_{num_tasks}",
+            type="results",
+            metadata={"results": results_path},
+        )
+    )
+
+    if logger is not None:
+        logger.experiment.finish()
+          
     
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="eval_language.yaml")

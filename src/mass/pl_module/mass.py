@@ -4,6 +4,9 @@ from hydra.utils import instantiate
 
 import torch
 import torch.nn as nn
+from tqdm import tqdm
+import numpy as np
+import wandb
 
 from mass.merger.tsv import TaskSingularVectorsMerger
 from mass.modules.mass_gate import MassGate
@@ -40,6 +43,7 @@ class MassAlgorithm:
         max_num_tasks_to_select,
         device: str = "cuda",
         svd_path: str = None,
+        debug: bool = False,
     ):
         """
 
@@ -53,6 +57,7 @@ class MassAlgorithm:
         self.layer_to_hook = layer_to_hook
         self.max_num_tasks_to_select = max_num_tasks_to_select
         self.device = device
+        self.debug = debug
 
         self.merger = merger
         self.base_merger = base_merger
@@ -70,10 +75,6 @@ class MassAlgorithm:
             svd_path,
         )
 
-        pylogger.info(f"SVD dict tasks keys: {self.svd_dict.keys()}")
-
-        pylogger.info(f"SVD dict keys for a task: {self.svd_dict[dataset_names[0]].keys()}")
-
         del task_dicts
 
         self.zeroshot_model = zeroshot_model
@@ -81,10 +82,10 @@ class MassAlgorithm:
             zeroshot_model,
             {dataset: finetuned_models[dataset].state_dict() for dataset in dataset_names},
         )
-
-        finetuned_models_list = list(finetuned_models.values())
+        
         del finetuned_models
-        merged_encoder = self.merge(merged_encoder, finetuned_models_list, in_place=True)
+        
+        merged_encoder = self.merge(merged_encoder, in_place=True)
 
         self.model = MassInferenceWrapper(
             layer_to_hook,
@@ -94,18 +95,51 @@ class MassAlgorithm:
             self.merger,
         ).to(device)
 
-        pylogger.info(f"{type(get_attr(self.model.base_model, self.layer_to_hook.split('.')))}")
-
-    def merge(self, base_model, finetuned_models, in_place=True):
+    def merge(self, base_model, in_place=True):
         if in_place:
             model = base_model
         else:
             model = deepcopy(base_model)
 
-        self._upscale_submodules(model, self.layer_to_hook)
+        self._upscale_submodules(model, self.layer_to_hook, debug=self.debug)
         return model
-
+    
     def _upscale_submodules(
+        self,
+        zeroshot_model: nn.Module,
+        name: str = None,
+        debug: bool = True,
+        tqdm_desc: str = "Upscaling Linear Modules",
+    ):
+        """
+        Upscales the submodules of the pretrained model by merging them with the corresponding submodules from the fine-tuned models.
+
+        Args:
+            zeroshot_model (nn.Module): The pretrained model.
+            finetuned_models (List[nn.Module]): A list of fine-tuned models.
+            tqdm_desc (str): Description for the tqdm progress bar.
+        """
+        if debug:
+            pylogger.warning("Upscaling all linear layers.")
+        
+        for name, module in tqdm(
+            tuple(zeroshot_model.named_modules()),
+            tqdm_desc,
+            leave=False,
+            dynamic_ncols=True,
+        ):
+            if isinstance(module, self._linear_layer_cls) and debug:
+                self._upscale_linear_layer(
+                    zeroshot_model,
+                    name,
+                )
+            elif name == self.layer_to_hook:
+                self._upscale_linear_layer(
+                    zeroshot_model,
+                    name,
+                )
+
+    def _upscale_linear_layer(
         self,
         base_model: nn.Module,
         name: str,
@@ -121,29 +155,29 @@ class MassAlgorithm:
         # TODO: do we need this still?
         # replace_attention_with_linear(zeroshot_model, finetuned_models)
         name_list = name.split(".")
-        pylogger.info(f"Layer name {name}")
+        pylogger.info(f"Layer name: {name}")
         module = get_attr(base_model, name_list)
 
         try:
-            pylogger.info(f"Svd dict keys: {self.svd_dict.keys()}")
-            # TODO: can we fix once for all this layer key mess
-            pylogger.info(get_routing_weights(self.svd_dict, self.layer_to_hook + ".weight"))
 
-            pylogger.info(f"Creating MassGate for layer {self.layer_to_hook}")
+            pylogger.info(f"Creating MassGate for layer {name}")
             mass_gate = MassGate(
+                name,
                 module,
-                get_routing_weights(self.svd_dict, self.layer_to_hook + ".weight"),
+                get_routing_weights(self.svd_dict, name + ".weight"), # TODO: remove manual .weight
                 self.dataset_names,
                 self.routing_mode,
                 self.max_num_tasks_to_select,
                 token_selection="mean",
+                debug=self.debug,
             )
             mass_gate.to(self.device)
+            pylogger.info(f"✅ MassGate created for layer {name}")
         except Exception as e:
-            pylogger.error(f"Error creating MassGate: {e}")
+            pylogger.error(f"❌ Error creating MassGate: {e}")
             return
         set_attr(base_model, name_list, mass_gate)
-        pylogger.info(f"Layer type:{type(get_attr(base_model, name_list))}")
+        pylogger.info(f"Layer type: {type(get_attr(base_model, name_list))}")
 
 
 class MassInferenceWrapper(nn.Module):
@@ -154,6 +188,7 @@ class MassInferenceWrapper(nn.Module):
         zeroshot_model: nn.Module,
         svd_dicts: dict,
         merger: TaskSingularVectorsMerger,
+        debug: bool = False,
     ):
         super().__init__()
         self.base_model = base_model
@@ -165,13 +200,17 @@ class MassInferenceWrapper(nn.Module):
 
         self.max_num_tvs_to_keep = 1
         self.cached_tvs = {}
+        
+        self.debug = debug
 
     def collect_output(self):
         mass = get_attr(self.base_model, self.layer_to_hook.split("."))
-        return mass.output
+        output = mass.output
+        mass.output = None 
+        return output
+    
 
     def generate(self, batch, max_length):
-        pylogger.info(f"Batch size: {batch.shape[0]}")
         self.base_model.generate(batch, max_length=max_length)
 
         _, _, dataset_group_to_samples = self.collect_output()
@@ -195,22 +234,16 @@ class MassInferenceWrapper(nn.Module):
             group_output = merged_model.generate(group_batch, max_length=max_length)
 
             for j, idx in enumerate(assigned_sample_idxs):
-                # ensure shape [1, seq_len]
                 sample_embeddings[idx] = group_output[j : j + 1]
 
-        # Right-pad all sequences to the same length before concatenation
-        # Determine global max length across the batch
         max_len = max(t.size(1) for t in sample_embeddings if t is not None)
 
-        # Try to read pad_token_id from the merged model config, else default to -100
         pad_token_id = getattr(getattr(merged_model, "config", None), "pad_token_id", -100)
         pad_value = pad_token_id if isinstance(pad_token_id, int) else -100
-        pylogger.info(f"Padding value: {pad_value}")
 
         for i, t in enumerate(sample_embeddings):
             seq_len = t.size(1)
             if seq_len < max_len:
-                # F.pad pads as (pad_left, pad_right) for last dimension
                 sample_embeddings[i] = torch.nn.functional.pad(
                     t, (0, max_len - seq_len), value=pad_value
                 )
@@ -249,3 +282,51 @@ class MassInferenceWrapper(nn.Module):
     def flush_cache(self):
         self.cached_tvs = {}
         torch.cuda.empty_cache()
+        
+    # Logging
+    
+    def logging(self, logger, current_task):
+        """Log statistics from all MassGate modules layer-wise"""
+        layer_stats = {}
+        
+        for layer_name, module in self.base_model.named_modules():
+            if isinstance(module, MassGate):
+                if not module.norms_to_log:
+                    pylogger.warning(f"No norms to log for layer {layer_name}")
+                    continue
+                    
+                norms_array = np.array(module.norms_to_log)
+                mean_coeffs = norms_array.mean(axis=0)
+                std_coeffs = norms_array.std(axis=0)
+                
+                layer_stats[layer_name] = {
+                    'mean_coeffs': mean_coeffs,
+                    'std_coeffs': std_coeffs,
+                    'dataset_names': list(module.dataset_names)
+                }
+        
+        if not layer_stats:
+            pylogger.warning("No MassGate layers found with logging data")
+            return
+        
+        for layer_name, stats in layer_stats.items():
+            mean_coeffs = stats['mean_coeffs']
+            std_coeffs = stats['std_coeffs']
+            dataset_names = stats['dataset_names']
+            
+            # Import here to avoid circular imports
+            from mass.utils.plots import plot_interactive_coefficients_std
+            
+            fig_std = plot_interactive_coefficients_std(
+                mean_coeffs, std_coeffs, dataset_names
+            )
+            
+            logger.experiment.log({
+                f"norms/{current_task}/{layer_name}": wandb.Plotly(fig_std),
+            })
+            
+            pylogger.info(f"Logged statistics for MassGate layer: {layer_name}")
+        
+        for layer_name, module in self.base_model.named_modules():
+            if isinstance(module, MassGate):
+                module.reset_to_log()

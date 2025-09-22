@@ -48,7 +48,7 @@ class TaskSingularVectorsMerger(TaskVectorBasedMerger):
 
         merged_encoder = copy.deepcopy(base_model)
 
-        pylogger.info(f"Applying multi-task vector to base model")
+        # pylogger.info(f"Applying multi-task vector to base model")
         merged_encoder = apply_dict_to_model(
             multi_task_vector,
             merged_encoder,
@@ -66,7 +66,7 @@ class TaskSingularVectorsMerger(TaskVectorBasedMerger):
 
         merged_encoder = copy.deepcopy(base_model)
 
-        pylogger.info(f"Applying multi-task vector to base model")
+        # pylogger.info(f"Applying multi-task vector to base model")
         merged_encoder = apply_dict_to_model(
             multi_task_vector,
             merged_encoder,
