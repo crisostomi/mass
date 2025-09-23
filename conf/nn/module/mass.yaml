@@ -19,7 +19,7 @@ debug: true
 
 routing_mode: topk
 
-layer_to_hook: "encoder.block.11.layer.1.DenseReluDense.wi_1"
+layer_to_hook: "encoder.block.10.layer.0.SelfAttention.o"
 max_num_tasks_to_select: 3
 
 svd_path: ${misc.svd_path}
