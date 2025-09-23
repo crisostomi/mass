@@ -32,6 +32,7 @@ class RouterTaskClassifier(pl.LightningModule):
         self.test_acc = metric.clone()
 
     def forward(self, images, split="test"):
+        # TODO: fix this it is still using lagacy implementation
         if split == "train":
             return self.router.predict_task_train(images)
         else:

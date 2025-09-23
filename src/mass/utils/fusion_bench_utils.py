@@ -253,6 +253,45 @@ def replace_attention_with_linear(
                 set_attr(m, name_list, LinearMultiheadAttention(expert))
 
 
+def replace_attention_with_linear_base(
+    model: ImageEncoder,
+    tqdm_desc: str = "Replacing Attention Layers",
+):
+    """
+    Replace MultiheadAttention layers with LinearMultiheadAttention in a single model.
+    
+    Args:
+        model: The model to modify
+        tqdm_desc: Description for the progress bar
+        device: Device to use for computation
+    """
+    # Import here to avoid circular import
+    from mass.modules.linear_attention import LinearMultiheadAttention
+
+    _attn_layer_cls = (nn.MultiheadAttention,)
+
+    for name, module in tqdm.tqdm(
+        tuple(model.named_modules()),
+        tqdm_desc,
+        leave=False,
+        dynamic_ncols=True,
+    ):
+        if isinstance(module, _attn_layer_cls):
+            pylogger.info(f"Replacing attention layer: {name}")
+            name_list = name.split(".")
+            try:
+                module = get_attr(model, name_list)
+            except AttributeError as e:
+                pylogger.warning(
+                    f"Failed to get attribute {name} from model: {e}"
+                )
+                set_attr(model, name_list, None)
+                return
+
+            module = module.to(get_device(model), non_blocking=True)
+            set_attr(model, name_list, LinearMultiheadAttention(module))
+
+
 class InfiniteDataLoader:
     """
     A wrapper class for DataLoader to create an infinite data loader.

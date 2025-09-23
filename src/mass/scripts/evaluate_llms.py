@@ -36,6 +36,10 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     seed_index_everything(cfg)
     
+    num_tasks = len(cfg.benchmark.datasets)
+    cfg.core.tags.append(f"n{num_tasks}")
+    cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
+    
     logger, template_core = boilerplate(cfg)
 
     num_tasks = len(cfg.eval_datasets)
@@ -44,6 +48,11 @@ def run(cfg: omegaconf.DictConfig) -> str:
     omegaconf.OmegaConf.set_struct(cfg, False)
     cfg.num_tasks = num_tasks  # Now we can safely update it
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
+    
+    # TODO: implement finetuning accuracies for LLMs
+    # finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
+    #     cfg.misc.finetuned_accuracy_path
+    # )[cfg.nn.encoder.model_name]
     
     zeroshot_encoder = instantiate(cfg.nn.encoder.model)
     

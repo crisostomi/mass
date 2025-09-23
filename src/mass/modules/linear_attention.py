@@ -27,6 +27,8 @@ except ModuleNotFoundError:
 
 scaled_dot_product_attention = torch._C._nn.scaled_dot_product_attention
 
+_linear_layer_cls = (nn.Linear,)
+
 pylogger = logging.getLogger(__name__)
 
 
@@ -680,7 +682,10 @@ def multi_head_attention_forward(
             attn_output.transpose(0, 1).contiguous().view(tgt_len * bsz, embed_dim)
         )
 
-        attn_output = out_proj(attn_output, bsz)
+        if not isinstance(out_proj, _linear_layer_cls):
+            attn_output = out_proj(attn_output, bsz)
+        else:
+            attn_output = out_proj(attn_output)
 
         attn_output = attn_output.view(tgt_len, bsz, attn_output.size(1))
 
@@ -715,7 +720,10 @@ def multi_head_attention_forward(
             attn_output.permute(2, 0, 1, 3).contiguous().view(bsz * tgt_len, embed_dim)
         )
 
-        attn_output = out_proj(attn_output, bsz)
+        if not isinstance(out_proj, _linear_layer_cls):
+            attn_output = out_proj(attn_output, bsz)
+        else:
+            attn_output = out_proj(attn_output)
 
         attn_output = attn_output.view(tgt_len, bsz, attn_output.size(1))
         if not is_batched:

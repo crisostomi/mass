@@ -40,10 +40,10 @@ conventions:
 svd_compress_factor: null
 
 misc:
-  ckpt_path: ${oc.env:MODELS_PATH}/${nn.encoder.model_name}
+  ckpt_path: ${oc.env:PROJECT_ROOT}/checkpoints/${nn.encoder.model_name}
   pretrained_checkpoint: ${misc.ckpt_path}/base/model.pt
-  openclip_cachedir: "${oc.env:MODELS_PATH}/openclip_cache/"
-  checkpoint_dir: ${oc.env:MODELS_PATH}/linear_router
-  svd_path: "${oc.env:MODELS_PATH}/svd_dict_${nn.encoder.model_name}.pt"
+  openclip_cachedir: "${oc.env:PROJECT_ROOT}/checkpoints/openclip_cache/"
+  checkpoint_dir: ${oc.env:PROJECT_ROOT}/checkpoints/linear_router
+  svd_path: "${oc.env:PROJECT_ROOT}/checkpoints/svd_dict_${nn.encoder.model_name}.pt"
   finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/accs.json"
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"

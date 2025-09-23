@@ -10,11 +10,12 @@ import wandb
 
 from mass.merger.tsv import TaskSingularVectorsMerger
 from mass.modules.mass_gate import MassGate
+from mass.modules.encoder import ImageEncoder
 
-from mass.task_vectors.task_singular_vectors import get_svd_dict
+from mass.utils.task_vectors import get_svd_dict
 from mass.utils.fusion_bench_utils import get_attr, set_attr
 
-from mass.utils.utils import compute_task_dict, get_routing_weights
+from mass.utils.utils import compute_task_dict, get_routing_weights, pad_output
 import logging
 
 pylogger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ num_of_tasks_to_scaling_coeff = {
 class MassAlgorithm:
 
     _linear_layer_cls = (nn.Linear,)
+    _image_encoder_cls = (ImageEncoder,)  
 
     def __init__(
         self,
@@ -58,6 +60,8 @@ class MassAlgorithm:
         self.max_num_tasks_to_select = max_num_tasks_to_select
         self.device = device
         self.debug = debug
+        
+        self.vision = isinstance(zeroshot_model, self._image_encoder_cls)
 
         self.merger = merger
         self.base_merger = base_merger
@@ -120,7 +124,7 @@ class MassAlgorithm:
         """
         if debug:
             pylogger.warning("Upscaling all linear layers.")
-        
+                
         for name, module in tqdm(
             tuple(zeroshot_model.named_modules()),
             tqdm_desc,
@@ -137,7 +141,6 @@ class MassAlgorithm:
                     zeroshot_model,
                     name,
                 )
-
     def _upscale_linear_layer(
         self,
         base_model: nn.Module,
@@ -151,8 +154,6 @@ class MassAlgorithm:
             finetuned_models (List[nn.Module]): A list of fine-tuned models.
             tqdm_desc (str): Description for the tqdm progress bar.
         """
-        # TODO: do we need this still?
-        # replace_attention_with_linear(zeroshot_model, finetuned_models)
         name_list = name.split(".")
         pylogger.info(f"Layer name: {name}")
         module = get_attr(base_model, name_list)
@@ -163,11 +164,11 @@ class MassAlgorithm:
             mass_gate = MassGate(
                 name,
                 module,
-                get_routing_weights(self.svd_dict, name + ".weight"), # TODO: remove manual .weight
+                get_routing_weights(self.svd_dict, name + ".weight" if self.vision else ""), # TODO: remove hardocoding for keys
                 self.dataset_names,
                 self.routing_mode,
                 self.max_num_tasks_to_select,
-                token_selection="mean",
+                visual=self.vision,
                 debug=self.debug,
             )
             mass_gate.to(self.device)
@@ -208,46 +209,93 @@ class MassInferenceWrapper(nn.Module):
         mass.output = None 
         return output
     
+    def _process_dataset_groups(self, batch, dataset_group_to_samples, processing_fn):
+        batch_size = batch.shape[0]
+        sample_embeddings = [None] * batch_size
+
+        for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
+            assigned_sample_idxs = torch.tensor(assigned_sample_idxs)
+            merged_model = self._apply_tv(list(dataset_group))
+            
+            group_batch = batch[assigned_sample_idxs]
+            merged_model.to(batch.device)
+            
+            group_output = processing_fn(merged_model, group_batch)
+
+            for j, idx in enumerate(assigned_sample_idxs):
+                sample_embeddings[idx] = group_output[j : j + 1]
+
+        return sample_embeddings
+    
+    def embed_image(self, batch, classification_heads, num_classes):
+        self.base_model(batch)
+        
+        selected_dataset_idxs, _, dataset_group_to_samples = self.collect_output()
+
+        def process_group(merged_model, group_batch):
+            return merged_model(group_batch)
+        
+        sample_embeddings = self._process_dataset_groups(batch, dataset_group_to_samples, process_group)
+        sample_embeddings = torch.cat(sample_embeddings, dim=0)
+
+        outputs = []
+
+        for sample_routed_datasets, sample_embedding in zip(
+            selected_dataset_idxs, sample_embeddings
+        ):
+
+            assert isinstance(
+                sample_routed_datasets, (int, list, tuple)
+            ), f"Unexpected type for routing indices: {type(sample_routed_datasets)}"
+
+            # logits for each dataset the sample was routed to, so a tensor for each routed_dataset in len(sample_routed_datasets)
+            candidate_logits = [
+                classification_heads[j](sample_embedding.unsqueeze(0))
+                for j in sample_routed_datasets
+            ]
+            # for each dataset, get the heads_selection_criteria score
+            candidate_scores = [
+                torch.max(logits).item()
+                for logits in candidate_logits
+            ]  ## try with the max mean (trained with contrastive loss)
+            # get the index of the best score among the datasets
+            best_idx = candidate_scores.index(max(candidate_scores))
+            # get the logits of the best dataset
+            logits = candidate_logits[best_idx]
+
+            outputs.append(logits)
+
+        assert (
+            num_classes is not None
+        ), "Output classes not set. Use set_metrics() method to set them."
+
+        return pad_output(outputs, num_classes)
+    
 
     def generate(self, batch, max_length):
         self.base_model.generate(batch, max_length=max_length)
 
         _, _, dataset_group_to_samples = self.collect_output()
 
-        batch_size = batch.shape[0]
-        sample_embeddings = [None] * batch_size
+        def process_group(merged_model, group_batch):
+            return merged_model.generate(group_batch, max_length=max_length)
+        
+        sample_embeddings = self._process_dataset_groups(batch, dataset_group_to_samples, process_group)
 
-        for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
+        if sample_embeddings and sample_embeddings[0] is not None:
+            max_len = max(t.size(1) for t in sample_embeddings if t is not None)
 
-            assigned_sample_idxs = torch.tensor(
-                assigned_sample_idxs
-            )  # Ensure assigned_sample_idxs is also a tensor
+            pad_value = -100 
 
-            merged_model = self._apply_tv(list(dataset_group))
+            for i, t in enumerate(sample_embeddings):
+                if t is not None:
+                    seq_len = t.size(1)
+                    if seq_len < max_len:
+                        sample_embeddings[i] = torch.nn.functional.pad(
+                            t, (0, max_len - seq_len), value=pad_value
+                        )
 
-            # (num_samples_in_group, C, H, W)
-            group_batch = batch[assigned_sample_idxs]
-
-            # (num_samples_in_group, embedding_dim)
-            merged_model.to(batch.device)
-            group_output = merged_model.generate(group_batch, max_length=max_length)
-
-            for j, idx in enumerate(assigned_sample_idxs):
-                sample_embeddings[idx] = group_output[j : j + 1]
-
-        max_len = max(t.size(1) for t in sample_embeddings if t is not None)
-
-        pad_token_id = getattr(getattr(merged_model, "config", None), "pad_token_id", -100)
-        pad_value = pad_token_id if isinstance(pad_token_id, int) else -100
-
-        for i, t in enumerate(sample_embeddings):
-            seq_len = t.size(1)
-            if seq_len < max_len:
-                sample_embeddings[i] = torch.nn.functional.pad(
-                    t, (0, max_len - seq_len), value=pad_value
-                )
-
-        sample_embeddings = torch.cat(sample_embeddings, dim=0)
+            sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
         return sample_embeddings
 
@@ -281,6 +329,14 @@ class MassInferenceWrapper(nn.Module):
         self.cached_tvs = {}
         torch.cuda.empty_cache()
         
+    @property
+    def train_preprocess(self):
+        return getattr(self.zeroshot_model, 'train_preprocess', None)
+
+    @property
+    def val_preprocess(self):
+        return getattr(self.zeroshot_model, 'val_preprocess', None)
+
     # Logging
     
     def logging(self, logger, current_task):

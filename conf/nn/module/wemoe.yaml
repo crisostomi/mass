@@ -1,20 +1,20 @@
-
-defaults:
-  - _self_
-  - aggregator: ta
-
 _target_: mass.pl_module.we_moe.WeightEnsemblingMoEAlgorithm
 
-x_key: ${conventions.x_key}
-y_key: ${conventions.y_key}
+merger:
+  _target_: mass.merger.arithmetic_merger.TaskArithmeticMerger
+  optimal_alpha: 
+    8: 0.30
+    14: 0.20
+    20: 0.10
+
 dataset_names: ${eval_datasets}
 
-image_encoder: ??  
+zeroshot_model: ??  
 finetuned_models: ??
 classification_heads: ??
-tasks: ??
-save_checkpoint_path: ??
 
+dataset_names: ${eval_datasets}
+save_checkpoint_path: ${misc.ckpt_path}/WeMoE.pt
 
 checkpoint: false
 save_checkpoint: false
@@ -32,14 +32,5 @@ model_path: null
 optimizer:
   _target_: torch.optim.AdamW
   lr: 1e-4
-  # weight_decay: 0.1
-  # _target_: torch.optim.SGD
-  # lr: 0.1
-  # momentum: 0.9
-  # weight_decay: 1e-4
-
-lr_scheduler:
-  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
-  T_max: 10
 
 

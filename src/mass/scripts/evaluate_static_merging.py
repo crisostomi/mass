@@ -43,7 +43,7 @@ from mass.utils.utils import (
     compute_avg_accuracy,
     print_memory,
 )
-from mass.task_vectors.task_singular_vectors import *
+from mass.utils.task_vectors import *
 import json
 import os
 

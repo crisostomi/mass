@@ -28,7 +28,7 @@ class MassGate(nn.Module):
         temperature: int = 1,
         threshold: float = 0.2,
         debug: Optional[bool] = False,
-        token_selection="mean",  # cls or mean
+        visual: bool = True,  # cls or mean
     ):
         super().__init__()
         
@@ -49,9 +49,7 @@ class MassGate(nn.Module):
         self.debug = debug
 
         # TODO: add an option for image case in which token is the first dimension
-        self.select_token = lambda x: (
-            x[:, 0, :] if token_selection == "cls" else x.mean(dim=1)
-        ) 
+        self.select_token = lambda x: ( x.mean(dim=1) if not visual else x[0, :, :]) 
         
         self.dataset_idx_to_name = {
             i: name for i, name in enumerate(dataset_names)
@@ -65,12 +63,12 @@ class MassGate(nn.Module):
         self.norms_to_log = []
 
             
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, bsz: int = None):
         """
         The overall forward pass of the router.
         Groups images based on selected task vectors.
         """
-        dataset_coeffs = self._compute_tv_coefficients(x)
+        dataset_coeffs = self._compute_tv_coefficients(x, bsz=bsz)  # (B, num_datasets)
 
         # for each sample, select the datasets such that the router coeffs surpass the threshold (B, num_datasets)
         selected_dataset_idxs: List[List[int]] = self._filter_datasets(dataset_coeffs)
@@ -80,11 +78,13 @@ class MassGate(nn.Module):
             selected_dataset_idxs
         )
         self.output = selected_dataset_idxs, dataset_coeffs, dataset_group_to_samples
+        
+
         return self.module(x)
 
-    def _compute_tv_coefficients(self, images):
+    def _compute_tv_coefficients(self, images, bsz: int = None) -> torch.Tensor:
 
-        norms = self._compute_logits(images)
+        norms = self._compute_logits(images, bsz=bsz)  # (B, num_datasets)
 
         tv_coefficients = self._logits_to_coefficients(norms)
 
@@ -95,7 +95,13 @@ class MassGate(nn.Module):
 
         return tv_coefficients
     
-    def _compute_logits(self, x) -> torch.Tensor:
+    def _compute_logits(self, x, bsz: int = None) -> torch.Tensor:
+        # pylogger.info(f"Layer name {self.name}, input shape {x.shape}")
+        
+        if bsz and len(x.shape) == 2:
+            patches = x.shape[0] // bsz
+            x = x.view(patches, bsz, *x.shape[1:])
+
         x = self.select_token(x)
 
         norms = compute_residual_norm(

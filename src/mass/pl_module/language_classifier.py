@@ -119,7 +119,7 @@ class Regression(LanguageTester):
         metrics.update(acc)  # MeanMetric.update() takes a single value
     
         running_acc = metrics.compute()
-        self.log_fn(f"spearman/{split}/{self.task_name}", running_acc)
+        self.log_fn(f"acc/{split}/{self.task_name}", running_acc)
 
         return {"logits": logits.detach()}
         

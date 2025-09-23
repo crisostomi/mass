@@ -288,7 +288,6 @@ def sum_svd_no_redundant_tasks_simple(
 
     for layer_name in tqdm(layer_names, desc="Summing SVD"):
         # check if this layer is 2D (weight matrix) or not
-        new_key = layer_name
         is_layer_matrix = aggregated_model_dict[layer_name].dim() == 2
         offset = 0
 
@@ -303,7 +302,7 @@ def sum_svd_no_redundant_tasks_simple(
 
             if is_layer_matrix:
                 # Retrieve the SVD factors
-                delta_layer_svd = svd_dict[dataset][new_key]
+                delta_layer_svd = svd_dict[dataset][layer_name]
                 u, s, v = (
                     delta_layer_svd["u"].to(device),
                     delta_layer_svd["s"].to(device),
@@ -335,7 +334,7 @@ def sum_svd_no_redundant_tasks_simple(
 
             else:
                 # For 1D layers, we do the usual average
-                delta_layer = svd_dict[dataset][new_key]["dim1"].to(device)
+                delta_layer = svd_dict[dataset][layer_name]["dim1"].to(device)
                 if i == 0:
                     aggregated_model_dict[layer_name] = delta_layer
                 else:
@@ -382,5 +381,28 @@ def sum_svd_no_redundant_tasks_simple(
         # aggregated_model_dict[layer_name] = ...
         merged = torch.linalg.multi_dot((u_u, v_u, torch.diag(sum_s), u_v, v_v))
         aggregated_model_dict[layer_name] = merged.to(device)
+
+    return aggregated_model_dict
+
+
+@torch.no_grad()
+def isotropic_sum(cumulative_dict, datasets, device="cuda"):
+    aggregated_model_dict = {}
+    for key in cumulative_dict.keys():
+        cumulative_dict[key] = cumulative_dict[key].to(device)
+        if len(cumulative_dict[key].shape) == 2 and "text_projection" not in key:
+            u, s, v = torch.linalg.svd(cumulative_dict[key], full_matrices=False)
+            iso_factor = torch.ones_like(s) * s.mean()
+
+            aggregated_model_dict[key] = torch.linalg.multi_dot(
+                (
+                    u,
+                    torch.diag(iso_factor),
+                    v,
+                )
+            )
+        else:
+            aggregated_model_dict[key] = cumulative_dict[key] / len(datasets)
+        aggregated_model_dict[key] = aggregated_model_dict[key].to(device)
 
     return aggregated_model_dict

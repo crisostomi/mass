@@ -11,9 +11,8 @@ from hydra.utils import instantiate
 from lightning.pytorch import Callback
 from omegaconf import DictConfig
 
-from nn_core.callbacks import NNTemplateCore
 from nn_core.common import PROJECT_ROOT
-from nn_core.common.utils import enforce_tags, seed_index_everything
+from nn_core.common.utils import seed_index_everything
 from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
@@ -22,15 +21,14 @@ import mass  # noqa
 from mass.data.dataset import get_task_evaluation_dataset
 from mass.modules.encoder import ImageEncoder
 from mass.pl_module.router_task_classifier import RouterTaskClassifier
-from mass.modules.mass_gate import AbstractRouter
-from mass.utils.io_utils import boilerplate, load_model_from_disk, load_model_from_hf
+from mass.utils.io_utils import boilerplate, load_model_from_hf
 from mass.utils.utils import (
     compute_task_dict,
     apply_dict_to_model,
     build_callbacks,
     print_memory,
 )
-from mass.task_vectors.task_singular_vectors import *
+from mass.utils.task_vectors import *
 
 pylogger = logging.getLogger(__name__)
 

@@ -49,74 +49,86 @@ def entropy_loss(logits: Tensor) -> Tensor:
     return -torch.sum(probs * torch.log(probs + 1e-8), dim=-1).mean()
 
 
-class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
+class WeightEnsemblingMoEAlgorithm():
     _mlp_class = (nn.Sequential,)
-    """
-    Algorithm for fusing models using Weight Ensembling Mixture of Experts (MoE).
-
-    This class provides methods for constructing the MoE model, performing test-time adaptation,
-    and running the fusion process.
-
-    Attributes:
-        _fabric (L.Fabric): The fabric for distributed training.
-        modelpool (ModelPool): The pool of models to be fused.
-    """
 
     def __init__(
         self,
-        pretrained_model,
+        zeroshot_model,
         finetuned_models,
         classification_heads,
-        tasks,
-        **kwargs: Any,
+        dataset_names,
+        merger,
+        optimizer,
+        save_checkpoint_path,
+        checkpoint=False,
+        save_checkpoint=False,
+        router_hidden_layers=2,
+        init_lambda=0.3,
+        max_steps=1000,
+        batch_size=16,
+        batch_reduce=True,
+        use_grad_accumulate=True,
+        model_path=None,
+        device="cuda",
     ):
 
-        super().__init__(
-            pretrained_model, classification_heads
-        )  # Temporary initialization
 
         # Store configuration parameters
-        self.tasks = tasks
-        self.task_to_index = {task: i for i, task in enumerate(tasks)}
+        self.dataset_names = dataset_names
+        self.merger = merger
+        self.optimizer_config = optimizer
+        self.save_checkpoint_path = save_checkpoint_path
+        self.checkpoint = checkpoint
+        self.save_checkpoint = save_checkpoint
+        self.router_hidden_layers = router_hidden_layers
+        self.init_lambda = init_lambda
+        self.max_steps = max_steps
+        self.batch_size = batch_size
+        self.batch_reduce = batch_reduce
+        self.use_grad_accumulate = use_grad_accumulate
+        self.model_path = model_path
+        self.device = device
+        
+        self.task_to_index = {task: i for i, task in enumerate(dataset_names)}
 
-        self.pretrained_model = pretrained_model
+        self.zeroshot_model = zeroshot_model
         self.finetuned_models = finetuned_models
+        self.classification_heads = classification_heads
 
         pylogger.info(
             "Fusing models using WeightEnsembling Mixture of Experts modules."
         )
-        self.aggregator: TaskArithmeticMerger = instantiate(
-            self.hparams.aggregator, optimal_alpha=self.hparams.init_lambda
-        )
-        moe_model = self.construct_moe_model(pretrained_model, finetuned_models)
+        
+        moe_model = self.construct_moe_model(zeroshot_model, finetuned_models)
 
         print_params_summary(moe_model)
 
-        if self.hparams.checkpoint:
+        if self.checkpoint:
             pylogger.info(
-                f"load checkpoint from {self.hparams.save_checkpoint_path}, test-time adaptation will be skipped."
+                f"load checkpoint from {self.save_checkpoint_path}, test-time adaptation will be skipped."
             )
-            self.load_checkpoint(moe_model, self.hparams.save_checkpoint_path)
+            self.load_checkpoint(moe_model, self.save_checkpoint_path)
         else:
             moe_model = self.test_time_adaptation(moe_model)
-            if self.hparams.save_checkpoint:
-                pylogger.info(f"save checkpoint to {self.hparams.save_checkpoint_path}")
+            if self.save_checkpoint:
+                pylogger.info(f"save checkpoint to {self.save_checkpoint_path}")
 
-                torch.save({"model": moe_model}, self.hparams.save_checkpoint_path)
+                torch.save({"model": moe_model}, self.save_checkpoint_path)
 
-        moe_model.batch_reduce = False
-        self.change_encoder(moe_model)
+        # Store the final model
+        self.model = moe_model
 
-    def load_checkpoint(self, model: Any, checkpoint: Any):
+    def load_checkpoint(self, model: Any, checkpoint_path: str):
         """
         Load the checkpoint file.
 
         Args:
             model: The model to load the checkpoint into.
-            checkpoint: The path to the checkpoint file.
+            checkpoint_path: The path to the checkpoint file.
         """
-        state = {"model": model}
-        self._fabric.load(checkpoint, state)
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        model.load_state_dict(checkpoint["model"])
 
     def _upscale_linear_layer(
         self,
@@ -154,10 +166,10 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
                 hidden_size=module[0].in_features,
                 base_model=module,
                 expert_models=experts,
-                init_lambda=self.hparams.init_lambda,
+                init_lambda=self.init_lambda,
                 batch_first=False,  # For open_clip models this is False
-                router_hidden_layers=self.hparams.router_hidden_layers,
-                batch_reduce=self.hparams.batch_reduce,
+                router_hidden_layers=self.router_hidden_layers,
+                batch_reduce=self.batch_reduce,
             )
             moe_linear = moe_linear.to(original_device, non_blocking=True)
             pylogger.info(f"Successfully upscaled layer: {name}")
@@ -183,8 +195,8 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
         """
 
         # Merge the models using task arithmetic
-        moe_model = self.aggregator.merge(
-            pretrained_model, {task: m for task, m in zip(self.tasks, finetuned_models)}
+        moe_model = self.merger.merge(
+            pretrained_model, {task: m for task, m in zip(self.dataset_names, finetuned_models)}
         ).requires_grad_(False)
 
         # Up-scale MLP modules
@@ -226,8 +238,8 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
 
         dataset = instantiate(
             dataset_cfg,
-            preprocess_fn=self.pretrained_model.val_preprocess,
-            batch_size=self.hparams.batch_size,
+            preprocess_fn=self.zeroshot_model.val_preprocess,
+            batch_size=self.batch_size,
         )
         return iter(InfiniteDataLoader(dataset.test_loader))
 
@@ -244,20 +256,20 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
 
         # configure optimizer using hydra instantiate
         optimizer = instantiate(
-            self.hparams["optimizer"],
+            self.optimizer_config,
             params=[p for p in module.parameters() if p.requires_grad],
         )
         print_params_summary(module)
         module.train()
 
         pbar = tqdm(
-            range(self.hparams.max_steps),
+            range(self.max_steps),
             "Test-time adaptation",
             dynamic_ncols=True,
         )
         for step_idx in pbar:
-            if self.hparams.use_grad_accumulate:
-                for task in self.tasks:
+            if self.use_grad_accumulate:
+                for task in self.dataset_names:
                     batch = next(
                         self.get_infinite_dataloader(task)
                     )  # Use cached iterator
@@ -270,8 +282,8 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
                     # this can save memory
                     loss.backward(retain_graph=True)
             else:
-                loss = 0
-                for task in self.tasks:
+                total_loss = None
+                for task in self.dataset_names:
 
                     batch = next(
                         self.get_infinite_dataloader(task)
@@ -281,9 +293,15 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
                     assert (
                         logits.dim() == 2
                     ), f"Expected logits to be 2D, got {logits.dim()}"
-                    loss = loss + entropy_loss(logits)
+                    
+                    task_loss = entropy_loss(logits)
+                    if total_loss is None:
+                        total_loss = task_loss
+                    else:
+                        total_loss = total_loss + task_loss
 
-                loss.backward(retain_graph=True)
+                if total_loss is not None:
+                    total_loss.backward(retain_graph=True)
 
             optimizer.step()
             optimizer.zero_grad()
@@ -308,9 +326,9 @@ class WeightEnsemblingMoEAlgorithm(MultiHeadImageClassifier):
     def forward(self, inputs):
         votes = []
 
-        features = self.encoder(inputs)
+        features = self.model(inputs)
 
-        for name, module in self.encoder.named_modules():
+        for name, module in self.model.named_modules():
             if isinstance(module, WeightEnsemblingMoE) and hasattr(
                 module, "last_selected_experts"
             ):

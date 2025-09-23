@@ -1,11 +1,9 @@
 ## Imports
 import copy
 import logging
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List
 
-import open_clip
 import wandb
 
 import hydra
@@ -22,50 +20,23 @@ from nn_core.serialization import NNCheckpointIO
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
 from mass.modules.encoder import ClassificationHead, ImageEncoder
+from mass.utils.fusion_bench_utils import replace_attention_with_linear
 from mass.utils.io_utils import (
     boilerplate,
     get_classification_heads,
-    load_model_from_hf,
 )
 from mass.utils.plots import plot_interactive_radar_chart
 from mass.utils.utils import (
-    compute_task_dict,
-    apply_dict_to_model,
     build_callbacks,
     get_finetuning_accuracies,
     compute_avg_accuracy,
 )
-from mass.task_vectors.task_singular_vectors import *
+from mass.utils.task_vectors import *
 import json
-import os
 
 pylogger = logging.getLogger(__name__)
 
 torch.set_float32_matmul_precision("high")
-
-
-def get_merged_base(
-    cfg,
-    zeroshot_encoder: ImageEncoder,
-    svd_dicts: Dict[str, Any],
-):
-        
-    multi_task_vector = (
-        sum_svd_no_redundant_tasks_simple( 
-            ref_state_dict=copy.deepcopy(zeroshot_encoder.state_dict()),
-            svd_dict=svd_dicts,
-            similarity_threshold=cfg.similarity_threshold,
-        )
-    )
-
-    merged_encoder: ImageEncoder = copy.deepcopy(zeroshot_encoder)
-
-    merged_encoder = apply_dict_to_model(
-        multi_task_vector,
-        merged_encoder,
-    )
-
-    return merged_encoder  # , svd_dicts
 
 
 @torch.no_grad()
@@ -79,8 +50,6 @@ def run(cfg: omegaconf.DictConfig) -> str:
         the run directory inside the storage_dir used by the current experiment
     """
     cfg.core.tags.append("mass")
-    if cfg.base == "zeroshot":
-        cfg.core.tags.append("zeroshot_base")
         
     pylogger.info(f"Starting MASS eval")
     seed_index_everything(cfg)
@@ -103,65 +72,37 @@ def run(cfg: omegaconf.DictConfig) -> str:
         cfg.misc.finetuned_accuracy_path
     )[cfg.nn.encoder.model_name]
 
-    zeroshot_encoder: ImageEncoder = load_model_from_hf(
-        model_name=cfg.nn.encoder.model_name
+    zeroshot_encoder: ImageEncoder = instantiate(
+        cfg.nn.encoder.model
     )
 
     finetuned_models = {
-        dataset: load_model_from_hf(
-            model_name=cfg.nn.encoder.model_name, dataset_name=dataset
+        dataset: instantiate(
+            cfg.nn.encoder.model, dataset_name=dataset
         )
         for dataset in cfg.benchmark.datasets
     }
+    
+
+    replace_attention_with_linear(zeroshot_encoder, finetuned_models=finetuned_models.values())
 
     pylogger.info(f"Number of tasks: {cfg.num_tasks}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
 
-    task_dicts = {}
-    for dataset in cfg.benchmark.datasets:
-        task_dicts[dataset] = compute_task_dict(
-            zeroshot_encoder.state_dict(), finetuned_models[dataset].state_dict()
-        )
-        del finetuned_models[dataset]  # Delete one model at a time
-        torch.cuda.empty_cache()
-
-
-    svd_dict = get_svd_dict(
-        task_dicts, cfg.benchmark.datasets, cfg.misc.svd_path, cfg.svd_compress_factor
-    )
-
-    del task_dicts
-
-    pylogger.info(f"Retrieving merged model {cfg.base}")
-    
-    if cfg.base == "tsvm":
-        merged_encoder = get_merged_base(
-            cfg, zeroshot_encoder, svd_dict
-        )
-    elif cfg.base == "zeroshot":
-        merged_encoder = copy.deepcopy(zeroshot_encoder)   
-    else:
-        raise ValueError(f"Unknown base {cfg.base}")
-
-    pylogger.info(f"Instantiating router")
-    router = instantiate(
-        cfg.nn.module.router,
-        encoder=merged_encoder,
-        svd_dict=svd_dict,
-        cfg=cfg,
-        _recursive_=False,
+    moerging = instantiate(
+        cfg.nn.module,
+        zeroshot_model=zeroshot_encoder,
+        finetuned_models=finetuned_models,
     )
 
     classification_heads: List[ClassificationHead] = get_classification_heads(cfg)
 
     pylogger.info(f"Instantiating final model")
     model = instantiate(
-        cfg.nn.module,
-        encoder=merged_encoder,
-        zeroshot_model=zeroshot_encoder,
-        router=router,
-        svd_dicts=svd_dict,
+        cfg.nn.task,
+        moe_model=moerging.model.cuda(),
         classification_heads=classification_heads,
+        custom_logger=logger,
         _recursive_=False,
     )
 
@@ -244,7 +185,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
         logger.experiment.finish()
 
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="task_vectors.yaml")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="eval_vision.yaml")
 def main(cfg: omegaconf.DictConfig):
     run(cfg)
 

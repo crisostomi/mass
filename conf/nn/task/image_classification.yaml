@@ -1,0 +1,3 @@
+_target_: mass.pl_module.image_multihead_classifier.MultiHeadImageClassifier
+moe_model: ??
+classification_heads: ??

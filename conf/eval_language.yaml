@@ -24,7 +24,7 @@ device: 'cuda'
 eval_datasets: ${benchmark.datasets}
 
 misc:
-  ckpt_path: ${oc.env:MODELS_PATH}/${nn.encoder.model_name}
+  ckpt_path: ${oc.env:PROJECT_ROOT}/checkpoints/${nn.encoder.model_name}
   pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
   openclip_cachedir: "${oc.env:PROJECT_ROOT}/checkpoints/openclip_cache/"
   checkpoint_dir: ${oc.env:PROJECT_ROOT}/checkpoints/linear_router

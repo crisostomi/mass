@@ -1,8 +1,8 @@
-_target_: mass.modules.encoder.ImageEncoder
 model_name: ViT-L-14 # ViT-B-32, ViT-L-14
+layer_to_hook: model.visual.transformer.resblocks.20.mlp.c_fc
 openclip_cachedir: ${misc.openclip_cachedir}
-cache_dir: null
-keep_lang: false 
-layer_to_hook: mlp # attn, mlp 
-layer_num_to_hook: 20 # <=23 
+model:
+  _target_: mass.utils.io_utils.load_model_from_hf
+  model_name: ViT-L-14
+  dataset_name: base
 

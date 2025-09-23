@@ -23,6 +23,7 @@ from mass.utils.fusion_bench_utils import (
     set_attr,
     simple_average,
 )
+from mass.utils.utils import pad_output, pad_unbatched_output
 
 
 pylogger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class SmileUpscalingAlgorithm():
         top_k: int = 1,
         routing_use_diff: bool = True,
         average_experts: bool = False,
-        model_path: str = None,
+        model_path: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -97,7 +98,13 @@ class SmileUpscalingAlgorithm():
             pylogger.info(f"Saving model to {model_path}")
             torch.save(model, model_path)
             
-        self.model = model
+        # Create inference wrapper
+        self.model = SmileInferenceWrapper(
+            model=model,
+            zeroshot_model=zeroshot_model,
+            dataset_names=list(finetuned_models.keys()) if isinstance(finetuned_models, dict) else [f"task_{i}" for i in range(len(finetuned_models_list))],
+            device=device
+        ).to(device)
        
     def merge(
         self,
@@ -214,7 +221,7 @@ class SmileUpscalingAlgorithm():
             tqdm_desc (str): Description for the tqdm progress bar.
         """
         # TODO: do we need this still?
-        replace_attention_with_linear(zeroshot_model, finetuned_models)
+        # replace_attention_with_linear(zeroshot_model, finetuned_models)
 
         for name, module in tqdm(
             tuple(zeroshot_model.named_modules()),
@@ -233,84 +240,88 @@ class SmileUpscalingAlgorithm():
                 pylogger.info(f"Averaging experts for leaf module: {name}")
                 # if the module is a leaf module, we perform a parameter average
                 self._average_experts(zeroshot_model, finetuned_models, name)
-                
 
-    # def set_metrics(self, num_classes):
 
-    #     self.output_classes = num_classes
+class SmileInferenceWrapper(nn.Module):    
+    def __init__(
+        self,
+        model: nn.Module,
+        zeroshot_model: nn.Module,
+        dataset_names: List[str],
+        device: str = "cuda",
+    ):
+        super().__init__()
+        self.model = model
+        self.zeroshot_model = zeroshot_model
+        self.dataset_names = dataset_names
+        self.device = device
+        
+        self.task_to_index = {task: i for i, task in enumerate(dataset_names)}
+        
+    def collect_votes(self, bsz, device):
+        votes = []
+        collected_layers = set()
+        
+        for name, module in self.model.named_modules():
+            pylogger.debug(f"Module {name}")
+            if isinstance(module, SmileMoELinear) and hasattr(
+                module, "last_selected_experts"
+            ):
+                collected_layers.add(name)
+                if module.last_selected_experts is None:
+                    pylogger.warning(f"Module {name} has no last selected experts")
+                else:
+                    votes.append(module.last_selected_experts)
 
-    #     metric = torchmetrics.Accuracy(
-    #         task="multiclass", num_classes=num_classes, top_k=1
-    #     )
+        if votes:
+            votes = torch.stack(votes)
+            majority_vote = torch.mode(votes, dim=0).values
+        else:
+            majority_vote = torch.zeros(
+                bsz, dtype=torch.long, device=device
+            )
+            
+        return majority_vote
+        
+        
+    def embed_image(self, batch, classification_heads, num_classes):
 
-    #     self.train_acc = metric.clone()
-    #     self.val_acc = metric.clone()
-    #     self.test_acc = metric.clone()
+        features = self.model(batch)
 
-    # def __call__(self, inputs):
-    #     if self.oracle_mode:
-    #         return self.forward_oracle(inputs)
-    #     return self.forward(inputs)
+        majority_vote = self.collect_votes(batch.size(0), batch.device)
 
-    # def forward(self, inputs):
-    #     votes = []
-    #     collected_layers = set()
+        head_groups = self._group_samples_by_selected_head(majority_vote)
 
-    #     features = self.encoder(inputs)
+        all_outputs = [None] * batch.size(0)
 
-    #     for name, module in self.encoder.named_modules():
-    #         pylogger.debug(f"Module {name}")
-    #         if isinstance(module, SmileMoELinear) and hasattr(
-    #             module, "last_selected_experts"
-    #         ):
-    #             collected_layers.add(name)
-    #             if module.last_selected_experts is None:
-    #                 pylogger.warning(f"Module {name} has no last selected experts")
-    #             else:
-    #                 votes.append(module.last_selected_experts)
+        for head_idx, sample_indices in head_groups.items():
 
-    #     if votes:
-    #         votes = torch.stack(votes)
-    #         majority_vote = torch.mode(votes, dim=0).values
-    #     else:
-    #         majority_vote = torch.zeros(
-    #             inputs.size(0), dtype=torch.long, device=inputs.device
-    #         )
+            group_features = features[sample_indices]
 
-    #     head_groups = self.group_samples_by_selected_head(majority_vote)
+            group_output = classification_heads[head_idx](group_features)
 
-    #     all_outputs = [None] * inputs.size(0)
+            for i, sample_idx in enumerate(sample_indices):
+                all_outputs[sample_idx] = group_output[i]
 
-    #     for head_idx, sample_indices in head_groups.items():
+        return pad_unbatched_output(all_outputs, num_classes)
+    
+    def generate(self, batch, max_length):
+        return self.model.generate(batch, max_length=max_length)
 
-    #         group_features = features[sample_indices]
+    def _group_samples_by_selected_head(self, selected_heads: torch.Tensor):
+        head_group_to_samples = {}
+        
+        for sample_idx, head_idx in enumerate(selected_heads.cpu().numpy()):
+            head_idx = int(head_idx)
+            head_group_to_samples.setdefault(head_idx, []).append(sample_idx)
+        
+        return head_group_to_samples
+    
+    @property
+    def train_preprocess(self):
+        return getattr(self.zeroshot_model, 'train_preprocess', None)
 
-    #         group_output = self.classification_heads[head_idx](group_features)
-
-    #         for i, sample_idx in enumerate(sample_indices):
-    #             all_outputs[sample_idx] = group_output[i]
-
-    #     return pad_unbatched_output(all_outputs, self.output_classes)
-
-    # def forward_oracle(self, inputs):
-    #     pylogger.warning("Using oracle forward pass")
-    #     features = self.encoder(inputs)
-    #     return self.classification_heads[self.head_idx](features)
-
-    # def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
-    #     """
-    #     Group samples that share the same selected head to be processed together for efficiency
-
-    #     Args:
-    #         selected_heads: Tensor of shape (batch_size,) containing head indices for each sample
-
-    #     Returns:
-    #         Dict mapping head_idx to list of sample indices
-    #     """
-    #     head_group_to_samples = {}
-
-    #     for sample_idx, head_idx in enumerate(selected_heads.cpu().numpy()):
-    #         head_idx = int(head_idx)
-    #         head_group_to_samples.setdefault(head_idx, []).append(sample_idx)
-
-    #     return head_group_to_samples
+    @property
+    def val_preprocess(self):
+        return getattr(self.zeroshot_model, 'val_preprocess', None)
+    

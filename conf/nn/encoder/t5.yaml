@@ -1,4 +1,5 @@
 model_name: t5-base
+layer_to_hook: "encoder.block.10.layer.0.SelfAttention.o"
 model:
   _target_: transformers.AutoModelForSeq2SeqLM.from_pretrained
   pretrained_model_name_or_path: google/flan-t5-base
