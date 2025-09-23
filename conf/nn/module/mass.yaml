@@ -10,20 +10,16 @@ base_merger:
   _target_: mass.merger.tsv.TaskSingularVectorsMerger
   svd_path: ${misc.svd_path}
   svd_compress_factor: null 
-  non_matrix_params_aggregation: 0.3
+  non_matrix_params_aggregation: "mean"
 
 zeroshot_model: ??
 finetuned_models: ??
 dataset_names: ${eval_datasets}
-debug: true
+debug: false
 
 routing_mode: topk
 
-layer_to_hook: "encoder.block.10.layer.0.SelfAttention.o"
+layer_to_hook: "encoder.block.8.layer.0.SelfAttention.o"
 max_num_tasks_to_select: 3
 
 svd_path: ${misc.svd_path}
-
-
-
-

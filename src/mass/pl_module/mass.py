@@ -67,7 +67,7 @@ class MassAlgorithm:
             task_dicts[dataset] = compute_task_dict(
                 zeroshot_model.state_dict(), finetuned_models[dataset].state_dict()
             )
-            del finetuned_models[dataset] 
+            del finetuned_models[dataset]
             torch.cuda.empty_cache()
 
         self.svd_dict = get_svd_dict(
@@ -83,7 +83,7 @@ class MassAlgorithm:
             zeroshot_model,
             self.svd_dict,
         )
-        
+
         merged_encoder = self.merge(merged_encoder, in_place=True)
 
         self.model = MassInferenceWrapper(
@@ -102,7 +102,7 @@ class MassAlgorithm:
 
         self._upscale_submodules(model, self.layer_to_hook, debug=self.debug)
         return model
-    
+
     def _upscale_submodules(
         self,
         zeroshot_model: nn.Module,
@@ -120,7 +120,7 @@ class MassAlgorithm:
         """
         if debug:
             pylogger.warning("Upscaling all linear layers.")
-        
+
         for name, module in tqdm(
             tuple(zeroshot_model.named_modules()),
             tqdm_desc,
@@ -163,7 +163,7 @@ class MassAlgorithm:
             mass_gate = MassGate(
                 name,
                 module,
-                get_routing_weights(self.svd_dict, name + ".weight"), # TODO: remove manual .weight
+                get_routing_weights(self.svd_dict, name + ".weight"),  # TODO: remove manual .weight
                 self.dataset_names,
                 self.routing_mode,
                 self.max_num_tasks_to_select,
@@ -197,17 +197,16 @@ class MassInferenceWrapper(nn.Module):
 
         self.layer_to_hook = layer_to_hook
 
-        self.max_num_tvs_to_keep = 1
+        self.max_num_tvs_to_keep = 20
         self.cached_tvs = {}
-        
+
         self.debug = debug
 
     def collect_output(self):
         mass = get_attr(self.base_model, self.layer_to_hook.split("."))
         output = mass.output
-        mass.output = None 
+        mass.output = None
         return output
-    
 
     def generate(self, batch, max_length):
         self.base_model.generate(batch, max_length=max_length)
@@ -280,93 +279,97 @@ class MassInferenceWrapper(nn.Module):
     def flush_cache(self):
         self.cached_tvs = {}
         torch.cuda.empty_cache()
-        
+
     # Logging
-    
+
     def logging(self, logger, current_task):
         """Log statistics from all MassGate modules layer-wise"""
         layer_stats = {}
         layer_accuracy_stats = {}
-        
+
         # Collect stats from all MassGate layers
         for layer_name, module in self.base_model.named_modules():
             if isinstance(module, MassGate):
                 if not module.norms_to_log:
                     pylogger.warning(f"No norms to log for layer {layer_name}")
                     continue
-                    
+
                 norms_array = np.array(module.norms_to_log)
                 mean_coeffs = norms_array.mean(axis=0)
                 std_coeffs = norms_array.std(axis=0)
-                
+
                 layer_stats[layer_name] = {
-                    'mean_coeffs': mean_coeffs,
-                    'std_coeffs': std_coeffs,
-                    'dataset_names': list(module.dataset_names)
+                    "mean_coeffs": mean_coeffs,
+                    "std_coeffs": std_coeffs,
+                    "dataset_names": list(module.dataset_names),
                 }
-                
+
                 # Collect task accuracy data if available
                 if module.layer_accuracy_to_log[module.name]:
                     layer_accuracy_stats[layer_name] = {
-                        'predictions': module.layer_accuracy_to_log[module.name],
-                        'dataset_names': list(module.dataset_names)
+                        "predictions": module.layer_accuracy_to_log[module.name],
+                        "dataset_names": list(module.dataset_names),
                     }
-        
+
         if not layer_stats:
             pylogger.warning("No MassGate layers found with logging data")
             return
-        
+
         # Log coefficient statistics
         for layer_name, stats in layer_stats.items():
-            mean_coeffs = stats['mean_coeffs']
-            std_coeffs = stats['std_coeffs']
-            dataset_names = stats['dataset_names']
-            
+            mean_coeffs = stats["mean_coeffs"]
+            std_coeffs = stats["std_coeffs"]
+            dataset_names = stats["dataset_names"]
+
             # Import here to avoid circular imports
             from mass.utils.plots import plot_interactive_coefficients_std
-            
-            fig_std = plot_interactive_coefficients_std(
-                mean_coeffs, std_coeffs, dataset_names
+
+            fig_std = plot_interactive_coefficients_std(mean_coeffs, std_coeffs, dataset_names)
+
+            logger.experiment.log(
+                {
+                    f"norms/{current_task}/{layer_name}": wandb.Plotly(fig_std),
+                }
             )
-            
-            logger.experiment.log({
-                f"norms/{current_task}/{layer_name}": wandb.Plotly(fig_std),
-            })
-            
+
             pylogger.info(f"Logged coefficient statistics for MassGate layer: {layer_name}")
-        
+
         # Log task accuracy statistics
         if layer_accuracy_stats:
             from mass.utils.plots import create_interactive_layer_task_accuracy_plot
-            
+
             # Get dataset names from any layer (they should all be the same)
-            dataset_names = next(iter(layer_accuracy_stats.values()))['dataset_names']
-            
+            dataset_names = next(iter(layer_accuracy_stats.values()))["dataset_names"]
+
             # Find the index of the current task
             if current_task in dataset_names:
                 current_task_idx = dataset_names.index(current_task)
-                
+
                 # Create a single dict with all layers for the CURRENT task accuracy plot
                 all_layer_predictions = {}
                 for layer_name, accuracy_stats in layer_accuracy_stats.items():
-                    all_layer_predictions[layer_name] = accuracy_stats['predictions']
-                
+                    all_layer_predictions[layer_name] = accuracy_stats["predictions"]
+
                 if all_layer_predictions:
                     fig_accuracy = create_interactive_layer_task_accuracy_plot(
-                        all_layer_predictions, 
-                        current_task_idx, 
+                        all_layer_predictions,
+                        current_task_idx,
                         dataset_names,
-                        title=f"Task Accuracy for {current_task} across all layers"
+                        title=f"Task Accuracy for {current_task} across all layers",
                     )
-                    
-                    logger.experiment.log({
-                        f"task_accuracy/{current_task}": wandb.Plotly(fig_accuracy),
-                    })
-                
+
+                    logger.experiment.log(
+                        {
+                            f"task_accuracy/{current_task}": wandb.Plotly(fig_accuracy),
+                        }
+                    )
+
                 pylogger.info(f"Logged task accuracy statistics for current task: {current_task}")
             else:
-                pylogger.warning(f"Current task '{current_task}' not found in dataset names: {dataset_names}")
-        
+                pylogger.warning(
+                    f"Current task '{current_task}' not found in dataset names: {dataset_names}"
+                )
+
         # Reset all logging stats after logging
         for layer_name, module in self.base_model.named_modules():
             if isinstance(module, MassGate):

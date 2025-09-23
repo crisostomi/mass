@@ -19,9 +19,14 @@ from mass.utils.utils import is_matrix
 
 pylogger = logging.getLogger(__name__)
 
+
 @torch.no_grad()
 def sum_svd(
-    ref_state_dict, svd_dicts, device="cuda", non_matrix_params_aggregation="base_model", silent=False
+    ref_state_dict,
+    svd_dicts,
+    device="cuda",
+    non_matrix_params_aggregation="base_model",
+    silent=False,
 ):
     """
     Takes the (SVD) for each vector in the task_vectors, and concatenate the low-rank matrices.
@@ -40,7 +45,7 @@ def sum_svd(
 
     datasets = list(svd_dicts.keys())
 
-    for layer_name in (tqdm(layer_names, desc="Summing SVD") if not silent else layer_names):
+    for layer_name in tqdm(layer_names, desc="Summing SVD") if not silent else layer_names:
         is_matrix = aggregated_model_dict[layer_name].dim() == 2
         # TODO: modified
         # new_key = layer_name.replace(".transformer", "")
@@ -64,9 +69,7 @@ def sum_svd(
                 u, s, v = u.to(device), s.to(device), v.to(device)
 
                 if i == 0:
-                    total_rank = sum(
-                        svd_dicts[d][new_key]["s"].shape[0] for d in datasets
-                    )
+                    total_rank = sum(svd_dicts[d][new_key]["s"].shape[0] for d in datasets)
                     sum_u = torch.zeros(u.shape[0], total_rank, device=device)
                     sum_s = torch.zeros(total_rank, device=device)
                     sum_v = torch.zeros(total_rank, v.shape[1], device=device)
@@ -159,9 +162,7 @@ def compress_tv(task_dicts, compress_rate: float, compress_ratio_per_task=None):
     with torch.no_grad():
         svd_dict = {}
 
-        for dataset, task_dict in tqdm(
-            task_dicts.items(), desc="Computing and compressing SVD"
-        ):
+        for dataset, task_dict in tqdm(task_dicts.items(), desc="Computing and compressing SVD"):
             svd_dict[dataset] = {}
 
             for key, layer in task_dict.items():
@@ -231,6 +232,8 @@ def get_svd_dict(
         pylogger.info("No precomputed SVD dictionary found. Computing from scratch...")
 
     svd_dict = compress_tv(task_dicts, compression_ratio, compress_ratio_per_task)
+    if not os.path.exists(os.path.dirname(svd_path)):
+        os.makedirs(os.path.dirname(svd_path), exist_ok=True)
     torch.save(svd_dict, svd_path)
     pylogger.info(f"SVD dictionary saved at: {svd_path}")
 
