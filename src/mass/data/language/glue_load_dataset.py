@@ -29,7 +29,9 @@ def torch_default_data_collator(features):
     # Ensure that tensor is created with the correct type
     # (it should be automatically the case, but let's make sure of it.)
     if "label" in first and first["label"] is not None:
-        label = first["label"].item() if isinstance(first["label"], torch.Tensor) else first["label"]
+        label = (
+            first["label"].item() if isinstance(first["label"], torch.Tensor) else first["label"]
+        )
         dtype = torch.long if isinstance(label, int) else torch.float
         batch["labels"] = torch.tensor([f["label"] for f in features], dtype=dtype)
     elif "label_ids" in first and first["label_ids"] is not None:
@@ -87,9 +89,7 @@ def load_glue_dataset(
     if cache_dir is not None:
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
-        cache_path = os.path.join(
-            cache_dir, "flan-t5", f"_load_{name}_dataset_cached"
-        )
+        cache_path = os.path.join(cache_dir, "flan-t5", f"_load_{name}_dataset_cached")
         if os.path.exists(cache_path):
             dataset = load_from_disk(cache_path)
         else:
@@ -100,7 +100,8 @@ def load_glue_dataset(
         dataset = _load_glue_dataset(name, tokenizer)
 
     return GlueDataset(dataset, batch_size=batch_size, split=split)
-    
+
+
 class GlueDataset:
     def __init__(
         self,
@@ -108,5 +109,9 @@ class GlueDataset:
         batch_size: int = 16,
         split: Optional[str] = "validation",
     ):
-        self.data_loader = torch.utils.data.DataLoader(dataset[split], batch_size=batch_size, collate_fn=torch_default_data_collator)
-
+        self.data_loader = torch.utils.data.DataLoader(
+            dataset[split],
+            batch_size=batch_size,
+            collate_fn=torch_default_data_collator,
+            num_workers=16,
+        )
