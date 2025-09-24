@@ -250,3 +250,5 @@ notebooks/media/*
 secrets.txt
 cluster/cluster.env
 results/*
+!results/.gitkeep
+!results/finetuning/

@@ -382,7 +382,7 @@ class WeMoEInferenceWrapper(nn.Module):
         return pad_unbatched_output(all_outputs, num_classes)
     
     def generate(self, batch, max_length):
-        raise NotImplementedError
+        return self.model.generate(batch, max_length=max_length)
 
     def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
         """
