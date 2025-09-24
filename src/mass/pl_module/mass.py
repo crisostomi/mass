@@ -288,7 +288,6 @@ class MassInferenceWrapper(nn.Module):
         # Try to read pad_token_id from the merged model config, else default to -100
         pad_token_id = getattr(getattr(self.base_model, "config", None), "pad_token_id", -100)
         pad_value = pad_token_id if isinstance(pad_token_id, int) else -100
-        pylogger.info(f"Padding value: {pad_value}")
 
         for i, t in enumerate(sample_embeddings):
             seq_len = t.size(1)
