@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import Dict
 
 import open_clip
 import wandb
@@ -23,7 +24,7 @@ import mass  # noqa
 
 from mass.utils.io_utils import boilerplate
 from mass.utils.plots import plot_interactive_radar_chart
-from mass.utils.utils import compute_avg_accuracy, print_memory, build_callbacks
+from mass.utils.utils import compute_avg_accuracy, get_finetuning_accuracies, print_memory, build_callbacks
 from mass.pl_module.language_classifier import CLASSIFICATION_TASKS, REGRESSION_TASKS, get_task_config_name
 
 pylogger = logging.getLogger(__name__)
@@ -49,10 +50,9 @@ def run(cfg: omegaconf.DictConfig) -> str:
     cfg.num_tasks = num_tasks  # Now we can safely update it
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
     
-    # TODO: implement finetuning accuracies for LLMs
-    # finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
-    #     cfg.misc.finetuned_accuracy_path
-    # )[cfg.nn.encoder.model_name]
+    finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
+        cfg.misc.finetuned_accuracy_path
+    )[cfg.nn.encoder.model_name]
     
     zeroshot_encoder = instantiate(cfg.nn.encoder.model)
     
@@ -108,6 +108,11 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
         task_model.set_metrics()
         task_model.set_task(dataset_name)
+        task_model.set_finetuning_accuracy(
+            finetuned_accuracies[
+                dataset_name
+            ]
+        )
 
         trainer = pl.Trainer(
             default_root_dir=cfg.core.storage_dir,

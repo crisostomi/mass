@@ -164,7 +164,7 @@ class MassAlgorithm:
             mass_gate = MassGate(
                 name,
                 module,
-                get_routing_weights(self.svd_dict, name + ".weight" if self.vision else ""), # TODO: remove hardocoding for keys
+                get_routing_weights(self.svd_dict, name + ".weight"), # TODO: remove hardocoding for keys
                 self.dataset_names,
                 self.routing_mode,
                 self.max_num_tasks_to_select,

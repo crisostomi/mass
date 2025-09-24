@@ -15,7 +15,7 @@ base_merger:
 zeroshot_model: ??
 finetuned_models: ??
 dataset_names: ${eval_datasets}
-debug: true
+debug: false
 layer_to_hook: ${nn.encoder.layer_to_hook}
 
 routing_mode: topk

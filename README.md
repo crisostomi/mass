@@ -24,6 +24,7 @@ If you want to set specific paths for datasets and models, you can create a `.en
 ```sh
     HYDRA_FULL_ERROR=1
     HF_HOME="~/.cache/huggingface"
+    TOKENIZERS_PARALLELISM=false
 ```
 
 ## 🚀 Getting Started
@@ -56,7 +57,7 @@ To run and test out method, MASS, on the 8 vision tasks benchmark with a ViT-B-3
 
 To run and test out method, MASS, on the Glue benchmark with a ViT-B-32:
 ```bash
-    uv run evaluate_language benchmark=glue nn/module=mass nn/encoder=b32
+    uv run evaluate_language benchmark=glue nn/module=mass nn/encoder=t5
 ```
 
 To try out a static merging method, e.g. TSV-M, using the ViT-B-16 encoder on the 20 tasks benchmark:

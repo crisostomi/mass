@@ -77,7 +77,7 @@ class LanguageTester(pl.LightningModule):
 
         accuracy = self.trainer.callback_metrics[f"acc/test/{self.task_name}"].cpu().item()
 
-        normalized_acc = 0.0  # TODO: implement normalised accuracy for LLMs
+        normalized_acc = accuracy / self.finetuning_accuracy  
 
         self.log_fn(f"normalized_acc/test/{self.task_name}", normalized_acc)
 
@@ -86,6 +86,9 @@ class LanguageTester(pl.LightningModule):
 
     def set_task(self, task_name):
         self.task_name = task_name
+        
+    def set_finetuning_accuracy(self, finetuning_accuracy):
+        self.finetuning_accuracy = finetuning_accuracy
 
     def set_metrics(self, num_classes=None):
         """
