@@ -48,7 +48,6 @@ class MassGate(nn.Module):
 
         self.debug = debug
 
-        # TODO: add an option for image case in which token is the first dimension
         self.select_token = lambda x: ( x.mean(dim=1) if not visual else x[0, :, :]) 
         
         self.dataset_idx_to_name = {

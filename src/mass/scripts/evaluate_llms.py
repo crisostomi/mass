@@ -106,7 +106,6 @@ def run(cfg: omegaconf.DictConfig) -> str:
         
         callbacks = build_callbacks(cfg.train.callbacks, template_core)
 
-        # TODO: check if this would work
         task_model.set_metrics()
         task_model.set_task(dataset_name)
 

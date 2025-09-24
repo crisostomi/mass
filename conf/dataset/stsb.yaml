@@ -4,5 +4,3 @@ tokenizer: ??
 batch_size: 128
 cache_dir: null
 split: validation 
-
-# TODO: this is the only regression task in GLUE, need special handling 

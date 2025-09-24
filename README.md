@@ -41,7 +41,6 @@ Below is the folder structure for the scripts provided in this repository, along
 src/mass/scripts/
 ├── evaluate_vision.py         # MoE vision evaluation script
 ├── evaluate_llms.py           # MoE LLMs evaluation script
-├── train_router.py            # Train an MLP router for task classification
 ├── finetune.py                # Fine-tuning checkpoints script
 └── evaluate_static_merging.py # Evaluate static merging methods
 ```
@@ -50,15 +49,27 @@ To run the scripts, use `uv run src/scripts/<script_name>.py` from the root fold
 
 **💡 Examples of commands for experiments in the paper:**
 
-To run and test out method, MASS, on the 8 tasks benchmark with a ViT-B-32:
+To run and test out method, MASS, on the 8 vision tasks benchmark with a ViT-B-32:
 ```bash
-    uv run evaluate benchmark=n8 nn/module=mass nn/encoder=b32
+    uv run evaluate_vision benchmark=n8 nn/module=mass nn/encoder=b32
+```
+
+To run and test out method, MASS, on the Glue benchmark with a ViT-B-32:
+```bash
+    uv run evaluate_language benchmark=glue nn/module=mass nn/encoder=b32
 ```
 
 To try out a static merging method, e.g. TSV-M, using the ViT-B-16 encoder on the 20 tasks benchmark:
 ```bash
     uv run static_merge merger=tsv nn/encoder=b16 benchmark=n20
 ```
+
+To finetune your own checkpoints on the 8 tasks benchmark use:
+```bash
+    uv run finetune -m dataset='SUN397,Cars,RESISC45,EuroSAT,SVHN,GTSRB,MNIST,DTD' 
+```
+
+
 
 ### 🤗 Models and data
 
@@ -99,8 +110,7 @@ conf/
 ├── train/                    # Training configurations
 ├── eval_language.yaml        # LLMs config
 ├── eval_vision.yaml          # Vision config
-├── finetune.yaml             # Fine-tuning config
-└── train_router.yaml         # Train MLP router config
+└── finetune.yaml             # Fine-tuning config
 ```
 
 ## 📚 Cite

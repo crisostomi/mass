@@ -45,5 +45,5 @@ misc:
   openclip_cachedir: "${oc.env:PROJECT_ROOT}/checkpoints/openclip_cache/"
   checkpoint_dir: ${oc.env:PROJECT_ROOT}/checkpoints/linear_router
   svd_path: "${oc.env:PROJECT_ROOT}/checkpoints/svd_dict_${nn.encoder.model_name}.pt"
-  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/accs.json"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/vit.json"
   results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"

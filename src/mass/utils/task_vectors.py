@@ -47,9 +47,6 @@ def sum_svd(
 
     for layer_name in tqdm(layer_names, desc="Summing SVD") if not silent else layer_names:
         is_matrix = aggregated_model_dict[layer_name].dim() == 2
-        # TODO: modified
-        # new_key = layer_name.replace(".transformer", "")
-        new_key = layer_name
         offset = 0
 
         for i, dataset in enumerate(datasets):
@@ -59,7 +56,7 @@ def sum_svd(
 
             if is_matrix:
 
-                delta_layer_svd = svd_dicts[dataset][new_key]
+                delta_layer_svd = svd_dicts[dataset][layer_name]
 
                 u, s, v = (
                     delta_layer_svd["u"],
@@ -69,7 +66,7 @@ def sum_svd(
                 u, s, v = u.to(device), s.to(device), v.to(device)
 
                 if i == 0:
-                    total_rank = sum(svd_dicts[d][new_key]["s"].shape[0] for d in datasets)
+                    total_rank = sum(svd_dicts[d][layer_name]["s"].shape[0] for d in datasets)
                     sum_u = torch.zeros(u.shape[0], total_rank, device=device)
                     sum_s = torch.zeros(total_rank, device=device)
                     sum_v = torch.zeros(total_rank, v.shape[1], device=device)
@@ -86,7 +83,7 @@ def sum_svd(
 
             # layer is not a matrix, compute the mean
             else:
-                delta_layer = svd_dicts[datasets[i]][new_key]["dim1"].to(device)
+                delta_layer = svd_dicts[datasets[i]][layer_name]["dim1"].to(device)
 
                 if non_matrix_params_aggregation == "mean":
 
@@ -166,10 +163,6 @@ def compress_tv(task_dicts, compress_rate: float, compress_ratio_per_task=None):
             svd_dict[dataset] = {}
 
             for key, layer in task_dict.items():
-                # Remove ".transformer" from the key but keep the layer
-                # TODO: check here
-                # new_key = key.replace(".transformer", "")
-                new_key = key
 
                 if is_matrix(layer):
                     # Use dataset-specific compression ratio if provided
@@ -180,13 +173,13 @@ def compress_tv(task_dicts, compress_rate: float, compress_ratio_per_task=None):
                     )
 
                     u, s, v = compute_svd_and_compress(layer, current_compress_rate)
-                    svd_dict[dataset][new_key] = {
+                    svd_dict[dataset][key] = {
                         "u": u.detach().cpu(),
                         "s": s.detach().cpu(),
                         "v": v.detach().cpu(),
                     }
                 else:
-                    svd_dict[dataset][new_key] = {"dim1": layer.detach().cpu()}
+                    svd_dict[dataset][key] = {"dim1": layer.detach().cpu()}
 
         return svd_dict
 

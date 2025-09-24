@@ -17,6 +17,7 @@ from mass.modules.smile_gates import (
 from mass.utils.fusion_bench_utils import (
     get_attr,
     get_device,
+    replace_attention_with_linear,
     set_attr,
     simple_average,
 )
@@ -89,7 +90,6 @@ class SmileUpscalingAlgorithm():
             pylogger.info("Creating SMILE model...")
             model = self.merge(zeroshot_model, finetuned_models_list)
 
-        # self.pylogger.info_profile_summary()  # TODO: implement profiling
         if model_path is not None:
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             pylogger.info(f"Saving model to {model_path}")
@@ -217,8 +217,8 @@ class SmileUpscalingAlgorithm():
             finetuned_models (List[nn.Module]): A list of fine-tuned models.
             tqdm_desc (str): Description for the tqdm progress bar.
         """
-        # TODO: do we need this still?
-        # replace_attention_with_linear(zeroshot_model, finetuned_models)
+        
+        replace_attention_with_linear(zeroshot_model, finetuned_models)
 
         for name, module in tqdm(
             tuple(zeroshot_model.named_modules()),

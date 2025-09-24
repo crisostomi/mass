@@ -185,8 +185,8 @@ mass = { workspace = true }
 [project.scripts]
 evaluate_vision = "mass.scripts.evaluate_vision:main"
 evaluate_language = "mass.scripts.evaluate_llms:main"
-train = "mass.scripts.train_router:main"
 static_merge = "mass.scripts.evaluate_static_merging:main"
+finetune = "mass.scripts.finetune:main"
 
 [dependency-groups]
 dev = [
