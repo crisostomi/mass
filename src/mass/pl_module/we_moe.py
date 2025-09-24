@@ -382,7 +382,27 @@ class WeMoEInferenceWrapper(nn.Module):
         return pad_unbatched_output(all_outputs, num_classes)
     
     def generate(self, batch, max_length):
-        return self.model.generate(batch, max_length=max_length)
+        sample_embeddings = self.model.generate(batch, max_length=max_length)
+    
+        max_len = max(t.size(1) for t in sample_embeddings if t is not None)
+
+        # Try to read pad_token_id from the merged model config, else default to -100
+        pad_token_id = getattr(getattr(self.base_model, "config", None), "pad_token_id", -100)
+        pad_value = pad_token_id if isinstance(pad_token_id, int) else -100
+        pylogger.info(f"Padding value: {pad_value}")
+
+        for i, t in enumerate(sample_embeddings):
+            seq_len = t.size(1)
+            if seq_len < max_len:
+                # F.pad pads as (pad_left, pad_right) for last dimension
+                sample_embeddings[i] = torch.nn.functional.pad(
+                    t, (0, max_len - seq_len), value=pad_value
+                )
+
+
+        sample_embeddings = torch.cat(sample_embeddings, dim=0)
+        
+        return sample_embeddings
 
     def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
         """
