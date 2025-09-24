@@ -309,8 +309,6 @@ class SmileInferenceWrapper(nn.Module):
         """Handles language tasks."""
         return self.model.generate(batch, max_length=max_length)
     
-        
-
     def _group_samples_by_selected_head(self, selected_heads: torch.Tensor):
         """
         Group samples that share the same selected head to be processed together for efficiency

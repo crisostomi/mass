@@ -384,9 +384,6 @@ class WeMoEInferenceWrapper(nn.Module):
     def generate(self, batch, max_length):
         return self.model.generate(batch, max_length=max_length)
     
-        
- 
-
     def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
         """
         Group samples that share the same selected head to be processed together for efficiency
