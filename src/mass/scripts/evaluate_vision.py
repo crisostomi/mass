@@ -39,7 +39,6 @@ pylogger = logging.getLogger(__name__)
 torch.set_float32_matmul_precision("high")
 
 
-@torch.no_grad()
 def run(cfg: omegaconf.DictConfig) -> str:
     """Generic train loop.
 
@@ -95,7 +94,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
         finetuned_models=finetuned_models,
     )
 
-    classification_heads: List[ClassificationHead] = get_classification_heads(cfg)
+    classification_heads: List[ClassificationHead] = get_classification_heads(cfg.benchmark.datasets, cfg.nn.encoder.model_name, cfg.misc.ckpt_path, cfg.misc.openclip_cachedir)
 
     pylogger.info(f"Instantiating final model")
     model = instantiate(

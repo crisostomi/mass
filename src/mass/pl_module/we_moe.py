@@ -1,13 +1,15 @@
 from ast import Dict
+import copy
 import functools
 
 from hydra.utils import instantiate
 import logging
-from typing import Any, Generic, List, cast  # noqa: F401
+from typing import Any, Generic, List, cast, Union  # noqa: F401
 
 import lightning.fabric.wrappers
 from omegaconf import OmegaConf
 import torch
+import torch.optim
 from torch import Tensor
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -30,6 +32,7 @@ from mass.utils.fusion_bench_utils import (
 
 from open_clip import CLIP
 
+from mass.utils.io_utils import get_classification_heads
 from mass.utils.utils import pad_unbatched_output, print_params_summary
 
 pylogger = logging.getLogger(__name__)
@@ -56,7 +59,6 @@ class WeightEnsemblingMoEAlgorithm():
         self,
         zeroshot_model,
         finetuned_models,
-        classification_heads,
         dataset_names,
         merger,
         optimizer,
@@ -71,6 +73,9 @@ class WeightEnsemblingMoEAlgorithm():
         use_grad_accumulate=True,
         model_path=None,
         device="cuda",
+        encoder_name=None,
+        ckpt_path=None,
+        openclip_cachedir=None,
     ):
 
 
@@ -94,7 +99,7 @@ class WeightEnsemblingMoEAlgorithm():
 
         self.zeroshot_model = zeroshot_model
         self.finetuned_models = finetuned_models
-        self.classification_heads = classification_heads
+        self.classification_heads = get_classification_heads(self.dataset_names, encoder_name, ckpt_path, openclip_cachedir)
 
         pylogger.info(
             "Fusing models using WeightEnsembling Mixture of Experts modules."
@@ -159,7 +164,7 @@ class WeightEnsemblingMoEAlgorithm():
         module = module.to(self.device, non_blocking=True)
         experts = [
             get_attr(m, name_list).to(self.device, non_blocking=True)
-            for m in finetuned_models
+            for m in finetuned_models.values()
         ]
         try:
             moe_linear = WeightEnsemblingMoE(
@@ -172,7 +177,7 @@ class WeightEnsemblingMoEAlgorithm():
                 batch_reduce=self.batch_reduce,
             )
             moe_linear = moe_linear.to(original_device, non_blocking=True)
-            pylogger.info(f"Successfully upscaled layer: {name}")
+            # pylogger.info(f"Successfully upscaled layer: {name}")
         except ExpertNotTrainedError:
             pylogger.info(f"skip {name} because the experts are not trained.")
             exit(1)
@@ -196,7 +201,7 @@ class WeightEnsemblingMoEAlgorithm():
 
         # Merge the models using task arithmetic
         moe_model = self.merger.merge(
-            pretrained_model, {task: m for task, m in zip(self.dataset_names, finetuned_models)}
+            pretrained_model, copy.deepcopy(finetuned_models)
         ).requires_grad_(False)
 
         # Up-scale MLP modules
@@ -226,9 +231,9 @@ class WeightEnsemblingMoEAlgorithm():
             Tensor: The computed logits.
         """
         images, _ = batch
-        text_embeds = self.classification_heads[self.task_to_index[task]].cuda()
-
         image_embeds = module(images.cuda())
+
+        text_embeds = self.classification_heads[self.task_to_index[task]].cuda()
         logits_per_text = text_embeds(image_embeds)
         return logits_per_text
 
@@ -254,12 +259,20 @@ class WeightEnsemblingMoEAlgorithm():
             WeightEnsemblingMoE: The adapted MoE module.
         """
 
-        # configure optimizer using hydra instantiate
-        optimizer = instantiate(
-            self.optimizer_config,
-            params=[p for p in module.parameters() if p.requires_grad],
-        )
+        # Configure optimizer - handle both partial and regular configs
+        trainable_params = [p for p in module.parameters() if p.requires_grad]
+        
+        optimizer: torch.optim.Optimizer
+        if callable(self.optimizer_config):
+            optimizer = cast(torch.optim.Optimizer, self.optimizer_config(params=trainable_params))
+        else:
+            optimizer = cast(torch.optim.Optimizer, instantiate(
+                self.optimizer_config,
+                params=trainable_params,
+            ))
+        
         print_params_summary(module)
+        module.cuda()
         module.train()
 
         pbar = tqdm(
@@ -308,26 +321,26 @@ class WeightEnsemblingMoEAlgorithm():
 
         return module
 
-    def set_metrics(self, num_classes):
 
-        self.output_classes = num_classes
-
-        metric = torchmetrics.Accuracy(
-            task="multiclass", num_classes=num_classes, top_k=1
-        )
-
-        self.train_acc = metric.clone()
-        self.val_acc = metric.clone()
-        self.test_acc = metric.clone()
-
-    def __call__(self, inputs):
-        return self.forward(inputs)
-
-    def forward(self, inputs):
+class WeMoEInferenceWrapper(nn.Module):
+    def __init__(
+        self,
+        model: nn.Module,
+        zeroshot_model: nn.Module,
+        dataset_names: List[str],
+        device: str = "cuda",
+    ):
+        super().__init__()
+        self.model = model
+        self.zeroshot_model = zeroshot_model
+        self.dataset_names = dataset_names
+        self.device = device
+        
+        self.task_to_index = {task: i for i, task in enumerate(dataset_names)}
+    
+    def collect_votes(self, bsz, device):
         votes = []
-
-        features = self.model(inputs)
-
+        
         for name, module in self.model.named_modules():
             if isinstance(module, WeightEnsemblingMoE) and hasattr(
                 module, "last_selected_experts"
@@ -342,24 +355,34 @@ class WeightEnsemblingMoEAlgorithm():
             majority_vote = torch.mode(votes, dim=0).values
         else:
             majority_vote = torch.zeros(
-                inputs.size(0), dtype=torch.long, device=inputs.device
+                bsz, dtype=torch.long, device=device
             )
+        return majority_vote
+
+    def embed_image(self, batch, classification_heads, num_classes):
+
+        features = self.model(batch)
+
+        majority_vote = self.collect_votes(batch.size(0), batch.device)
 
         head_groups = self.group_samples_by_selected_head(majority_vote)
 
-        all_outputs = [None] * inputs.size(0)
+        all_outputs = [None] * batch.size(0)
 
         for head_idx, sample_indices in head_groups.items():
 
             group_features = features[sample_indices]
-            group_output = self.classification_heads[
+            group_output = classification_heads[
                 head_idx
             ](group_features)
 
             for i, sample_idx in enumerate(sample_indices):
                 all_outputs[sample_idx] = group_output[i]
 
-        return pad_unbatched_output(all_outputs, self.output_classes)
+        return pad_unbatched_output(all_outputs, num_classes)
+    
+    def generate(self, batch, max_length):
+        raise NotImplementedError
 
     def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
         """

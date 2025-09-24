@@ -1,16 +1,14 @@
 import logging
 import os
 from copy import deepcopy
-import re
 from typing import (
     Any,
     List,
 )
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from tqdm.auto import tqdm
-import pytorch_lightning as pl
 
 from mass.modules.smile_gates import (
     ExpertNotTrainedError,
@@ -19,18 +17,17 @@ from mass.modules.smile_gates import (
 from mass.utils.fusion_bench_utils import (
     get_attr,
     get_device,
-    replace_attention_with_linear,
     set_attr,
     simple_average,
 )
-from mass.utils.utils import pad_output, pad_unbatched_output
+from mass.utils.utils import pad_unbatched_output
 
 
 pylogger = logging.getLogger(__name__)
 
 
 class SmileUpscalingAlgorithm():
-    # _linear_layer_cls = (nn.Linear,) avoid hard coding
+
     _linear_layer_cls = (nn.Linear,)
 
     def __init__(
@@ -285,11 +282,13 @@ class SmileInferenceWrapper(nn.Module):
         
         
     def embed_image(self, batch, classification_heads, num_classes):
-
+        """Handles image classification tasks."""
         features = self.model(batch)
 
+        # collect votes from all MoE layers to decide the head too
         majority_vote = self.collect_votes(batch.size(0), batch.device)
 
+        # group by head to parallelize computation
         head_groups = self._group_samples_by_selected_head(majority_vote)
 
         all_outputs = [None] * batch.size(0)
@@ -300,15 +299,26 @@ class SmileInferenceWrapper(nn.Module):
 
             group_output = classification_heads[head_idx](group_features)
 
+            # distribute back to the original indices
             for i, sample_idx in enumerate(sample_indices):
                 all_outputs[sample_idx] = group_output[i]
 
         return pad_unbatched_output(all_outputs, num_classes)
     
     def generate(self, batch, max_length):
+        """Handles language tasks."""
         return self.model.generate(batch, max_length=max_length)
 
     def _group_samples_by_selected_head(self, selected_heads: torch.Tensor):
+        """
+        Group samples that share the same selected head to be processed together for efficiency
+
+        Args:
+            selected_heads: Tensor of shape (batch_size,) containing head indices for each sample
+
+        Returns:
+            Dict mapping head_idx to list of sample indices
+        """
         head_group_to_samples = {}
         
         for sample_idx, head_idx in enumerate(selected_heads.cpu().numpy()):

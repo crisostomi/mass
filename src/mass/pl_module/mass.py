@@ -123,7 +123,7 @@ class MassAlgorithm:
             tqdm_desc (str): Description for the tqdm progress bar.
         """
         if debug:
-            pylogger.warning("Upscaling all linear layers.")
+            pylogger.warning("Upscaling all linear layers. This might slow down the method quite a lot, should be used only for debug purposes. Requires Wandb integration.")
                 
         for name, module in tqdm(
             tuple(zeroshot_model.named_modules()),
@@ -155,12 +155,12 @@ class MassAlgorithm:
             tqdm_desc (str): Description for the tqdm progress bar.
         """
         name_list = name.split(".")
-        pylogger.info(f"Layer name: {name}")
+        # pylogger.info(f"Layer name: {name}")
         module = get_attr(base_model, name_list)
 
         try:
 
-            pylogger.info(f"Creating MassGate for layer {name}")
+            # pylogger.info(f"Creating MassGate for layer {name}")
             mass_gate = MassGate(
                 name,
                 module,
@@ -172,12 +172,12 @@ class MassAlgorithm:
                 debug=self.debug,
             )
             mass_gate.to(self.device)
-            pylogger.info(f"✅ MassGate created for layer {name}")
+            # pylogger.info(f" MassGate created for layer {name}")
         except Exception as e:
             pylogger.error(f"❌ Error creating MassGate: {e}")
             return
         set_attr(base_model, name_list, mass_gate)
-        pylogger.info(f"Layer type: {type(get_attr(base_model, name_list))}")
+        # pylogger.info(f"Layer type: {type(get_attr(base_model, name_list))}")
 
 
 class MassInferenceWrapper(nn.Module):
@@ -232,6 +232,7 @@ class MassInferenceWrapper(nn.Module):
         
         selected_dataset_idxs, _, dataset_group_to_samples = self.collect_output()
 
+        # needed to handle the difference in image/text encoders (see below)
         def process_group(merged_model, group_batch):
             return merged_model(group_batch)
         
@@ -257,7 +258,7 @@ class MassInferenceWrapper(nn.Module):
             candidate_scores = [
                 torch.max(logits).item()
                 for logits in candidate_logits
-            ]  ## try with the max mean (trained with contrastive loss)
+            ] 
             # get the index of the best score among the datasets
             best_idx = candidate_scores.index(max(candidate_scores))
             # get the logits of the best dataset
@@ -389,7 +390,7 @@ class MassInferenceWrapper(nn.Module):
                 }
             )
 
-            pylogger.info(f"Logged coefficient statistics for MassGate layer: {layer_name}")
+            # pylogger.info(f"Logged coefficient statistics for MassGate layer: {layer_name}")
 
         # Log task accuracy statistics
         if layer_accuracy_stats:

@@ -28,7 +28,7 @@ class TaskArithmeticMerger(TaskVectorBasedMerger):
             cumulative_dict = sum_task_dict(
                 cumulative_dict,
                 compute_task_dict(
-                    base_model.state_dict(), finetuned_models[dataset]  # .state_dict()
+                    base_model.state_dict(), finetuned_models[dataset].state_dict()
                 ),
             )
             del finetuned_models[dataset]  # Delete one model at a time

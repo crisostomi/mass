@@ -25,16 +25,15 @@ def get_class(model):
     return model.__class__.__module__ + "." + model.__class__.__qualname__
 
 
-def get_classification_heads(cfg: DictConfig):
+def get_classification_heads(datasets, encoder_name, ckpt_path, cache_dir):
     classification_heads = []
 
-    for dataset_name in cfg.benchmark.datasets:
-
+    for dataset_name in datasets:
         classification_head = get_classification_head(
-            cfg.nn.encoder.model_name,
+            encoder_name,
             dataset_name,
-            cfg.misc.ckpt_path,
-            openclip_cachedir=cfg.misc.openclip_cachedir,
+            ckpt_path,
+            openclip_cachedir=cache_dir,
         )
 
         classification_heads.append(classification_head)

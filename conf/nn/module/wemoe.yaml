@@ -11,9 +11,7 @@ dataset_names: ${eval_datasets}
 
 zeroshot_model: ??  
 finetuned_models: ??
-classification_heads: ??
 
-dataset_names: ${eval_datasets}
 save_checkpoint_path: ${misc.ckpt_path}/WeMoE.pt
 
 checkpoint: false
@@ -27,10 +25,15 @@ batch_reduce: true
 use_grad_accumulate: true
 model_path: null
 
+encoder_name: ${nn.encoder.model_name}
+ckpt_path: ${misc.ckpt_path}
+openclip_cachedir: ${misc.openclip_cachedir}
 
 
 optimizer:
   _target_: torch.optim.AdamW
   lr: 1e-4
+  _partial_: true  # This prevents immediate instantiation
+
 
 

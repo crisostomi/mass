@@ -1,6 +1,0 @@
-datasets:
-  - "cola"
-  - "mnli"
-  - "mrpc"
-
-

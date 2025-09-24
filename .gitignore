@@ -223,7 +223,8 @@ fabric.properties
 # PROJECT SPECIFIC
 openclip_cachedir/open_clip/
 .vscode/
-checkpoints/
+checkpoints/*
+!checkpoints/.gitkeep
 ./data/
 artifacts/
 outputs/
