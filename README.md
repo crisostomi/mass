@@ -14,7 +14,7 @@
 Setup the development environment:
 
 ```bash
-    git clone git@github.com:crisostomi/mass.git
+    git clone https://github.com/crisostomi/mass.git
     cd mass
     uv sync
 ```
