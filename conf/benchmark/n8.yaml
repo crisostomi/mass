@@ -1,9 +1,9 @@
 datasets:
-  - "SUN397"
-  - "Cars"
-  - "RESISC45"
-  - "EuroSAT"
-  - "SVHN"
-  - "GTSRB"
-  - "MNIST"
-  - "DTD"
+  - ${dataset:"SUN397"} 
+  - ${dataset:"Cars"}
+  - ${dataset:"RESISC45"}
+  - ${dataset:"EuroSAT"}
+  - ${dataset:"SVHN"}
+  - ${dataset:"GTSRB"}
+  - ${dataset:"MNIST"}
+  - ${dataset:"DTD"}

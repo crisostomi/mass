@@ -178,10 +178,10 @@ def run(cfg: omegaconf.DictConfig) -> str:
         )
 
         model.set_metrics(len(dataset.classnames))
-        model.set_task(dataset_name)
+        model.set_task(dataset.name)
         model.set_finetuning_accuracy(
             finetuned_accuracies[
-                dataset_name + "Val" if cfg.eval_on_train else dataset_name
+                dataset.name + "Val" if cfg.eval_on_train else dataset.name
             ]
         )
 
@@ -201,14 +201,14 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
         if cfg.eval_on_train:
             pylogger.error("For now evaluation supported only on val-set")
-            pylogger.info(f"Evaluating on {dataset_name} the training set")
+            pylogger.info(f"Evaluating on {dataset.name} the training set")
             test_results = trainer.test(model=model, dataloaders=dataset.train_loader)
 
         else:
-            pylogger.info(f"Evaluating on the {dataset_name} test set!")
+            pylogger.info(f"Evaluating on the {dataset.name} test set!")
             test_results = trainer.test(model=model, dataloaders=dataset.test_loader)
 
-        results[dataset_name] = test_results
+        results[dataset.name] = test_results
 
     avg = compute_avg_accuracy(results)
     results["avg"] = [

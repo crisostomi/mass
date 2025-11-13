@@ -78,14 +78,7 @@ class ImageClassifier(pl.LightningModule):
         self.test_acc = metric.clone()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Method for the forward pass.
-
-        'training_step', 'validation_step' and 'test_step' should call
-        this method in order to compute the output predictions and the loss.
-
-        Returns:
-            output_dict: forward output containing the predictions (output logits ecc...) and the loss if any.
-        """
+        """ """
         embeddings = self.encoder(x)
 
         logits = self.classification_head(embeddings)
@@ -111,10 +104,6 @@ class ImageClassifier(pl.LightningModule):
 
         return {"logits": logits.detach(), "loss": loss}
 
-    def freeze_head(self):
-        self.classification_head.weight.requires_grad_(False)
-        self.classification_head.bias.requires_grad_(False)
-
     def training_step(self, batch: Any, batch_idx: int) -> Mapping[str, Any]:
         return self._step(batch=batch, split="train")
 
@@ -123,6 +112,10 @@ class ImageClassifier(pl.LightningModule):
 
     def test_step(self, batch: Any, batch_idx: int) -> Mapping[str, Any]:
         return self._step(batch=batch, split="test")
+
+    def freeze_head(self):
+        self.classification_head.weight.requires_grad_(False)
+        self.classification_head.bias.requires_grad_(False)
 
     def configure_optimizers(
         self,

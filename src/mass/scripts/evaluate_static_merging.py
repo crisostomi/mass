@@ -126,11 +126,7 @@ def run(cfg: DictConfig) -> str:
 
     results = {}
     print_memory("before eval")
-    for dataset_name in cfg.benchmark.datasets:
-
-        dataset_cfg = OmegaConf.load(
-            PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
-        )
+    for dataset_cfg in cfg.benchmark.datasets:
 
         dataset = instantiate(
             dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
@@ -138,7 +134,7 @@ def run(cfg: DictConfig) -> str:
 
         classification_head = get_classification_head(
             cfg.nn.encoder.model_name,
-            dataset_name,
+            dataset_cfg.name,
             ckpt_path=cfg.misc.ckpt_path,
             openclip_cachedir=cfg.misc.openclip_cachedir,
             device=cfg.device,
@@ -152,10 +148,10 @@ def run(cfg: DictConfig) -> str:
         )
 
         model.set_metrics(len(dataset.classnames))
-        model.set_task(dataset_name)
+        model.set_task(dataset_cfg.name)
         model.set_finetuning_accuracy(
             finetuned_accuracies[
-                dataset_name + "Val" if cfg.eval_on_train else dataset_name
+                dataset_cfg.name + "Val" if cfg.eval_on_train else dataset_cfg.name
             ]
         )
 
@@ -174,14 +170,14 @@ def run(cfg: DictConfig) -> str:
 
         if cfg.eval_on_train:
             pylogger.error("For now evaluation supported only on val-set")
-            pylogger.info(f"Evaluating on {dataset_name} the training set")
+            pylogger.info(f"Evaluating on {dataset_cfg.name} the training set")
             test_results = trainer.test(model=model, dataloaders=dataset.train_loader)
 
         else:
-            pylogger.info(f"Evaluating on the {dataset_name} test set!")
+            pylogger.info(f"Evaluating on the {dataset_cfg.name} test set!")
             test_results = trainer.test(model=model, dataloaders=dataset.test_loader)
 
-        results[dataset_name] = test_results
+        results[dataset_cfg.name] = test_results
 
     avg = compute_avg_accuracy(results)
     results["avg"] = [

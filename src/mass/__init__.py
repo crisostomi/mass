@@ -67,3 +67,17 @@ load_dotenv()
 
 
 os.environ["WANDB_DIR"] = str(PROJECT_ROOT / "wandb")
+
+
+from omegaconf import OmegaConf
+
+
+def dataset_resolver(dataset_name: str):  # NOQA
+    dataset_cfg = OmegaConf.load(
+        PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
+    )
+
+    return dataset_cfg
+
+
+OmegaConf.register_new_resolver("dataset", dataset_resolver)

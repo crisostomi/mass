@@ -64,17 +64,19 @@ def run(cfg: DictConfig):
 
     model.task_name = cfg.dataset.name
 
-    dataset = instantiate(cfg.dataset, preprocess_fn=zeroshot_encoder.val_preprocess, batch_size=cfg.train.batch_size)
+    dataset = instantiate(
+        cfg.dataset,
+        preprocess_fn=zeroshot_encoder.val_preprocess,
+        batch_size=cfg.train.batch_size,
+    )
 
     model.freeze_head()
 
-    storage_dir: str = cfg.core.storage_dir
-
     pylogger.info("Instantiating the <Trainer>")
     trainer = pl.Trainer(
-        default_root_dir=storage_dir,
+        default_root_dir=cfg.core.storage_dir,
         logger=logger,
-        enable_checkpointing=False,  # Completely disable checkpointing
+        enable_checkpointing=False,
         **cfg.train.trainer,
     )
 
