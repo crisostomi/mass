@@ -1,0 +1,5 @@
+datasets:
+- "mmlu"
+- "truthfulqa"
+- "gsm8k"
+- "arc_challenge"

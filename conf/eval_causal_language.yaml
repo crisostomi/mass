@@ -1,0 +1,34 @@
+core:
+  project_name: mass
+  storage_dir: ${oc.env:PROJECT_ROOT}/storage
+  entity: gladia
+  version: 0.0.1
+  tags: 
+  - dev
+
+
+defaults:
+  - hydra: default
+  - nn: default
+  - train: default
+  - benchmark: causal
+  - hydra/launcher: basic
+  - override hydra/job_logging: none
+  - override hydra/hydra_logging: none
+  - _self_ # as last argument to allow the override of parameters via this main config
+
+seed_index: 0
+device: 'cuda'
+
+
+eval_datasets: ${benchmark.datasets}
+
+misc:
+  ckpt_path: ${oc.env:PROJECT_ROOT}/checkpoints/${nn.encoder.model_name}
+  pretrained_checkpoint: ${misc.ckpt_path}/MNISTVal/nonlinear_zeroshot.pt
+  openclip_cachedir: "${oc.env:PROJECT_ROOT}/checkpoints/openclip_cache/"
+  checkpoint_dir: ${oc.env:PROJECT_ROOT}/checkpoints/linear_router
+  svd_path: "${oc.env:PROJECT_ROOT}/checkpoints/svd_dict_${nn.encoder.model_name}_${num_tasks}.pt"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/flan-t5.json"
+  results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"
+
