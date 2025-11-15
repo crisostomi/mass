@@ -68,6 +68,7 @@ class MassAlgorithm:
 
         task_dicts = {}
         for dataset in dataset_names:
+            pylogger.info(f"State dict of pretrinaed {zeroshot_model.__class__.__name__}: {list(zeroshot_model.state_dict().keys())}")
             task_dicts[dataset] = compute_task_dict(
                 zeroshot_model.state_dict(), finetuned_models[dataset].state_dict()
             )

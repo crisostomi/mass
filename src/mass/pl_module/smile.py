@@ -21,7 +21,7 @@ from mass.utils.fusion_bench_utils import (
     set_attr,
     simple_average,
 )
-from mass.utils.utils import pad_unbatched_output
+from mass.utils.utils import pad_unbatched_output, return_params_summary
 
 
 pylogger = logging.getLogger(__name__)
@@ -76,6 +76,8 @@ class SmileUpscalingAlgorithm():
         
         finetuned_models_list = list(finetuned_models.values())
 
+        params_before = return_params_summary(zeroshot_model)
+
         for key, value in kwargs.items():
             pylogger.warning(f"Unrecognized argument: {key}")
             setattr(self, key, value)
@@ -94,6 +96,9 @@ class SmileUpscalingAlgorithm():
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             pylogger.info(f"Saving model to {model_path}")
             torch.save(model, model_path)
+            
+        params_after = return_params_summary(model)
+        pylogger.info(f"Relative parameter increase: {params_after['total_params'] / params_before['total_params']:.2f}x")
             
         # Create inference wrapper
         self.model = SmileInferenceWrapper(

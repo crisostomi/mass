@@ -9,6 +9,8 @@ import zipfile
 from pathlib import Path
 from typing import Dict, List
 
+import tqdm
+
 import hydra
 import numpy as np
 import torch
@@ -131,6 +133,25 @@ def print_params_summary(model: torch.nn.Module):
         f"Number of trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}, ({sum(p.numel() for p in model.parameters() if p.requires_grad) / sum(p.numel() for p in model.parameters()) * 100}%)"
     )
     pylogger.info(f"Total number of parameters: {sum(p.numel() for p in model.parameters())}")
+    
+def return_params_summary(model: torch.nn.Module) -> Dict[str, int]:
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    non_trainable_params = total_params - trainable_params
+    trainable_percentage = (trainable_params / total_params * 100) if total_params > 0 else 0
+
+    return {
+        "total_params": total_params,
+        "trainable_params": trainable_params,
+        "non_trainable_params": non_trainable_params,
+        "trainable_percentage": trainable_percentage
+    }
+    
+def print_parameters_increase(model_before: torch.nn.Module, model_after: torch.nn.Module):
+    params_before = sum(p.numel() for p in model_before.parameters())
+    params_after = sum(p.numel() for p in model_after.parameters())
+    increase = params_after - params_before
+    pylogger.info(f"Parameters before: {params_before}, after: {params_after}, increase: {increase} ({increase / params_before * 100:.2f}%)")
 
 class LabelSmoothing(torch.nn.Module):
     def __init__(self, smoothing=0.0):
@@ -410,7 +431,10 @@ def from_router_to_svd_dict_key(key):
 def compute_task_dict(pretrained, finetuned):
     new_state_dict = OrderedDict()
 
-    for key in pretrained:
+    for key in tqdm.tqdm(pretrained):
+        if "embed_tokens" in key:
+            pylogger.info(f"Skipping key {key}")
+            continue
         if pretrained[key].dtype in [torch.int64, torch.uint8]:
             pylogger.info(f"Skipping key {key}")
             continue
