@@ -122,7 +122,9 @@ class WeightEnsemblingMoEAlgorithm():
                 torch.save({"model": moe_model}, self.save_checkpoint_path)
 
         # Store the final model
-        self.model = moe_model
+        self.model = WeMoEInferenceWrapper(
+            moe_model, zeroshot_model, dataset_names, device=device
+        )
 
     def load_checkpoint(self, model: Any, checkpoint_path: str):
         """
@@ -380,6 +382,15 @@ class WeMoEInferenceWrapper(nn.Module):
                 all_outputs[sample_idx] = group_output[i]
 
         return pad_unbatched_output(all_outputs, num_classes)
+    
+    
+    @property
+    def train_preprocess(self):
+        return getattr(self.zeroshot_model, 'train_preprocess', None)
+
+    @property
+    def val_preprocess(self):
+        return getattr(self.zeroshot_model, 'val_preprocess', None)
     
     def generate(self, batch, max_length):
         return self.model.generate(batch, max_length=max_length)

@@ -1,0 +1,6 @@
+name: "mmlu"
+datasets:
+- "1"
+- "2"
+- "3"
+

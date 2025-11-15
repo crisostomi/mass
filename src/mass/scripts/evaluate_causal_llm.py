@@ -17,6 +17,7 @@ import pytorch_lightning as pl
 
 from nn_core.common import PROJECT_ROOT
 from nn_core.common.utils import seed_index_everything
+from lm_eval.__main__ import check_argument_types, cli_evaluate, setup_parser
 
 # Force the execution of __init__.py if this file is executed directly.
 import mass  # noqa
@@ -30,7 +31,7 @@ pylogger = logging.getLogger(__name__)
 
 torch.set_float32_matmul_precision("high")
 
-EXPERTS = ["meta-math/MetaMath-Mistral-7B","cognitivecomputations/dolphin-2.1-mistral-7b","uukuguy/speechless-code-mistral-7b-v1.0"]
+EXPERTS = {"1":"meta-math/MetaMath-Mistral-7B","2":"cognitivecomputations/dolphin-2.1-mistral-7b","3":"uukuguy/speechless-code-mistral-7b-v1.0"}
 
 
 @torch.no_grad()
@@ -38,19 +39,15 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     seed_index_everything(cfg)
     
-    num_tasks = len(cfg.benchmark.datasets)
-    cfg.core.tags.append(f"n{num_tasks}")
     cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
     
     logger, template_core = boilerplate(cfg)
 
-    num_tasks = len(cfg.eval_datasets)
-    pylogger.info(f"Starting MASS eval with {num_tasks} tasks")
-    pylogger.info(f"{cfg.eval_datasets}")
+
 
     # Temporarily disable struct mode to allow dynamic update
     omegaconf.OmegaConf.set_struct(cfg, False)
-    cfg.num_tasks = num_tasks  # Now we can safely update it
+    cfg.num_tasks = 0  # Now we can safely update it
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
     
     zeroshot_encoder = instantiate(cfg.nn.encoder.model)
@@ -58,9 +55,9 @@ def run(cfg: omegaconf.DictConfig) -> str:
         pylogger.info(f"Layer name: {name} | Layer type: {type(layer)}")
     
     finetuned_models = {
-        expert: instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=expert,
+        dataset: instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=EXPERTS[dataset],
         )
-        for expert in EXPERTS
+        for dataset in cfg.benchmark.datasets
     }
     
     pylogger.info(f"Finetuned models: {finetuned_models.keys()}")
@@ -76,17 +73,17 @@ def run(cfg: omegaconf.DictConfig) -> str:
     
     pylogger.info(f"Model instantiated: {moerging}")
     
-    results = {}
-    for dataset_name in cfg.benchmark.datasets:
+    # results = {}
+    # for dataset_name in cfg.benchmark.datasets:
 
-        dataset_cfg = omegaconf.OmegaConf.load(
-            PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
-        )
+    #     dataset_cfg = omegaconf.OmegaConf.load(
+    #         PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
+    #     )
         
-        dataset = instantiate(
-            dataset_cfg, tokenizer=tokenizer) #cache_dir="~/.cache/huggingface/datasets/glue")
+    #     dataset = instantiate(
+    #         dataset_cfg, tokenizer=tokenizer) #cache_dir="~/.cache/huggingface/datasets/glue")
         
-        pylogger.info(f"Dataset {dataset_name} loaded: {dataset}")
+    #     pylogger.info(f"Dataset {dataset_name} loaded: {dataset}")
         
     #     # Get appropriate task configuration and instantiate
     #     task_config_name = get_task_config_name(dataset_name)

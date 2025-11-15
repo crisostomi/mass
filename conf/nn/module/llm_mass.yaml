@@ -1,0 +1,31 @@
+_target_: mass.pl_module.mass.MassAlgorithm
+
+merger: 
+  _target_: mass.merger.tsv.TaskSingularVectorsMerger
+  svd_path: ${misc.svd_path}
+  svd_compress_factor: null 
+  non_matrix_params_aggregation: "mean" # "base_model"
+
+base_merger: 
+  _target_: mass.merger.tsv.TaskSingularVectorsMerger
+  svd_path: ${misc.svd_path}
+  svd_compress_factor: null 
+  non_matrix_params_aggregation: "mean" # "base_model"
+
+# Use this for vision
+# base_merger: 
+#   _target_: mass.merger.no_red_tsv.TaskSingularVectorsMergerNoRedundancy
+#   svd_path: ${misc.svd_path}
+#   svd_compress_factor: null 
+#   similarity_threshold: 0.3
+
+zeroshot_model: ??
+finetuned_models: ??
+dataset_names: ${eval_datasets}
+debug: false
+layer_to_hook: ${nn.encoder.layer_to_hook}
+
+routing_mode: topk
+max_num_tasks_to_select: 3
+
+svd_path: ${misc.svd_path}
