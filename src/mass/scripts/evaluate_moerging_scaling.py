@@ -89,6 +89,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     all_benchmarks = list(benchmark_cfg.datasets)
     max_num_tasks = len(all_benchmarks)
+    start_num_tasks = max(2, getattr(cfg, "start_num_tasks", 2))
 
     # upperbound accuracies, used for logging the normalized accuracy
     finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
@@ -99,7 +100,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
         model_name=cfg.nn.encoder.model_name
     )
 
-    for num_tasks in range(2, max_num_tasks + 1):
+    for num_tasks in range(start_num_tasks, max_num_tasks + 1):
         local_benchmarks = all_benchmarks[:num_tasks]
         pylogger.info(f"Starting MASS eval for {num_tasks} tasks")
 

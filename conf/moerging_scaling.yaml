@@ -20,6 +20,7 @@ defaults:
 
 seed_index: 0
 num_tasks: 0
+start_num_tasks: 2
 data_batch_size: 128
 base: tsvm
 similarity_threshold: 0.3
