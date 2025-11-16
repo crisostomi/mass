@@ -20,6 +20,7 @@ defaults:
 
 seed_index: 0
 num_tasks: 0
+max_num_tasks: null
 start_num_tasks: 2
 data_batch_size: 128
 base: tsvm

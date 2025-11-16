@@ -88,8 +88,29 @@ def run(cfg: omegaconf.DictConfig) -> str:
         benchmark_cfg = cfg.benchmark
 
     all_benchmarks = list(benchmark_cfg.datasets)
-    max_num_tasks = len(all_benchmarks)
+    total_benchmarks = len(all_benchmarks)
+
+    if total_benchmarks < 2:
+        pylogger.warning(
+            "At least two benchmark datasets are required for scaling evaluation."
+        )
+        return ""
+
+    configured_max_tasks: Optional[int] = getattr(cfg, "max_num_tasks", None)
+    if configured_max_tasks is not None:
+        max_num_tasks = min(configured_max_tasks, total_benchmarks)
+    else:
+        max_num_tasks = total_benchmarks
+
     start_num_tasks = max(2, getattr(cfg, "start_num_tasks", 2))
+
+    if max_num_tasks < start_num_tasks:
+        pylogger.warning(
+            "Configured max_num_tasks=%d is smaller than start_num_tasks=%d. Nothing to run.",
+            max_num_tasks,
+            start_num_tasks,
+        )
+        return ""
 
     # upperbound accuracies, used for logging the normalized accuracy
     finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
