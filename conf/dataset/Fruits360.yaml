@@ -1,0 +1,11 @@
+_target_: mass.data.dataset.load_dataset
+name: Fruits360
+ft_epochs: -1
+preprocess_fn: ???
+batch_size: 128
+hf_dataset:
+  _target_: mass.data.dataset.load_imagefolder_dataset
+  data_files:
+    train: "${oc.env:PROJECT_ROOT}/data/Fruits-360/fruits-360_100x100/fruits-360/Training/**"
+    test: "${oc.env:PROJECT_ROOT}/data/Fruits-360/fruits-360_100x100/fruits-360/Test/**"
+  cache_dir: "${oc.env:PROJECT_ROOT}/storage/hf_cache"

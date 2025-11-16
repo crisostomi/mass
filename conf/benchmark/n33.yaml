@@ -1,0 +1,37 @@
+datasets:
+  - ${dataset:"SUN397"} 
+  - ${dataset:"Cars"}
+  - ${dataset:"RESISC45"}
+  - ${dataset:"EuroSAT"}
+  - ${dataset:"SVHN"}
+  - ${dataset:"GTSRB"}
+  - ${dataset:"MNIST"}
+  - ${dataset:"DTD"}
+    # end of 8 tasks
+  - ${dataset:"Flowers102"}
+  - ${dataset:"PCAM"}
+  - ${dataset:"FER2013"}
+  - ${dataset:"OxfordIIITPet"}
+  - ${dataset:"STL10"}
+  - ${dataset:"CIFAR100"}
+  # end of 14 tasks
+  - ${dataset:"CIFAR10"}
+  - ${dataset:"Food101"}
+  - ${dataset:"FashionMNIST"}
+  - ${dataset:"EMNIST"}
+  - ${dataset:"KMNIST"}
+  - ${dataset:"RenderedSST2"}
+  # end of 20 tasks 
+  - "${dataset:Beans}"
+  - "${dataset:CUB200}"
+  - "${dataset:Dogs}"
+  - "${dataset:FlowersKaggle}"
+  - "${dataset:Fruits360}"
+  - "${dataset:Garbage}"
+  - "${dataset:IntelImages}"
+  - "${dataset:KenyanFood13}"
+  - "${dataset:KvasirV2}"
+  - "${dataset:Landscape}"
+  - "${dataset:MangoLeafBD}"
+  - "${dataset:Vegetables}"
+  - "${dataset:Weather}"

@@ -1,167 +1,174 @@
-#!/usr/bin/env python3
-import argparse
-import importlib
-import json
-from pathlib import Path
-from typing import Any, Dict
-
-from omegaconf import OmegaConf, DictConfig
-from hydra.utils import instantiate
-import hydra
-from omegaconf import DictConfig, OmegaConf
+## Imports
+import copy
 import logging
 import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from nn_core.common.utils import enforce_tags, seed_index_everything
+from mass.data.dataset import HFImageClassification
+from mass.pl_module.image_classifier import ImageClassifier
+import open_clip
+import wandb
+
+import hydra
+import omegaconf
+import pytorch_lightning as pl
+import torch
+from hydra import compose, initialize
+from hydra.utils import instantiate
+from lightning.pytorch import Callback
+from omegaconf import DictConfig, ListConfig, OmegaConf
+from torch.nn.utils import parameters_to_vector, vector_to_parameters
+
 from nn_core.callbacks import NNTemplateCore
 from nn_core.common import PROJECT_ROOT
+from nn_core.common.utils import enforce_tags, seed_index_everything
 from nn_core.model_logging import NNLogger
-import omegaconf
+from nn_core.serialization import NNCheckpointIO
+
+# Force the execution of __init__.py if this file is executed directly.
+import mass  # noqa
+from mass.modules.encoder import ClassificationHead, ImageEncoder
+from mass.modules.heads import (
+    get_classification_head,
+)
+from mass.utils.io_utils import (
+    boilerplate,
+    load_model_from_hf,
+)
+from mass.utils.plots import plot_interactive_radar_chart
+from mass.utils.utils import (
+    build_callbacks,
+    get_finetuning_accuracies,
+    compute_avg_accuracy,
+    print_memory,
+)
+from mass.task_vectors.task_singular_vectors import *
+import json
+import os
+
+pylogger = logging.getLogger(__name__)
+
+torch.set_float32_matmul_precision("high")
 
 
-def run(cfg):
-
-    dataset_names = []
-    for entry in cfg.defaults:
-
-        # entries are plain names like 'cifar10', 'fer2013', ...
-        if isinstance(entry, str):
-            dataset_names.append(entry)
-
-        elif isinstance(entry, DictConfig):
-            # allow hydra-style dict defaults like {'dataset': 'cifar10'}
-            # take any value of the dict as the dataset file name
-            dataset_names.extend([v for v in entry.values()])
-
-        else:
-            raise ValueError(f"Unsupported defaults entry: {entry}")
-
-    print(f"Found {len(dataset_names)} datasets")
-
-    loaded = {}
-
-    for name in dataset_names:
-        ds_cfg = load_dataset_cfg(args.conf_root, name)
-
-        if "_target_" not in ds_cfg:
-            raise ValueError(
-                f"{name}.yaml must define a _target_ (got keys: {list(ds_cfg.keys())})"
-            )
-
-        # Hydra instantiate expects the dict with _target_ at the root
-        # Ensure it's a DictConfig to keep OmegaConf behavior
-        target_cfg = DictConfig(ds_cfg)
-
-        print(f"\n→ Loading '{name}' via {target_cfg._target_} ...")
-        try:
-            obj = instantiate(target_cfg)
-            loaded[name] = obj
-            print(f"   Loaded: {short_summarize(obj)}")
-
-            if args.print_example:
-                sample = None
-                # Try common access patterns
-                try:
-                    if hasattr(obj, "select") and hasattr(obj, "__getitem__"):
-                        # 🤗 datasets.Dataset
-                        sample = obj[0]
-                    elif hasattr(obj, "keys") and "train" in obj:
-                        # DatasetDict
-                        sample = obj["train"][0]
-                    elif hasattr(obj, "__getitem__"):
-                        sample = obj[0]
-                except Exception:
-                    sample = None
-
-                if sample is not None:
-                    # Avoid dumping giant tensors; convert to a light preview
-                    try:
-
-                        def sanitize(x):
-                            try:
-                                import torch
-                                import numpy as np
-
-                                if isinstance(x, (torch.Tensor,)):
-                                    return f"Tensor(shape={tuple(x.shape)}, dtype={x.dtype})"
-                                if isinstance(x, (np.ndarray,)):
-                                    return f"ndarray(shape={x.shape}, dtype={x.dtype})"
-                            except Exception:
-                                pass
-                            if hasattr(x, "size") and hasattr(x, "mode"):  # PIL Image
-                                return f"PIL.Image(size={x.size}, mode={x.mode})"
-                            return x
-
-                        if isinstance(sample, dict):
-                            preview = {k: sanitize(v) for k, v in sample.items()}
-                        else:
-                            preview = sanitize(sample)
-                        print(
-                            "   Example[0] preview:",
-                            json.dumps(preview, default=str)[:500],
-                        )
-                    except Exception as e:
-                        print(f"   (Could not preview example: {e})")
-
-        except Exception as e:
-            print(f"   ERROR loading '{name}': {e}")
-
-    print(f"\nDone. Successfully loaded: {list(loaded.keys())}")
-
-    failed = [name for name in dataset_names if name not in loaded]
-    if failed:
-        print(f"Failed to load: {failed}")
-
-
-def load_dataset_cfg(cfg_dir: Path, name: str) -> DictConfig:
+def load_config(
+    config_path: str,
+    config_name: str,
+    overrides: list[str] | None = None,
+) -> DictConfig:
     """
-    Each dataset file is expected to look like:
-      <name>.yaml:
-        <name>:
-          _target_: package.func
-          key: value
+    Load a Hydra config without launching a full Hydra app.
+
+    Args:
+        config_path (str): Path to the folder containing your configs (relative to project root).
+        config_name (str): Name of the YAML config file (without `.yaml`).
+        overrides (list[str], optional): List of override strings, e.g. ["trainer.max_epochs=20"].
+
+    Returns:
+        DictConfig: The loaded configuration.
     """
-    cfg = OmegaConf.load(cfg_dir / f"{name}.yaml")
+    overrides = overrides or []
+    abs_config_path = str(Path(config_path).absolute())
 
-    if name not in cfg:
+    with hydra.initialize(config_path=abs_config_path, version_base=None):
+        cfg = hydra.compose(config_name=config_name, overrides=overrides)
 
-        # allow files where the single top-level key is the dataset name
-        if len(cfg.keys()) == 1:
-            only = next(iter(cfg.keys()))
-            return cfg[only]
+    return cfg
 
-        raise KeyError(
-            f"Top-level key '{name}' not found in {name}.yaml (has: {list(cfg.keys())})"
+
+def run(cfg: DictConfig) -> str:
+    """Generic train loop.
+
+    Args:
+        cfg: run configuration, defined by Hydra in /conf
+
+    Returns:
+        the run directory inside the storage_dir used by the current experiment
+    """
+
+    seed_index_everything(cfg)
+
+    logger, template_core = boilerplate(cfg)
+
+    num_tasks = len(cfg.benchmark.datasets)
+
+    # Temporarily disable struct mode to allow dynamic update
+    omegaconf.OmegaConf.set_struct(cfg, False)
+    cfg.num_tasks = num_tasks  # Now we can safely update it
+    omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
+
+    # upperbound accuracies, used for logging the normalized accuracy
+    finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
+        cfg.misc.finetuned_accuracy_path
+    )[cfg.nn.encoder.model_name]
+
+    # only has vision encoder, no text transformer
+    zeroshot_encoder: ImageEncoder = load_model_from_hf(
+        model_name=cfg.nn.encoder.model_name
+    )
+
+    pylogger.info(f"Number of tasks: {cfg.num_tasks}")
+
+    merger = instantiate(cfg.merger)
+
+    for dataset_cfg in cfg.benchmark.datasets:
+
+        dataset = instantiate(
+            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
         )
 
-    return cfg[name]
+        classification_head = get_classification_head(
+            cfg.nn.encoder.model_name,
+            dataset_cfg.name,
+            ckpt_path=cfg.misc.ckpt_path,
+            openclip_cachedir=cfg.misc.openclip_cachedir,
+            device=cfg.device,
+        )
+
+        model = ImageClassifier(
+            encoder=zeroshot_encoder,
+            classifier=classification_head,
+            x_key=cfg.conventions.x_key,
+            y_key=cfg.conventions.y_key,
+        )
+
+        model.set_metrics(len(dataset.classnames))
+        model.set_task(dataset_cfg.name)
+        # model.set_finetuning_accuracy(
+        #     finetuned_accuracies[
+        #         dataset_cfg.name + "Val" if cfg.eval_on_train else dataset_cfg.name
+        #     ]
+        # )
+
+        callbacks: List[Callback] = build_callbacks(cfg.train.callbacks, template_core)
+
+        trainer = pl.Trainer(
+            default_root_dir=cfg.core.storage_dir,
+            plugins=[NNCheckpointIO(jailing_dir=logger.run_dir)],
+            logger=logger,
+            callbacks=callbacks,
+            limit_test_batches=(
+                cfg.number_of_train_batches if cfg.eval_on_train else None
+            ),
+            **cfg.train.trainer,
+        )
+
+        if cfg.eval_on_train:
+            pylogger.error("For now evaluation supported only on val-set")
+            pylogger.info(f"Evaluating on {dataset_cfg.name} the training set")
+            test_results = trainer.test(model=model, dataloaders=dataset.train_loader)
+
+        else:
+            pylogger.info(f"Evaluating on the {dataset_cfg.name} test set!")
+            test_results = trainer.test(model=model, dataloaders=dataset.test_loader)
 
 
-def short_summarize(obj: Any) -> str:
-    try:
-        # Try to be informative for common dataset types
-        # 🤗 datasets
-        if obj.__class__.__module__.startswith("datasets"):
-            # obj might be Dataset or DatasetDict
-            try:
-                import datasets as hfds  # noqa: F401
-            except Exception:
-                pass
-            if hasattr(obj, "num_rows"):
-                return f"HuggingFace Dataset(num_rows={obj.num_rows})"
-            if hasattr(obj, "keys"):
-                # DatasetDict
-                d = {k: getattr(v, "num_rows", "?") for k, v in obj.items()}
-                return f"HuggingFace DatasetDict({d})"
-        # torchvision-style or others
-        if hasattr(obj, "__len__"):
-            return f"{obj.__class__.__name__}(len={len(obj)})"
-        return obj.__class__.__name__
-    except Exception:
-        return obj.__class__.__name__
 
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="finetune.yaml")
+
+
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="static_merging.yaml")
 def main(cfg: omegaconf.DictConfig):
     run(cfg)
 

@@ -1,0 +1,12 @@
+_target_: mass.data.dataset.load_dataset
+name: Landscape
+ft_epochs: -1
+preprocess_fn: ???
+batch_size: 128
+hf_dataset:
+  _target_: mass.data.dataset.load_imagefolder_dataset
+  data_files:
+    train: "${oc.env:PROJECT_ROOT}/data/Landscape/Landscape Classification/Landscape Classification/Training Data/**"
+    validation: "${oc.env:PROJECT_ROOT}/data/Landscape/Landscape Classification/Landscape Classification/Validation Data/**"
+    test: "${oc.env:PROJECT_ROOT}/data/Landscape/Landscape Classification/Landscape Classification/Testing Data/**"
+  cache_dir: "${oc.env:PROJECT_ROOT}/storage/hf_cache"

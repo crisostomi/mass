@@ -11,7 +11,7 @@ defaults:
   - hydra: default
   - nn: default
   - train: finetune
-  - dataset: MNIST
+  - dataset: Beans
   - override hydra/launcher: basic
   - _self_ # as last argument to allow the override of parameters via this main config
 

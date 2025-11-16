@@ -28,6 +28,8 @@ from mass.utils.io_utils import (
 )
 from hydra.utils import instantiate
 
+from mass.utils.utils import build_callbacks
+
 pylogger = logging.getLogger(__name__)
 torch.set_float32_matmul_precision("high")
 
@@ -72,19 +74,25 @@ def run(cfg: DictConfig):
 
     model.freeze_head()
 
+    callbacks: List[Callback] = build_callbacks(cfg.train.callbacks)
+
     pylogger.info("Instantiating the <Trainer>")
     trainer = pl.Trainer(
         default_root_dir=cfg.core.storage_dir,
         logger=logger,
-        enable_checkpointing=False,
         **cfg.train.trainer,
+        callbacks=callbacks,
     )
 
     pylogger.info("Starting training!")
-    trainer.fit(
+    val_loader = getattr(dataset, "val_loader", None)
+    fit_kwargs = dict(
         model=model,
         train_dataloaders=dataset.train_loader,
     )
+    if val_loader is not None:
+        fit_kwargs["val_dataloaders"] = val_loader
+    trainer.fit(**fit_kwargs)
 
     pylogger.info("Starting testing!")
     trainer.test(model=model, dataloaders=dataset.test_loader)

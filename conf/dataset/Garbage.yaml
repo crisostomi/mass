@@ -1,0 +1,14 @@
+_target_: mass.data.dataset.load_dataset
+name: Garbage
+ft_epochs: -1
+preprocess_fn: ???
+batch_size: 128
+hf_dataset:
+  _target_: mass.data.dataset.load_imagefolder_dataset
+  data_files:
+    trainvaltest: "${oc.env:PROJECT_ROOT}/data/Garbage/Garbage classification/Garbage classification/**"
+  cache_dir: "${oc.env:PROJECT_ROOT}/storage/hf_cache"
+  train_ratio: 0.85
+  val_ratio: 0.0
+  test_ratio: 0.15
+  seed: 42

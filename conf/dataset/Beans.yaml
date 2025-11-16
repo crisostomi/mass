@@ -1,0 +1,12 @@
+_target_: mass.data.dataset.load_dataset
+name: Beans
+ft_epochs: -1
+preprocess_fn: ???
+batch_size: 128
+hf_dataset:
+  _target_: mass.data.dataset.load_imagefolder_dataset
+  data_files:
+    train: "${oc.env:PROJECT_ROOT}/data/beans/data/train/**"
+    validation: "${oc.env:PROJECT_ROOT}/data/beans/data/validation/**"
+    test: "${oc.env:PROJECT_ROOT}/data/beans/data/test/**"
+  cache_dir: "${oc.env:PROJECT_ROOT}/storage/hf_cache"

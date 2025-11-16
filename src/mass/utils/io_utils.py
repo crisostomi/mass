@@ -28,11 +28,11 @@ def get_class(model):
 def get_classification_heads(cfg: DictConfig):
     classification_heads = []
 
-    for dataset_name in cfg.benchmark.datasets:
+    for dataset_cfg in cfg.benchmark.datasets:
 
         classification_head = get_classification_head(
             cfg.nn.encoder.model_name,
-            dataset_name,
+            dataset_cfg.name,
             cfg.misc.ckpt_path,
             openclip_cachedir=cfg.misc.openclip_cachedir,
         )

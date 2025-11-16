@@ -1,9 +1,0 @@
-datasets:
-  - CIFAR100
-  - Flowers102
-  - Food101
-  - GTSRB
-  - KMNIST
-  - RESISC45
-  - STL10
-  - SUN397

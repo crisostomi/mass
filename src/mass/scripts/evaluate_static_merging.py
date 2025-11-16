@@ -109,8 +109,8 @@ def run(cfg: DictConfig) -> str:
     )
 
     finetuned_models = {
-        dataset: load_model_from_hf(
-            model_name=cfg.nn.encoder.model_name, dataset_name=dataset
+        dataset.name: load_model_from_hf(
+            model_name=cfg.nn.encoder.model_name, dataset_name=dataset.name
         ).state_dict() # TODO: uniform to use both without state_dict()
         for dataset in cfg.benchmark.datasets
     }

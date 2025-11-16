@@ -105,8 +105,8 @@ def run(cfg: omegaconf.DictConfig) -> str:
     )
 
     finetuned_models = {
-        dataset: load_model_from_hf(
-            model_name=cfg.nn.encoder.model_name, dataset_name=dataset
+        dataset.name: load_model_from_hf(
+            model_name=cfg.nn.encoder.model_name, dataset_name=dataset.name
         )
         for dataset in cfg.benchmark.datasets
     }
@@ -116,16 +116,18 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     task_dicts = {}
     for dataset in cfg.benchmark.datasets:
-        task_dicts[dataset] = compute_task_dict(
-            zeroshot_encoder.state_dict(), finetuned_models[dataset].state_dict()
+        task_dicts[dataset.name] = compute_task_dict(
+            zeroshot_encoder.state_dict(), finetuned_models[dataset.name].state_dict()
         )
-        del finetuned_models[dataset]  # Delete one model at a time
+        del finetuned_models[dataset.name]  # Delete one model at a time
         torch.cuda.empty_cache()
 
 
     svd_dict = get_svd_dict(
-        task_dicts, cfg.benchmark.datasets, cfg.misc.svd_path, cfg.svd_compress_factor
+        task_dicts, cfg.misc.svd_path, cfg.svd_compress_factor
     )
+
+    print(svd_dict.keys())
 
     del task_dicts
 
@@ -167,26 +169,21 @@ def run(cfg: omegaconf.DictConfig) -> str:
     results = {}
     torch.cuda.empty_cache()
     pylogger.info(f"Starting evaluation")
-    for dataset_name in cfg.benchmark.datasets:
+    for dataset_cfg in cfg.benchmark.datasets:
 
-        dataset_cfg = omegaconf.OmegaConf.load(
-            PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
-        )
-        
         dataset = instantiate(
-            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess, batch_size=cfg.data_batch_size
+            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess
         )
 
         model.set_metrics(len(dataset.classnames))
-        model.set_task(dataset.name)
+        model.set_task(dataset_cfg.name)
         model.set_finetuning_accuracy(
             finetuned_accuracies[
-                dataset.name + "Val" if cfg.eval_on_train else dataset.name
+                dataset_cfg.name + "Val" if cfg.eval_on_train else dataset_cfg.name
             ]
         )
 
         callbacks: List[Callback] = build_callbacks(cfg.train.callbacks, template_core)
-
 
         trainer = pl.Trainer(
             default_root_dir=cfg.core.storage_dir,
@@ -201,14 +198,14 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
         if cfg.eval_on_train:
             pylogger.error("For now evaluation supported only on val-set")
-            pylogger.info(f"Evaluating on {dataset.name} the training set")
+            pylogger.info(f"Evaluating on {dataset_cfg.name} the training set")
             test_results = trainer.test(model=model, dataloaders=dataset.train_loader)
 
         else:
-            pylogger.info(f"Evaluating on the {dataset.name} test set!")
+            pylogger.info(f"Evaluating on the {dataset_cfg.name} test set!")
             test_results = trainer.test(model=model, dataloaders=dataset.test_loader)
 
-        results[dataset.name] = test_results
+        results[dataset_cfg.name] = test_results
 
     avg = compute_avg_accuracy(results)
     results["avg"] = [
@@ -241,7 +238,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
         logger.experiment.finish()
 
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="task_vectors.yaml")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="moerging.yaml")
 def main(cfg: omegaconf.DictConfig):
     run(cfg)
 

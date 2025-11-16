@@ -13,8 +13,103 @@ from datasets import (
 from hydra.utils import instantiate
 import torchvision
 from tqdm import tqdm
-
+from omegaconf import OmegaConf
 from mass.data.templates import get_dataset_label
+
+
+def load_imagefolder_dataset(
+    data_files: Optional[Dict[str, Union[str, Sequence[str]]]] = None,
+    data_dir: Optional[str] = None,
+    cache_dir: Optional[str] = None,
+    train_ratio: float = 0.8,
+    val_ratio: float = 0.0,
+    test_ratio: Optional[float] = None,
+    seed: int = 42,
+):
+    """Load local image-folder data and ensure train/test(/val) splits exist."""
+
+    dataset = load_hf_dataset(
+        path="imagefolder",
+        data_files=OmegaConf.to_container(data_files, resolve=True),
+    )
+
+    if isinstance(dataset, DatasetDict):
+        dataset_dict = dataset.copy()
+    else:
+        dataset_dict = DatasetDict({"train": dataset})
+
+    if len(dataset_dict.keys()) <= 1:
+        base_split = next(iter(dataset_dict.values()))
+        dataset_dict = _split_single_imagefolder_dataset(
+            base_split=base_split,
+            train_ratio=train_ratio,
+            val_ratio=val_ratio,
+            test_ratio=test_ratio,
+            seed=seed,
+        )
+
+    dataset_dict = _ensure_validation_split(dataset_dict, seed=seed + 10)
+    return dataset_dict
+
+
+def _split_single_imagefolder_dataset(
+    base_split: HFDataset,
+    train_ratio: float,
+    val_ratio: float,
+    test_ratio: Optional[float],
+    seed: int,
+) -> DatasetDict:
+    """Split a single HF split into train/val/test according to the provided ratios."""
+
+    if test_ratio is None:
+        test_ratio = 1.0 - train_ratio - val_ratio
+
+    total = train_ratio + val_ratio + test_ratio
+    if total <= 0:
+        raise ValueError("Invalid split ratios: they must sum to a positive value.")
+    if train_ratio <= 0 or test_ratio <= 0:
+        raise ValueError("train_ratio and test_ratio must be positive.")
+
+    remaining = total
+    splits = {}
+    working_split = base_split
+
+    if val_ratio > 0:
+        val_fraction = val_ratio / remaining
+        tmp = working_split.train_test_split(test_size=val_fraction, seed=seed)
+        splits["validation"] = tmp["test"]
+        working_split = tmp["train"]
+        remaining -= val_ratio
+
+    rel_test = test_ratio / remaining
+    tmp = working_split.train_test_split(test_size=rel_test, seed=seed + 1)
+    splits["train"] = tmp["train"]
+    splits["test"] = tmp["test"]
+
+    ordered = DatasetDict()
+    ordered["train"] = splits["train"]
+    if "validation" in splits:
+        ordered["validation"] = splits["validation"]
+    ordered["test"] = splits["test"]
+    return ordered
+
+
+def _ensure_validation_split(dataset: DatasetDict, seed: int, fraction: float = 0.1):
+    """Guarantee the presence of a validation split by carving it from train when needed."""
+    if "validation" in dataset:
+        return dataset
+    if "train" not in dataset:
+        raise ValueError(
+            "Cannot create validation split because 'train' split is missing."
+        )
+    if dataset["train"].num_rows < 2:
+        raise ValueError("Not enough training samples to create a validation split.")
+
+    split = dataset["train"].train_test_split(test_size=fraction, seed=seed)
+    dataset = dataset.copy()
+    dataset["train"] = split["train"]
+    dataset["validation"] = split["test"]
+    return dataset
 
 
 def convert(x):
@@ -103,6 +198,7 @@ class HFImageClassification:
                 "train" in hf_ds and "test" in hf_ds
             ), "Expected 'train' and 'test' splits in the provided DatasetDict."
             train_key, test_key = "train", "test"
+            val_key = "validation" if "validation" in hf_ds else None
         else:
             assert (
                 "train" in split_map and "test" in split_map
@@ -111,12 +207,27 @@ class HFImageClassification:
             assert (
                 train_key in hf_ds and test_key in hf_ds
             ), f"split_map points to missing splits: got {list(hf_ds.keys())}"
+            val_key = split_map.get("val") or split_map.get("validation")
+
+        if val_key is None and "validation" in hf_ds:
+            val_key = "validation"
+        if val_key is not None:
+            assert (
+                val_key in hf_ds
+            ), f"Validation split '{val_key}' missing from dataset keys: {list(hf_ds.keys())}"
 
         self.train_dataset = _HFImageTorchDataset(
             hf_ds[train_key], transform=preprocess, label_map=label_map
         )
         self.test_dataset = _HFImageTorchDataset(
             hf_ds[test_key], transform=preprocess, label_map=label_map
+        )
+        self.val_dataset = (
+            _HFImageTorchDataset(
+                hf_ds[val_key], transform=preprocess, label_map=label_map
+            )
+            if val_key is not None
+            else None
         )
 
         self.train_loader = DataLoader(
@@ -133,6 +244,17 @@ class HFImageClassification:
             num_workers=num_workers,
             pin_memory=pin_memory,
         )
+        self.val_loader = (
+            DataLoader(
+                self.val_dataset,
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=num_workers,
+                pin_memory=pin_memory,
+            )
+            if self.val_dataset is not None
+            else None
+        )
 
         if classnames_override is not None:
             self.classnames = list(classnames_override)
@@ -142,6 +264,8 @@ class HFImageClassification:
         # mirror torchvision attr some libs expect
         self.train_dataset.classes = self.classnames
         self.test_dataset.classes = self.classnames
+        if self.val_dataset is not None:
+            self.val_dataset.classes = self.classnames
         self.ft_epochs = ft_epochs
 
     @staticmethod

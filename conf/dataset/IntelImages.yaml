@@ -1,0 +1,11 @@
+_target_: mass.data.dataset.load_dataset
+name: IntelImages
+ft_epochs: -1
+preprocess_fn: ???
+batch_size: 128
+hf_dataset:
+  _target_: mass.data.dataset.load_imagefolder_dataset
+  data_files:
+    train: "${oc.env:PROJECT_ROOT}/data/Intel-Images/seg_train/seg_train/**"
+    test: "${oc.env:PROJECT_ROOT}/data/Intel-Images/seg_test/seg_test/**"
+  cache_dir: "${oc.env:PROJECT_ROOT}/storage/hf_cache"

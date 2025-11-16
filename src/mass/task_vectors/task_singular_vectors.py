@@ -192,7 +192,6 @@ def compress_tv(task_dicts, compress_rate: float, compress_ratio_per_task=None):
 
 def get_svd_dict(
     task_dicts,
-    datasets,
     svd_path: str,
     compression_factor: float = None,
     compress_ratio_per_task: dict = None,
@@ -202,13 +201,14 @@ def get_svd_dict(
 
     Args:
         task_dicts: The list (or dict) of NonLinearTaskVector objects.
-        datasets: The datasets for which the SVD dictionary is built.
         svd_path (str): The file path where the SVD dictionary is stored.
         compression_factor (float, optional): Compression factor to use. Defaults to len(datasets) if not provided.
 
     Returns:
         dict: The SVD dictionary.
     """
+
+    datasets = list(task_dicts.keys())
 
     compression_factor = compression_factor or len(datasets)
     compression_ratio = 1 / compression_factor

@@ -4,15 +4,16 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - new_tasks
+  - scaling
 
 
 defaults:
   - hydra: default
   - nn: default
   - train: default
-  - benchmark: new
+  - benchmark: n33
   - hydra/launcher: basic
+  - override nn/module: mass
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none
   - _self_ # as last argument to allow the override of parameters via this main config

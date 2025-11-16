@@ -42,7 +42,11 @@ class AbstractRouter(torch.nn.Module, abc.ABC):
         self.temperature = temperature
         self.cache_dir = cache_dir
 
-        self.dataset_names = dataset_names
+        self.dataset_names = dataset_names if isinstance(dataset_names, list) else [
+            dataset.name for dataset in dataset_names
+        ]
+
+        pylogger.info(f"Router datasets: {self.dataset_names}")
         self.dataset_idx_to_name = {
             i: name for i, name in enumerate(self.dataset_names)
         }

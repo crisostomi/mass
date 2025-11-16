@@ -4,17 +4,19 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - baseline
-  - ood
+  # - baseline
+  # - ood
+  # - tsv
   - tsv
+  - new_tasks 
   
 defaults:
   - hydra: default
   - nn: default
   - train: default
-  - merger: ta # isotropic # tsv # consensus # iso-cts
-  - benchmark: n8 # N14, N8
-  - override hydra/launcher: submitit_slurm # basic
+  - merger: tsv # isotropic # tsv # consensus # iso-cts
+  - benchmark: new # N14, N8
+  - override hydra/launcher: basic # submitit_slurm # basic
   - override hydra/job_logging: none
   - override hydra/hydra_logging: none
   - _self_ # as last argument to allow the override of parameters via this main config

@@ -1,0 +1,99 @@
+{
+    "avg": [
+        {
+            "acc/test/avg": 0.8497461263950055,
+            "normalized_acc/test/avg": 0.9204743412824777
+        }
+    ],
+    "Beans": [
+        {
+            "acc/test/Beans": 0.8515625,
+            "loss/test/Beans": 0.4378963112831116,
+            "normalized_acc/test/Beans": 0.9159663915634155
+        }
+    ],
+    "CUB200": [
+        {
+            "acc/test/CUB200": 0.5319389700889587,
+            "loss/test/CUB200": 1.81902015209198,
+            "normalized_acc/test/CUB200": 0.7363067865371704
+        }
+    ],
+    "Dogs": [
+        {
+            "acc/test/Dogs": 0.6488500237464905,
+            "loss/test/Dogs": 1.3939714431762695,
+            "normalized_acc/test/Dogs": 0.8556172847747803
+        }
+    ],
+    "FlowersKaggle": [
+        {
+            "acc/test/FlowersKaggle": 0.9537037014961243,
+            "loss/test/FlowersKaggle": 0.18334661424160004,
+            "normalized_acc/test/FlowersKaggle": 0.9919742941856384
+        }
+    ],
+    "Fruits360": [
+        {
+            "acc/test/Fruits360": 0.8217127323150635,
+            "loss/test/Fruits360": 0.7377055287361145,
+            "normalized_acc/test/Fruits360": 0.8230295777320862
+        }
+    ],
+    "Garbage": [
+        {
+            "acc/test/Garbage": 0.9157894849777222,
+            "loss/test/Garbage": 0.24854110181331635,
+            "normalized_acc/test/Garbage": 0.9508196711540222
+        }
+    ],
+    "IntelImages": [
+        {
+            "acc/test/IntelImages": 0.9513333439826965,
+            "loss/test/IntelImages": 0.16761474311351776,
+            "normalized_acc/test/IntelImages": 0.955537736415863
+        }
+    ],
+    "KenyanFood13": [
+        {
+            "acc/test/KenyanFood13": 0.7276073694229126,
+            "loss/test/KenyanFood13": 1.0044022798538208,
+            "normalized_acc/test/KenyanFood13": 0.8798219561576843
+        }
+    ],
+    "KvasirV2": [
+        {
+            "acc/test/KvasirV2": 0.8650000095367432,
+            "loss/test/KvasirV2": 0.3351071774959564,
+            "normalized_acc/test/KvasirV2": 0.9444949626922607
+        }
+    ],
+    "Landscape": [
+        {
+            "acc/test/Landscape": 0.9359999895095825,
+            "loss/test/Landscape": 0.2357059121131897,
+            "normalized_acc/test/Landscape": 1.0086206197738647
+        }
+    ],
+    "MangoLeafBD": [
+        {
+            "acc/test/MangoLeafBD": 0.9649999737739563,
+            "loss/test/MangoLeafBD": 0.10283979773521423,
+            "normalized_acc/test/MangoLeafBD": 0.9649999737739563
+        }
+    ],
+    "Vegetables": [
+        {
+            "acc/test/Vegetables": 0.9886666536331177,
+            "loss/test/Vegetables": 0.03376179561018944,
+            "normalized_acc/test/Vegetables": 0.9886666536331177
+        }
+    ],
+    "Weather": [
+        {
+            "acc/test/Weather": 0.8895348906517029,
+            "loss/test/Weather": 0.38292986154556274,
+            "normalized_acc/test/Weather": 0.9503105282783508
+        }
+    ]
+}

@@ -238,6 +238,73 @@ kmnist_template = [
     lambda c: f"a photo of the character {c}.",
 ]
 
+beans_template = [
+    lambda c: f"a photo of {c} beans.",
+    lambda c: f"a close-up photo of {c} beans.",
+    lambda c: f"a photo of the {c} bean plant.",
+]
+
+cub200_template = [
+    lambda c: f"a photo of a {c} bird.",
+    lambda c: f"a photo of the {c}.",
+]
+
+dogs_template = [
+    lambda c: f"a photo of a {c} dog.",
+    lambda c: f"a photo of the {c}.",
+]
+
+flowerskaggle_template = [
+    lambda c: f"a photo of a {c} flower.",
+    lambda c: f"a close-up photo of a {c}.",
+]
+
+fruits360_template = [
+    lambda c: f"a photo of a {c}.",
+    lambda c: f"a photo of the {c}.",
+]
+
+garbage_template = [
+    lambda c: f"a photo of {c} waste.",
+    lambda c: f"a photo of {c} garbage.",
+]
+
+intelimages_template = [
+    lambda c: f"aerial photo of {c}.",
+    lambda c: f"satellite photo of {c}.",
+]
+
+kenyanfood13_template = [
+    lambda c: f"a photo of {c}, a Kenyan dish.",
+    lambda c: f"a photo of the {c}.",
+]
+
+kvasirv2_template = [
+    lambda c: f"an endoscopic image of {c}.",
+    lambda c: f"a medical image showing {c}.",
+]
+
+landscape_template = [
+    lambda c: f"a photo of a {c} landscape.",
+    lambda c: f"a photo of the {c}.",
+]
+
+mangoleafbd_template = [
+    lambda c: f"a photo of a {c} mango leaf.",
+    lambda c: f"a close-up of a {c} mango leaf.",
+]
+
+vegetables_template = [
+    lambda c: f"a photo of a {c} vegetable.",
+    lambda c: f"a close-up photo of a {c}.",
+]
+
+weather_template = [
+    lambda c: f"a photo of {c} weather.",
+    lambda c: f"a photo showing {c} conditions.",
+]
+
+
 dataset_to_template = {
     "Cars": cars_template,
     "CIFAR10": cifar10_template,
@@ -260,6 +327,19 @@ dataset_to_template = {
     "EMNIST": emnist_template,
     "FashionMNIST": fashionmnist_template,
     "KMNIST": kmnist_template,
+    "Beans": beans_template,
+    "CUB200": cub200_template,
+    "Dogs": dogs_template,
+    "FlowersKaggle": flowerskaggle_template,
+    "Fruits360": fruits360_template,
+    "Garbage": garbage_template,
+    "IntelImages": intelimages_template,
+    "KenyanFood13": kenyanfood13_template,
+    "KvasirV2": kvasirv2_template,
+    "Landscape": landscape_template,
+    "MangoLeafBD": mangoleafbd_template,
+    "Vegetables": vegetables_template,
+    "Weather": weather_template,
 }
 
 
