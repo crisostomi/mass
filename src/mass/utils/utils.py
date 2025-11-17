@@ -355,16 +355,35 @@ def apply_dict_to_model(task_vector_dict, model, coefficient: float = 1.0):
         model.load_state_dict(new_state_dict, strict=False)  # Load updated parameters
     return model.cuda()
 
+def apply_dict_to_dict(task_vector_dict, model_dict, coefficient: float = 1.0):
+    """
+    Applies a task vector dictionary to a model. The resulting model is the deep copy of the input model
+    on the GPU with the task vector applied to the weights.
+    """
+    with torch.no_grad():
+        for key, value in task_vector_dict.items():
+            # new_key = key.replace("encoder.", "")
+            if key not in model_dict:
+                pylogger.warning(
+                    f"Key {key} is present in the task vector but not in the model"
+                )
+                continue
+            else:
+                model_dict[key] += coefficient * value.cuda()  # Update weight
+
+    return model_dict
+
 
 def sum_task_dict(task_vector_dict_1, task_vector_dict_2):
     """
     Sums two task vector dictionaries. It sums task_vector_dict_2 into task_vector_dict_1.
     """
+
     for key, value in task_vector_dict_2.items():
         if key in task_vector_dict_1:
-            task_vector_dict_1[key] += value
+            task_vector_dict_1[key] += value.cuda() # TODO: remove
         else:
-            task_vector_dict_1[key] = value
+            task_vector_dict_1[key] = value.cuda() # TODO: remove
     return task_vector_dict_1
 
 
