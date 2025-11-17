@@ -9,7 +9,7 @@ core:
 
 defaults:
   - hydra: default
-  - nn: default
+  - nn: language
   - train: default
   - benchmark: causal
   - hydra/launcher: basic

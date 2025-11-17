@@ -15,7 +15,8 @@ import logging
 from tqdm import tqdm
 from typing import Tuple
 
-from mass.utils.utils import is_matrix
+def is_matrix(layer):
+    return len(layer.shape) == 2
 
 pylogger = logging.getLogger(__name__)
 
@@ -44,16 +45,21 @@ def sum_svd(
     layer_names = list(aggregated_model_dict.keys())
 
     datasets = list(svd_dicts.keys())
+    pylogger.info(f"Datasets: {datasets}")
 
     for layer_name in tqdm(layer_names, desc="Summing SVD") if not silent else layer_names:
         is_matrix = aggregated_model_dict[layer_name].dim() == 2
         offset = 0
+        
+        if "text_projection" in layer_name:
+                continue
+        if "embed_tokens" in layer_name:
+            continue
+        if "lm_head" in layer_name:
+            continue
 
         for i, dataset in enumerate(datasets):
-
-            if "text_projection" in layer_name:
-                continue
-
+            
             if is_matrix:
 
                 delta_layer_svd = svd_dicts[dataset][layer_name]

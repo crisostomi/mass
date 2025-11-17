@@ -14,12 +14,13 @@ pylogger = logging.getLogger(__name__)
 
 class TaskSingularVectorsMerger(TaskVectorBasedMerger):
 
-    def __init__(self, svd_path, svd_compress_factor, non_matrix_params_aggregation):
+    def __init__(self, svd_path, svd_compress_factor, non_matrix_params_aggregation, device="cuda"):
         super().__init__()
 
         self.svd_path = svd_path
         self.svd_compress_factor = svd_compress_factor
         self.non_matrix_params_aggregation = non_matrix_params_aggregation
+        self.device = device
 
     def merge(self, base_model, finetuned_models):
 
@@ -44,6 +45,7 @@ class TaskSingularVectorsMerger(TaskVectorBasedMerger):
             ref_state_dict=copy.deepcopy(base_model.state_dict()),
             svd_dicts=svd_dict,
             non_matrix_params_aggregation=self.non_matrix_params_aggregation,
+            device=self.device,
         )
 
         merged_encoder = copy.deepcopy(base_model)

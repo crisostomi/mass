@@ -17,14 +17,31 @@ import torch
 from omegaconf import ListConfig
 from pytorch_lightning import Callback
 
+from mass.utils.task_vectors import compute_svd_and_compress
+
 pylogger = logging.getLogger(__name__)
 
 
-def print_memory(context):
+def print_memory(context: str):
     process = psutil.Process(os.getpid())
-    pylogger.warning(
-        f"{context} -- memory in MB: { process.memory_info().rss / 1024**2}",
-    )
+    ram_mb = process.memory_info().rss / 1024**2
+    
+    log_message = f"{context} -- System RAM: {ram_mb:.2f} MB"
+
+    if torch.cuda.is_available():
+        gpu_allocated_mb = torch.cuda.memory_allocated() / 1024**2
+        gpu_peak_mb = torch.cuda.max_memory_allocated() / 1024**2
+        _gpu_free_bytes, gpu_total_bytes = torch.cuda.mem_get_info()
+        gpu_total_mb = gpu_total_bytes / 1024**2
+        
+        log_message += (
+            f" | GPU Memory: "
+            f"{gpu_allocated_mb:.2f} MB (Allocated) / "
+            f"{gpu_peak_mb:.2f} MB (Peak) / "
+            f"{gpu_total_mb:.2f} MB (Total)"
+        )
+
+    pylogger.warning(log_message)
 
 
 def assign_learning_rate(param_group, new_lr):
@@ -358,6 +375,35 @@ def is_matrix(layer):
 def is_matrix_dict(layer):
     return isinstance(layer, dict) and "u" in layer
 
+def get_routing_weights_from_task_dict(task_dict, layer):
+    vs = []
+    sigma = []
+    us = []
+
+    for task in task_dict.keys():
+        if layer not in task_dict[task]:
+            raise KeyError(f"Layer '{layer}' not found in task dict for key '{task}'.")
+        
+        layer_tensor = task_dict[task][layer]
+
+        if not is_matrix(layer_tensor):
+            pylogger.warning(f"Layer '{layer}' in task '{task}' is not a matrix.")
+            continue
+
+        with torch.no_grad():
+            u, s, v = compute_svd_and_compress(layer_tensor, 1 / len(task_dict))
+
+
+        vs.append(v.to("cuda"))
+        sigma.append(s.to("cuda"))
+        us.append(u.to("cuda"))
+    
+    return (
+        torch.stack(vs) if vs else None,
+        torch.stack(sigma) if sigma else None,
+        torch.stack(us) if us else None,
+    )
+
 
 def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
     """
@@ -431,8 +477,11 @@ def from_router_to_svd_dict_key(key):
 def compute_task_dict(pretrained, finetuned):
     new_state_dict = OrderedDict()
 
-    for key in tqdm.tqdm(pretrained):
+    for key in tqdm.tqdm(pretrained, desc="Computing task dict"):
         if "embed_tokens" in key:
+            pylogger.info(f"Skipping key {key}")
+            continue
+        if "lm_head" in key:
             pylogger.info(f"Skipping key {key}")
             continue
         if pretrained[key].dtype in [torch.int64, torch.uint8]:

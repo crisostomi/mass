@@ -101,7 +101,9 @@ class MassGate(nn.Module):
             patches = x.shape[0] // bsz
             x = x.view(patches, bsz, *x.shape[1:])
 
+        pylogger.info(f"Token shape prior selection {x.shape}")
         x = self.select_token(x)
+        pylogger.info(f"Layer name {self.name}, selected token shape {x.shape}")
 
         norms = compute_residual_norm(
             x, v=self.routing_weights, s=self.routing_singular_values, 

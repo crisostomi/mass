@@ -1,5 +1,4 @@
 datasets:
-  - "SUN397"
   - "Cars"
   - "RESISC45"
   - "EuroSAT"
@@ -7,3 +6,4 @@ datasets:
   - "GTSRB"
   - "MNIST"
   - "DTD"
+  - "SUN397"

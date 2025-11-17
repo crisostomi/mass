@@ -1,3 +1,5 @@
-name: "arc"
+name: "arc_easy"
 datasets:
 - "1"
+- "2"
+- "3"

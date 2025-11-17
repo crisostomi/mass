@@ -45,3 +45,32 @@ class TaskArithmeticMerger(TaskVectorBasedMerger):
         )
 
         return merged_encoder
+    
+    def merge_from_task_dicts(
+        self,
+        base_model: ImageEncoder,
+        task_dicts: Dict[str, Dict[str, torch.Tensor]],
+    ) -> ImageEncoder:
+
+        cumulative_dict = {}
+
+        datasets = list(task_dicts.keys())
+
+        for dataset in datasets:
+            cumulative_dict = sum_task_dict(
+                cumulative_dict,
+                task_dicts[dataset],
+            )
+            torch.cuda.empty_cache()
+
+        print_memory("after computing task dicts")
+
+        merged_encoder: ImageEncoder = copy.deepcopy(base_model)
+
+        merged_encoder = apply_dict_to_model(
+            cumulative_dict,
+            merged_encoder,
+            coefficient=self.optimal_alpha[len(datasets)],
+        )
+
+        return merged_encoder
