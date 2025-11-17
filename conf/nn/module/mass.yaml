@@ -14,4 +14,6 @@ layer_to_hook: ${nn.encoder.layer_to_hook}
 routing_mode: topk
 max_num_tasks_to_select: 3
 
+use_finetuned: false
+
 svd_path: ${misc.svd_path}

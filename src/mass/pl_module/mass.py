@@ -23,7 +23,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from mass.utils.task_vectors import get_svd_dict
 from mass.utils.fusion_bench_utils import get_attr, set_attr
 
-from mass.utils.utils import compute_task_dict, get_routing_weights, get_routing_weights_from_task_dict, pad_output, print_memory
+from mass.utils.utils import compute_task_dict, get_routing_weights, get_routing_weights_from_finetuned, get_routing_weights_from_task_dict, pad_output, print_memory
 import logging
 
 pylogger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class MassAlgorithm:
         device: str = "cuda",
         svd_path: str = None,
         debug: bool = False,
-        use_finetuned: bool = True
+        use_finetuned: bool = False
     ):
         """
 
@@ -70,54 +70,27 @@ class MassAlgorithm:
         self.max_num_tasks_to_select = max_num_tasks_to_select
         self.device = device
         self.debug = debug
+        self.use_finetuned = use_finetuned
         
         self.vision = isinstance(zeroshot_model, self._image_encoder_cls)
 
         self.merger = merger
         self.base_merger = base_merger
         
-        task_dicts = {}
-        for dataset in dataset_names:
-            task_dicts[dataset] = compute_task_dict(
-                zeroshot_model.state_dict(), finetuned_models[dataset].state_dict()
-            )
-            del finetuned_models[dataset]
-            torch.cuda.empty_cache()
-        
-        print_memory("after computing task dicts")
-        self.zeroshot_model = zeroshot_model
-        self.clean_zeroshot_model = copy.deepcopy(zeroshot_model).cpu()
-        
-        if (isinstance(self.base_merger, TaskSingularVectorsMerger) or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy)) and isinstance(self.merger, TaskSingularVectorsMerger):
-            pylogger.info(f"Using SVD-based merging for both base and final merger.")
-            self.svd_dict = get_svd_dict(
-                task_dicts,
-                self.dataset_names,
-                svd_path,
-            )
+        if not self.use_finetuned:
+            task_dicts = {}
+            for dataset in dataset_names:
+                task_dicts[dataset] = compute_task_dict(
+                    zeroshot_model.state_dict(), finetuned_models[dataset].state_dict()
+                )
+                del finetuned_models[dataset]
+                torch.cuda.empty_cache()
+            
+            print_memory("after computing task dicts")
+            self.zeroshot_model = zeroshot_model
 
-            del task_dicts
-
-            merged_encoder = self.base_merger.merge_from_svd_dict(
-                zeroshot_model,
-                self.svd_dict,
-            )
-        elif isinstance(self.base_merger, TaskArithmeticMerger) and isinstance(self.merger, TaskArithmeticMerger):
-            pylogger.info(f"Using Arithmetic merging for both base and final merger.")
-            merged_encoder = self.base_merger.merge_from_task_dicts(
-                zeroshot_model,
-                task_dicts,
-            )
-            self.task_dicts = task_dicts
-        elif isinstance(self.base_merger, DummyMerger):
-            pylogger.info(f"Using Dummy merging for base merger.")
-            print_memory("after saving zeroshot model")
-            if isinstance(self.merger, TaskArithmeticMerger):
-                pylogger.info(f"Using Arithmetic merging for final merger.")
-                self.task_dicts = task_dicts
-                print_memory("after saving task dicts")
-            elif  isinstance(self.merger, TaskSingularVectorsMerger):
-                pylogger.info(f"Using SVD-based merging for final merger.")
+            if (isinstance(self.base_merger, TaskSingularVectorsMerger) or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy)) and isinstance(self.merger, TaskSingularVectorsMerger):
+                pylogger.info(f"Using SVD-based merging for both base and final merger.")
                 self.svd_dict = get_svd_dict(
                     task_dicts,
                     self.dataset_names,
@@ -125,9 +98,41 @@ class MassAlgorithm:
                 )
 
                 del task_dicts
-        else:
-            raise NotImplementedError(f"Merger type {type(self.base_merger)} not supported yet.")
 
+                merged_encoder = self.base_merger.merge_from_svd_dict(
+                    zeroshot_model,
+                    self.svd_dict,
+                )
+            elif isinstance(self.base_merger, TaskArithmeticMerger) and isinstance(self.merger, TaskArithmeticMerger):
+                pylogger.info(f"Using Arithmetic merging for both base and final merger.")
+                merged_encoder = self.base_merger.merge_from_task_dicts(
+                    zeroshot_model,
+                    task_dicts,
+                )
+                self.task_dicts = task_dicts
+            elif isinstance(self.base_merger, DummyMerger):
+                pylogger.info(f"Using Dummy merging for base merger.")
+                print_memory("after saving zeroshot model")
+                if isinstance(self.merger, TaskArithmeticMerger):
+                    pylogger.info(f"Using Arithmetic merging for final merger.")
+                    self.task_dicts = task_dicts
+                    print_memory("after saving task dicts")
+                elif  isinstance(self.merger, TaskSingularVectorsMerger):
+                    pylogger.info(f"Using SVD-based merging for final merger.")
+                    self.svd_dict = get_svd_dict(
+                        task_dicts,
+                        self.dataset_names,
+                        svd_path,
+                    )
+
+                    del task_dicts
+            else:
+                raise NotImplementedError(f"Base Merger type {type(self.base_merger)} and Merger {type(self.merger)} not supported yet.")
+        else:
+            assert routing_mode == "top1", f"When using finetuned models, only 'top1' routing is supported. Given mode: {routing_mode}"
+            self.zeroshot_model = zeroshot_model
+            self.finetuned = finetuned_models
+            
         merged_encoder = copy.deepcopy(zeroshot_model)
         merged_encoder = self.merge(merged_encoder, in_place=True)
         print_memory("after merging encoder")
@@ -135,11 +140,38 @@ class MassAlgorithm:
         self.model = MassInferenceWrapper(
             layer_to_hook,
             merged_encoder,
-            self.clean_zeroshot_model,
-            svd_dicts=self.svd_dict if isinstance(self.base_merger, TaskSingularVectorsMerger) or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy) or (isinstance(self.base_merger, DummyMerger) and isinstance(self.merger, TaskSingularVectorsMerger)) else None,
-            task_dicts=self.task_dicts if (isinstance(self.merger, TaskArithmeticMerger) and isinstance(self.base_merger, DummyMerger)) or (isinstance(self.base_merger, TaskArithmeticMerger) and isinstance(self.base_merger, TaskArithmeticMerger)) else None,
+            self.zeroshot_model,
+            svd_dicts=(
+                self.svd_dict
+                if (
+                    (
+                        isinstance(self.base_merger, TaskSingularVectorsMerger)
+                        or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy)
+                        or (
+                            isinstance(self.base_merger, DummyMerger)
+                            and isinstance(self.merger, TaskSingularVectorsMerger)
+                        )
+                    )
+                    and not self.use_finetuned
+                )
+                else None
+            ),
+            task_dicts=(
+                self.task_dicts
+                if (
+                    (
+                        isinstance(self.merger, TaskArithmeticMerger)
+                        and isinstance(self.base_merger, DummyMerger)
+                    )
+                    or isinstance(self.base_merger, TaskArithmeticMerger)
+                )
+                and not self.use_finetuned
+                else None
+            ),
+            finetuned=self.finetuned if self.use_finetuned else None,
             merger=self.merger,
         ).to(device)
+
         print_memory("after making the wrapper")
 
     def merge(self, base_model, in_place=True):
@@ -187,12 +219,16 @@ class MassAlgorithm:
                 )
     
     def get_routing_weights(self, name: str):
-        if isinstance(self.merger, TaskSingularVectorsMerger) or isinstance(self.merger, TaskSingularVectorsMergerNoRedundancy):
-            return get_routing_weights(self.svd_dict, name + ".weight")  # TODO: remove hardocoding for keys       
-        elif isinstance(self.merger, TaskArithmeticMerger):
-            return get_routing_weights_from_task_dict(self.task_dicts, name + ".weight")
+        if not self.use_finetuned:
+            if isinstance(self.merger, TaskSingularVectorsMerger) or isinstance(self.merger, TaskSingularVectorsMergerNoRedundancy):
+                return get_routing_weights(self.svd_dict, name + ".weight")  # TODO: remove hardocoding for keys       
+            elif isinstance(self.merger, TaskArithmeticMerger):
+                return get_routing_weights_from_task_dict(self.task_dicts, name + ".weight")
+            else:
+                raise NotImplementedError(f"Merger type {type(self.merger)} not supported yet.")
         else:
-            raise NotImplementedError(f"Merger type {type(self.merger)} not supported yet.")
+            return get_routing_weights_from_finetuned(self.finetuned, self.zeroshot_model, name + ".weight")
+            
                  
     
     def _upscale_linear_layer(
@@ -256,7 +292,7 @@ class MassInferenceWrapper(nn.Module):
 
         self.layer_to_hook = layer_to_hook
 
-        self.max_num_tvs_to_keep = 1
+        self.max_num_tvs_to_keep = 20
         self.cached_tvs = OrderedDict()
 
         self.debug = debug
@@ -458,6 +494,10 @@ class MassInferenceWrapper(nn.Module):
         """Apply the aggregated task vector to the model."""
 
         dataset_combo = "_".join(dataset_names)
+        
+        if self.finetuned is not None:
+            pylogger.info("Using finetuned model directly.")
+            return self.finetuned[dataset_names[0]]
 
         if dataset_combo in self.cached_tvs:
             return self.cached_tvs[dataset_combo]

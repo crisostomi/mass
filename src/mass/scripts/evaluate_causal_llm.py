@@ -65,6 +65,7 @@ def run(cfg: omegaconf.DictConfig):
         model=eval_model,
         tasks=[cfg.benchmark.name], 
         batch_size=8,
+        limit=100, 
     )
 
     pylogger.info(f"Evaluation results:\n{json.dumps(results, indent=2)}")

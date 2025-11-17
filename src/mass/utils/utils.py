@@ -394,6 +394,35 @@ def is_matrix(layer):
 def is_matrix_dict(layer):
     return isinstance(layer, dict) and "u" in layer
 
+def get_routing_weights_from_finetuned(finetuned, zeroshot, layer):
+    vs = []
+    sigma = []
+    us = []
+    
+    for task in finetuned.keys():
+        if layer not in finetuned[task].state_dict():
+            raise KeyError(f"Layer '{layer}' not found in finetuned model for key '{task}'.")
+        
+        layer_tensor = finetuned[task].state_dict()[layer] - zeroshot.state_dict()[layer]
+
+        if not is_matrix(layer_tensor):
+            pylogger.warning(f"Layer '{layer}' in task '{task}' is not a matrix.")
+            continue
+
+        with torch.no_grad():
+            u, s, v = compute_svd_and_compress(layer_tensor, 1 / len(finetuned))
+
+
+        vs.append(v.to("cuda"))
+        sigma.append(s.to("cuda"))
+        us.append(u.to("cuda"))
+    
+    return (
+        torch.stack(vs) if vs else None,
+        torch.stack(sigma) if sigma else None,
+        torch.stack(us) if us else None,
+    )
+    
 def get_routing_weights_from_task_dict(task_dict, layer):
     vs = []
     sigma = []
