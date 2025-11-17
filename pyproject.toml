@@ -192,6 +192,7 @@ interpret = "mass.scripts.interpret:main"
 smile = "mass.scripts.evaluate_smile:main"
 wemoe = "mass.scripts.evaluate_we_moe:main"
 static_merge = "mass.scripts.evaluate_static_merging:main"
+merging_scaling = "mass.scripts.evaluate_merging_scaling:main"
 ood = "mass.scripts.evaluate_pipeline_ood:main"
 ood_static = "mass.scripts.evaluate_static_merging_ood:main"
 

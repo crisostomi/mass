@@ -1,0 +1,48 @@
+core:
+  project_name: mass
+  storage_dir: ${oc.env:PROJECT_ROOT}/storage
+  entity: gladia
+  version: 0.0.1
+  tags:
+    - scaling
+    - TA
+
+defaults:
+  - hydra: default
+  - nn: default
+  - train: default
+  - merger: ta
+  - benchmark: n33
+  - override hydra/launcher: basic
+  - override hydra/job_logging: none
+  - override hydra/hydra_logging: none
+  - _self_
+
+seed_index: 0
+num_tasks: 0
+max_num_tasks: null
+start_num_tasks: 2
+eval_on_train: false
+number_of_train_batches: -1
+device: "cuda"
+
+eval_datasets: ${benchmark.datasets}
+
+task_vectors:
+  to_remove:
+    - "DTD"
+
+conventions:
+  x_key: "x"
+  y_key: "y"
+
+svd_compress_factor: null
+
+misc:
+  ckpt_path: ${oc.env:MODELS_PATH}/${nn.encoder.model_name}
+  pretrained_checkpoint: ${misc.ckpt_path}/base/model.pt
+  openclip_cachedir: "${oc.env:PROJECT_ROOT}/checkpoints/openclip_cache/"
+  checkpoint_dir: ${oc.env:PROJECT_ROOT}/checkpoints/linear_router
+  svd_path: "${oc.env:PROJECT_ROOT}/checkpoints/svd_dict_${nn.encoder.model_name}_${num_tasks}.pt"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/accs.json"
+  results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"

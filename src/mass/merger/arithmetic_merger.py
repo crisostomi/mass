@@ -38,10 +38,15 @@ class TaskArithmeticMerger(TaskVectorBasedMerger):
 
         merged_encoder: ImageEncoder = copy.deepcopy(base_model)
 
+        if len(datasets) not in self.optimal_alpha:
+            coefficient = 0.7733 * len(datasets) ** (-0.5517)
+        else:
+            coefficient = self.optimal_alpha[len(datasets)]
+
         merged_encoder = apply_dict_to_model(
             cumulative_dict,
             merged_encoder,
-            coefficient=self.optimal_alpha[len(datasets)],
+            coefficient=coefficient,
         )
 
         return merged_encoder

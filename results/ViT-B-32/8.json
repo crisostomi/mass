@@ -1,15 +1,64 @@
 {
+    "SUN397": [
+        {
+            "acc/test/SUN397": 0.5640805959701538,
+            "loss/test/SUN397": 1.7874900102615356,
+            "normalized_acc/test/SUN397": 0.7533472180366516
+        }
+    ],
+    "Cars": [
+        {
+            "acc/test/Cars": 0.5897276401519775,
+            "loss/test/Cars": 1.3519376516342163,
+            "normalized_acc/test/Cars": 0.7388594746589661
+        }
+    ],
+    "RESISC45": [
+        {
+            "acc/test/RESISC45": 0.6176190376281738,
+            "loss/test/RESISC45": 1.5514135360717773,
+            "normalized_acc/test/RESISC45": 0.6480679512023926
+        }
+    ],
+    "EuroSAT": [
+        {
+            "acc/test/EuroSAT": 0.8040740489959717,
+            "loss/test/EuroSAT": 0.7188548445701599,
+            "normalized_acc/test/EuroSAT": 0.8100746273994446
+        }
+    ],
+    "SVHN": [
+        {
+            "acc/test/SVHN": 0.8443454504013062,
+            "loss/test/SVHN": 0.538443922996521,
+            "normalized_acc/test/SVHN": 0.8734700679779053
+        }
+    ],
+    "GTSRB": [
+        {
+            "acc/test/GTSRB": 0.6401425004005432,
+            "loss/test/GTSRB": 1.347230315208435,
+            "normalized_acc/test/GTSRB": 0.6470587849617004
+        }
+    ],
+    "MNIST": [
+        {
+            "acc/test/MNIST": 0.9779999852180481,
+            "loss/test/MNIST": 0.08525925874710083,
+            "normalized_acc/test/MNIST": 0.9834087491035461
+        }
+    ],
     "DTD": [
         {
-            "acc/test/DTD": 0.38031914830207825,
-            "loss/test/DTD": 2.4726650714874268,
-            "normalized_acc/test/DTD": 0.4863945543766022
+            "acc/test/DTD": 0.46755319833755493,
+            "loss/test/DTD": 2.3156917095184326,
+            "normalized_acc/test/DTD": 0.5979592204093933
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.38031914830207825,
-            "normalized_acc/test/avg": 0.4863945543766022
+            "acc/test/avg": 0.6881928071379662,
+            "normalized_acc/test/avg": 0.75653076171875
         }
     ]
 }
