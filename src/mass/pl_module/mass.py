@@ -299,13 +299,20 @@ class MassInferenceWrapper(nn.Module):
         
         self.config = self.zeroshot_model.config if hasattr(self.zeroshot_model, 'config') else None
         self.name_or_path = self.zeroshot_model.name_or_path if hasattr(self.zeroshot_model, 'name_or_path') else None
+        self.dtype = self.zeroshot_model.dtype if hasattr(self.zeroshot_model, 'dtype') else None
+        if self.finetuned is not None:
+            pylogger.info("Using finetuned models for inference.")
+            self.zeroshot_model = None
+            print_memory("after deleting zeroshot model")
+            
         self.device = torch.device(device) # Store the target device
 
     def to(self, device, *args, **kwargs):
         device_obj = torch.device(device)
         self.device = device_obj
         self.base_model.to(device_obj)
-        self.zeroshot_model.to(device_obj)
+        if self.zeroshot_model is not None:
+            self.zeroshot_model.to(device_obj)
         super().to(device, *args, **kwargs)
         
         return self
@@ -386,6 +393,7 @@ class MassInferenceWrapper(nn.Module):
         **kwargs,
     ):
         
+        print_memory("before pass")
         input_ids = input_ids.to(self.device)
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
@@ -401,18 +409,26 @@ class MassInferenceWrapper(nn.Module):
         )
 
         _, _, dataset_group_to_samples = self.collect_output()
+        
+        print_memory("after pass")
+        self.base_model.to("cpu")
+        torch.cuda.empty_cache()
+        
+        print_memory("after moving base model to cpu")
 
         batch_size = input_ids.shape[0]
         final_logits = torch.zeros(
             batch_size, input_ids.shape[1], self.config.vocab_size,
-            device=self.device, dtype=self.zeroshot_model.dtype
+            device=self.device, dtype=self.dtype
         )
 
         for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
             if not assigned_sample_idxs:
                 continue
-
+            
+            print_memory("before applying tv")
             merged_model = self._apply_tv(list(dataset_group)).to(self.device)
+            print_memory("after applying tv")
 
             group_input_ids = input_ids[assigned_sample_idxs]
             group_attention_mask = attention_mask[assigned_sample_idxs] if attention_mask is not None else None
@@ -425,7 +441,25 @@ class MassInferenceWrapper(nn.Module):
                     position_ids=group_position_ids,
                 )
 
-            final_logits[assigned_sample_idxs] = group_outputs.logits
+            logits = group_outputs.logits
+
+            if logits.ndim == 2:
+                num_samples_in_group = group_input_ids.shape[0]
+                sequence_length = group_input_ids.shape[1]
+                logits = logits.view(num_samples_in_group, sequence_length, -1)
+
+            target_vocab_size = final_logits.shape[-1]
+            logits = logits[:, :, :target_vocab_size]
+        
+            final_logits[assigned_sample_idxs] = logits
+            print_memory("after processing group")
+            merged_model.to("cpu")
+            torch.cuda.empty_cache()
+            print_memory("after moving merged model to cpu")
+        
+        print_memory("after processing all groups")
+        self.base_model.to(self.device)
+        print_memory("after moving base model back to device")
 
         return CausalLMOutputWithPast(logits=final_logits)
     
@@ -443,6 +477,9 @@ class MassInferenceWrapper(nn.Module):
             
         self.base_model(input_ids=input_ids, attention_mask=attention_mask)
         _, _, dataset_group_to_samples = self.collect_output()
+        
+        self.base_model.to("cpu")
+        torch.cuda.empty_cache()
 
         batch_size = input_ids.shape[0]
         output_sequences = [None] * batch_size
@@ -464,7 +501,12 @@ class MassInferenceWrapper(nn.Module):
 
             for i, original_idx in enumerate(assigned_sample_idxs):
                 output_sequences[original_idx] = group_output[i]
-
+            
+            merged_model.to("cpu")
+            torch.cuda.empty_cache()
+        
+        self.base_model.to(self.device)
+            
         pad_token_id = self.config.pad_token_id or self.config.eos_token_id
 
         max_len = max(seq.size(0) for seq in output_sequences)
@@ -479,7 +521,7 @@ class MassInferenceWrapper(nn.Module):
         """
         Delegates the call to the underlying zeroshot model, enabling KV caching.
         """
-        return self.zeroshot_model.prepare_inputs_for_generation(*args, **kwargs)
+        return self.base_model.prepare_inputs_for_generation(*args, **kwargs)
     
     def tie_weights(self):
         """
@@ -487,7 +529,8 @@ class MassInferenceWrapper(nn.Module):
         We delegate the call to our underlying Hugging Face models to ensure
         their weights (e.g., embeddings and lm_head) are correctly tied.
         """
-        self.zeroshot_model.tie_weights()
+        if self.zeroshot_model is not None:
+            self.zeroshot_model.tie_weights()
         self.base_model.tie_weights()
 
     def _apply_tv(self, dataset_names):

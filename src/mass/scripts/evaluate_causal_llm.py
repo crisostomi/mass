@@ -43,6 +43,13 @@ def run(cfg: omegaconf.DictConfig):
     cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
     logger, template_core = boilerplate(cfg)
     
+    num_tasks = len(cfg.eval_datasets)
+
+    # Temporarily disable struct mode to allow dynamic update
+    omegaconf.OmegaConf.set_struct(cfg, False)
+    cfg.num_tasks = num_tasks  # Now we can safely update it
+    omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
+    
     zeroshot_encoder = instantiate(cfg.nn.encoder.model)
     finetuned_models = {
         dataset: instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=EXPERTS[dataset])
