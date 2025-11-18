@@ -4,7 +4,7 @@ core:
   entity: gladia
   version: 0.0.1
   tags: 
-  - dev
+  - causal
 
 
 defaults:
@@ -19,6 +19,7 @@ defaults:
 
 seed_index: 0
 device: 'cuda'
+expert: 1
 
 
 eval_datasets: ${benchmark.datasets}

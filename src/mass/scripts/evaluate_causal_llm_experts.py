@@ -32,14 +32,14 @@ from mass.pl_module.language_classifier import get_task_config_name
 
 pylogger = logging.getLogger(__name__)
 
+torch.set_float32_matmul_precision("high")
+
 EXPERTS = {"1":"meta-math/MetaMath-Mistral-7B","2":"cognitivecomputations/dolphin-2.1-mistral-7b","3":"uukuguy/speechless-code-mistral-7b-v1.0"}
 
 @torch.no_grad()
 def run(cfg: omegaconf.DictConfig):
     seed_index_everything(cfg)
     cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
-    cfg.core.tags.append(cfg.benchmark.name)   
-    cfg.core.tags.append("mass")               
     
 
     logger, template_core = boilerplate(cfg)
@@ -49,21 +49,9 @@ def run(cfg: omegaconf.DictConfig):
     omegaconf.OmegaConf.set_struct(cfg, False)
     cfg.num_tasks = num_tasks  
     omegaconf.OmegaConf.set_struct(cfg, True)  
-    
-    zeroshot_encoder = instantiate(cfg.nn.encoder.model, torch_dtype=torch.bfloat16)
-
-    finetuned_models = {
-        dataset: instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=EXPERTS[dataset], torch_dtype=torch.bfloat16)
-        for dataset in cfg.benchmark.datasets
-    }
-    moerging = instantiate(
-        cfg.nn.module,
-        zeroshot_model=zeroshot_encoder,
-        finetuned_models=finetuned_models,
-    )
-    
+        
     eval_model = lm_eval.models.huggingface.HFLM(
-        pretrained=moerging.model,
+        pretrained=instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=EXPERTS[str(cfg.expert)], torch_dtype=torch.bfloat16).cuda(),
         use_fast_tokenizer=False
     )
 

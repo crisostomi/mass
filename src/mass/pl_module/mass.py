@@ -24,7 +24,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from mass.utils.task_vectors import get_svd_dict
 from mass.utils.fusion_bench_utils import get_attr, set_attr
 
-from mass.utils.utils import compute_task_dict, get_routing_weights, get_routing_weights_from_finetuned, get_routing_weights_from_task_dict, pad_output, print_memory
+from mass.utils.utils import compute_task_dict, get_routing_weights, get_routing_weights_from_finetuned, get_routing_weights_from_task_dict, pad_output
 import logging
 
 pylogger = logging.getLogger(__name__)
@@ -64,7 +64,6 @@ class MassAlgorithm:
         zeroshot_model:
         classification_heads: list of classification heads, one for each dataset
         """
-        print_memory("Startin init")
         self.dataset_names = dataset_names
         self.routing_mode = routing_mode
         self.layer_to_hook = layer_to_hook
@@ -87,11 +86,9 @@ class MassAlgorithm:
                 del finetuned_models[dataset]
                 torch.cuda.empty_cache()
             
-            print_memory("after computing task dicts")
             self.zeroshot_model = zeroshot_model
 
             if (isinstance(self.base_merger, TaskSingularVectorsMerger) or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy)) and isinstance(self.merger, TaskSingularVectorsMerger):
-                pylogger.info(f"Using SVD-based merging for both base and final merger.")
                 self.svd_dict = get_svd_dict(
                     task_dicts,
                     self.dataset_names,
@@ -105,21 +102,15 @@ class MassAlgorithm:
                     self.svd_dict,
                 )
             elif isinstance(self.base_merger, TaskArithmeticMerger) and isinstance(self.merger, TaskArithmeticMerger):
-                pylogger.info(f"Using Arithmetic merging for both base and final merger.")
                 merged_encoder = self.base_merger.merge_from_task_dicts(
                     zeroshot_model,
                     task_dicts,
                 )
                 self.task_dicts = task_dicts
             elif isinstance(self.base_merger, DummyMerger):
-                pylogger.info(f"Using Dummy merging for base merger.")
-                print_memory("after saving zeroshot model")
                 if isinstance(self.merger, TaskArithmeticMerger):
-                    pylogger.info(f"Using Arithmetic merging for final merger.")
                     self.task_dicts = task_dicts
-                    print_memory("after saving task dicts")
                 elif  isinstance(self.merger, TaskSingularVectorsMerger):
-                    pylogger.info(f"Using SVD-based merging for final merger.")
                     self.svd_dict = get_svd_dict(
                         task_dicts,
                         self.dataset_names,
@@ -136,7 +127,6 @@ class MassAlgorithm:
             
         merged_encoder = copy.deepcopy(zeroshot_model)
         merged_encoder = self.merge(merged_encoder, in_place=True)
-        print_memory("after merging encoder")
 
         self.model = MassInferenceWrapper(
             layer_to_hook,
@@ -173,7 +163,6 @@ class MassAlgorithm:
             merger=self.merger,
         ).to(device)
 
-        print_memory("after making the wrapper")
 
     def merge(self, base_model, in_place=True):
         if in_place:
@@ -249,13 +238,11 @@ class MassAlgorithm:
         module = get_attr(base_model, name_list)
 
         try:
-            pylogger.info(f"Zeroshot model dtype {self.zeroshot_model.dtype}")
             routing_weights = self.get_routing_weights(
                 name,
                 dtype=self.zeroshot_model.dtype 
             )
             
-            pylogger.info(f"🔄 Creating MassGate for layer: {name}")
             mass_gate = MassGate(
                 name,
                 module,
@@ -287,7 +274,6 @@ class MassInferenceWrapper(nn.Module):
         device: str = "cuda",
     ):
         super().__init__()
-        pylogger.info(f"{svd_dicts is not None=}, {task_dicts is not None=}, {finetuned is not None=}")
         assert sum(x is not None for x in [svd_dicts, task_dicts, finetuned]) == 1, "Exactly one of `svd_dicts`, `task_dicts`, or `finetuned` must be non-None."
         
         self.base_model = base_model
@@ -308,9 +294,7 @@ class MassInferenceWrapper(nn.Module):
         self.name_or_path = self.zeroshot_model.name_or_path if hasattr(self.zeroshot_model, 'name_or_path') else None
         self.dtype = self.zeroshot_model.dtype if hasattr(self.zeroshot_model, 'dtype') else None
         if self.finetuned is not None:
-            pylogger.info("Using finetuned models for inference.")
             self.zeroshot_model = None
-            print_memory("after deleting zeroshot model")
             
         self.device = torch.device(device) # Store the target device
 
@@ -400,7 +384,6 @@ class MassInferenceWrapper(nn.Module):
         **kwargs,
     ):
         
-        print_memory("before pass")
         input_ids = input_ids.to(self.device)
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
@@ -417,7 +400,6 @@ class MassInferenceWrapper(nn.Module):
 
         _, _, dataset_group_to_samples = self.collect_output()
         
-        print_memory("after pass")
 
         batch_size = input_ids.shape[0]
         final_logits = torch.zeros(
@@ -429,9 +411,7 @@ class MassInferenceWrapper(nn.Module):
             if not assigned_sample_idxs:
                 continue
             
-            print_memory("before applying tv")
             merged_model = self._apply_tv(list(dataset_group))
-            print_memory("after applying tv")
 
             group_input_ids = input_ids[assigned_sample_idxs]
             group_attention_mask = attention_mask[assigned_sample_idxs] if attention_mask is not None else None
@@ -454,7 +434,7 @@ class MassInferenceWrapper(nn.Module):
             target_vocab_size = final_logits.shape[-1]
             logits = logits[:, :, :target_vocab_size]
         
-            final_logits[assigned_sample_idxs] = logits
+            final_logits[assigned_sample_idxs] = logits.to(final_logits.dtype)
 
         return CausalLMOutputWithPast(logits=final_logits)
     
@@ -527,7 +507,6 @@ class MassInferenceWrapper(nn.Module):
         dataset_combo = "_".join(dataset_names)
         
         if self.finetuned is not None:
-            pylogger.info("Using finetuned model directly.")
             aggregated = self.finetuned[dataset_names[0]].to(self.device)
         else:
             if dataset_combo in self.cached_tvs:
@@ -620,8 +599,6 @@ class MassInferenceWrapper(nn.Module):
                 }
             )
 
-            # pylogger.info(f"Logged coefficient statistics for MassGate layer: {layer_name}")
-
         # Log task accuracy statistics
         if layer_accuracy_stats:
             from mass.utils.plots import create_interactive_layer_task_accuracy_plot
@@ -652,7 +629,6 @@ class MassInferenceWrapper(nn.Module):
                         }
                     )
 
-                pylogger.info(f"Logged task accuracy statistics for current task: {current_task}")
             else:
                 pylogger.warning(
                     f"Current task '{current_task}' not found in dataset names: {dataset_names}"
