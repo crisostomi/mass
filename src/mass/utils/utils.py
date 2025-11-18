@@ -394,7 +394,10 @@ def is_matrix(layer):
 def is_matrix_dict(layer):
     return isinstance(layer, dict) and "u" in layer
 
-def get_routing_weights_from_finetuned(finetuned, zeroshot, layer):
+def get_routing_weights_from_finetuned(finetuned, zeroshot, layer, device="cuda", dtype=torch.float32):
+    """
+    Computes SVD components and returns them on the specified device and with the specified dtype.
+    """
     vs = []
     sigma = []
     us = []
@@ -410,12 +413,11 @@ def get_routing_weights_from_finetuned(finetuned, zeroshot, layer):
             continue
 
         with torch.no_grad():
-            u, s, v = compute_svd_and_compress(layer_tensor, 1 / len(finetuned))
+            u, s, v = compute_svd_and_compress(layer_tensor.to(device), 1 / len(finetuned))
 
-
-        vs.append(v.to("cuda"))
-        sigma.append(s.to("cuda"))
-        us.append(u.to("cuda"))
+        vs.append(v.to(device=device, dtype=dtype))
+        sigma.append(s.to(device=device, dtype=dtype))
+        us.append(u.to(device=device, dtype=dtype))
     
     return (
         torch.stack(vs) if vs else None,

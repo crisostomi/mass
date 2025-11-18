@@ -36,6 +36,17 @@ torch.set_float32_matmul_precision("high")
 
 EXPERTS = {"1":"meta-math/MetaMath-Mistral-7B","2":"cognitivecomputations/dolphin-2.1-mistral-7b","3":"uukuguy/speechless-code-mistral-7b-v1.0"}
 
+def json_safe(obj):
+    if isinstance(obj, dict):
+        return {k: json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [json_safe(v) for v in obj]
+    if hasattr(obj, "item"):  # numpy / torch scalar
+        return obj.item()
+    if isinstance(obj, (Path,)):
+        return str(obj)
+    return obj
+
 
 @torch.no_grad()
 def run(cfg: omegaconf.DictConfig):
@@ -50,9 +61,12 @@ def run(cfg: omegaconf.DictConfig):
     cfg.num_tasks = num_tasks  # Now we can safely update it
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
     
-    zeroshot_encoder = instantiate(cfg.nn.encoder.model)
+    print_memory("after boilerplate")
+    zeroshot_encoder = instantiate(cfg.nn.encoder.model, torch_dtype=torch.bfloat16)
+    print_memory("after loading zeroshot")
+
     finetuned_models = {
-        dataset: instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=EXPERTS[dataset])
+        dataset: instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=EXPERTS[dataset], torch_dtype=torch.bfloat16)
         for dataset in cfg.benchmark.datasets
     }
     moerging = instantiate(
@@ -72,17 +86,18 @@ def run(cfg: omegaconf.DictConfig):
         model=eval_model,
         tasks=[cfg.benchmark.name], 
         batch_size=8,
-        limit=100, 
+        limit=20, 
     )
 
-    pylogger.info(f"Evaluation results:\n{json.dumps(results, indent=2)}")
+    safe_results = json_safe(results)
+    pylogger.info(f"Evaluation results:\n{json.dumps(safe_results, indent=2)}")
 
     if logger is not None and 'results' in results:
         flat_results = {}
         for task_name, metrics in results['results'].items():
             for metric_name, value in metrics.items():
                 if not metric_name.endswith("_stderr"):
-                    flat_results[f"eval/{task_name}/{metric_name}"] = value
+                    flat_results[f"eval/{task_name}/{metric_name}"] = json_safe(value)
         
         pylogger.info(f"Logging the following metrics to W&B: {flat_results}")
         logger.experiment.log(flat_results)

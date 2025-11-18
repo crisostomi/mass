@@ -141,7 +141,7 @@ def compute_svd_and_compress(
             - s (torch.Tensor): The reduced singular values.
             - v (torch.Tensor): The right singular vectors of the reduced SVD.
     """
-    u, s, v = torch.linalg.svd(matrix, full_matrices=False)
+    u, s, v = torch.linalg.svd(matrix.to(torch.float32), full_matrices=False)
 
     reduced_index_s = int(s.shape[0] * compress_ratio)
 

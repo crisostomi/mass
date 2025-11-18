@@ -51,7 +51,7 @@ def boilerplate(cfg):
         logging_cfg=cfg.train.logging, cfg=cfg, resume_id=template_core.resume_id
     )
 
-    logger.upload_source()
+    # logger.upload_source()
 
     return logger, template_core
 

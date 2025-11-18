@@ -3,6 +3,7 @@ import copy
 from typing import List, Optional
 from collections import OrderedDict
 
+from fastapi import routing
 from hydra.utils import instantiate
 
 import torch
@@ -218,7 +219,7 @@ class MassAlgorithm:
                     name,
                 )
     
-    def get_routing_weights(self, name: str):
+    def get_routing_weights(self, name: str, dtype=torch.float32):
         if not self.use_finetuned:
             if isinstance(self.merger, TaskSingularVectorsMerger) or isinstance(self.merger, TaskSingularVectorsMergerNoRedundancy):
                 return get_routing_weights(self.svd_dict, name + ".weight")  # TODO: remove hardocoding for keys       
@@ -227,7 +228,7 @@ class MassAlgorithm:
             else:
                 raise NotImplementedError(f"Merger type {type(self.merger)} not supported yet.")
         else:
-            return get_routing_weights_from_finetuned(self.finetuned, self.zeroshot_model, name + ".weight")
+            return get_routing_weights_from_finetuned(self.finetuned, self.zeroshot_model, name + ".weight", dtype=dtype)
             
                  
     
@@ -248,11 +249,17 @@ class MassAlgorithm:
         module = get_attr(base_model, name_list)
 
         try:
+            pylogger.info(f"Zeroshot model dtype {self.zeroshot_model.dtype}")
+            routing_weights = self.get_routing_weights(
+                name,
+                dtype=self.zeroshot_model.dtype 
+            )
+            
             pylogger.info(f"🔄 Creating MassGate for layer: {name}")
             mass_gate = MassGate(
                 name,
                 module,
-                self.get_routing_weights(name),
+                routing_weights,
                 self.dataset_names,
                 self.routing_mode,
                 self.max_num_tasks_to_select,
@@ -292,7 +299,7 @@ class MassInferenceWrapper(nn.Module):
 
         self.layer_to_hook = layer_to_hook
 
-        self.max_num_tvs_to_keep = 20
+        self.max_num_tvs_to_keep = 2
         self.cached_tvs = OrderedDict()
 
         self.debug = debug
@@ -411,10 +418,6 @@ class MassInferenceWrapper(nn.Module):
         _, _, dataset_group_to_samples = self.collect_output()
         
         print_memory("after pass")
-        self.base_model.to("cpu")
-        torch.cuda.empty_cache()
-        
-        print_memory("after moving base model to cpu")
 
         batch_size = input_ids.shape[0]
         final_logits = torch.zeros(
@@ -427,7 +430,7 @@ class MassInferenceWrapper(nn.Module):
                 continue
             
             print_memory("before applying tv")
-            merged_model = self._apply_tv(list(dataset_group)).to(self.device)
+            merged_model = self._apply_tv(list(dataset_group))
             print_memory("after applying tv")
 
             group_input_ids = input_ids[assigned_sample_idxs]
@@ -452,14 +455,6 @@ class MassInferenceWrapper(nn.Module):
             logits = logits[:, :, :target_vocab_size]
         
             final_logits[assigned_sample_idxs] = logits
-            print_memory("after processing group")
-            merged_model.to("cpu")
-            torch.cuda.empty_cache()
-            print_memory("after moving merged model to cpu")
-        
-        print_memory("after processing all groups")
-        self.base_model.to(self.device)
-        print_memory("after moving base model back to device")
 
         return CausalLMOutputWithPast(logits=final_logits)
     
@@ -478,8 +473,6 @@ class MassInferenceWrapper(nn.Module):
         self.base_model(input_ids=input_ids, attention_mask=attention_mask)
         _, _, dataset_group_to_samples = self.collect_output()
         
-        self.base_model.to("cpu")
-        torch.cuda.empty_cache()
 
         batch_size = input_ids.shape[0]
         output_sequences = [None] * batch_size
@@ -488,7 +481,7 @@ class MassInferenceWrapper(nn.Module):
             if not assigned_sample_idxs:
                 continue
 
-            merged_model = self._apply_tv(list(dataset_group)).to(self.device)
+            merged_model = self._apply_tv(list(dataset_group))
 
             group_input_ids = input_ids[assigned_sample_idxs]
             group_attention_mask = attention_mask[assigned_sample_idxs] if attention_mask is not None else None
@@ -501,11 +494,6 @@ class MassInferenceWrapper(nn.Module):
 
             for i, original_idx in enumerate(assigned_sample_idxs):
                 output_sequences[original_idx] = group_output[i]
-            
-            merged_model.to("cpu")
-            torch.cuda.empty_cache()
-        
-        self.base_model.to(self.device)
             
         pad_token_id = self.config.pad_token_id or self.config.eos_token_id
 
@@ -540,29 +528,30 @@ class MassInferenceWrapper(nn.Module):
         
         if self.finetuned is not None:
             pylogger.info("Using finetuned model directly.")
-            return self.finetuned[dataset_names[0]]
-
-        if dataset_combo in self.cached_tvs:
-            return self.cached_tvs[dataset_combo]
-
-        if isinstance(self.merger, TaskSingularVectorsMerger):
-
-            aggregated = self.merger.merge_from_svd_dict(
-                self.zeroshot_model,
-                {dataset_name: self.svd_dicts[dataset_name] for dataset_name in dataset_names},
-            )
-
-        elif isinstance(self.merger, TaskArithmeticMerger):
-            
-            aggregated = self.merger.merge_from_task_dicts(
-                self.zeroshot_model,
-                {dataset_name: self.task_dicts[dataset_name] for dataset_name in dataset_names},
-            )
-
+            aggregated = self.finetuned[dataset_names[0]].to(self.device)
         else:
-            raise NotImplementedError
+            if dataset_combo in self.cached_tvs:
+                return self.cached_tvs[dataset_combo]
+
+            if isinstance(self.merger, TaskSingularVectorsMerger):
+
+                aggregated = self.merger.merge_from_svd_dict(
+                    self.zeroshot_model,
+                    {dataset_name: self.svd_dicts[dataset_name] for dataset_name in dataset_names},
+                )
+
+            elif isinstance(self.merger, TaskArithmeticMerger):
+                
+                aggregated = self.merger.merge_from_task_dicts(
+                    self.zeroshot_model,
+                    {dataset_name: self.task_dicts[dataset_name] for dataset_name in dataset_names},
+                )
+
+            else:
+                raise NotImplementedError
         
         if len(self.cached_tvs) > self.max_num_tvs_to_keep:
+            pylogger.warning("Flushing TV cache to save memory...")
             self.flush_cache()
             self.cached_tvs[dataset_combo] = aggregated
         return aggregated

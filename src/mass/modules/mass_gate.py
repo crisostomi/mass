@@ -40,11 +40,10 @@ class MassGate(nn.Module):
         self.dataset_names = dataset_names
         self.max_num_tasks_to_select = min(max_num_tasks_to_select, len(dataset_names))
 
-        v, s, u = routing_weights
+        v, s, _ = routing_weights
         
         self.register_buffer("routing_weights", v)
         self.register_buffer("routing_singular_values", s)
-        self.register_buffer("routing_left_weights", u)
 
         self.debug = debug
 

@@ -3,3 +3,4 @@ layer_to_hook: model.layers.31.mlp.down_proj
 model:
   _target_: transformers.AutoModelForCausalLM.from_pretrained
   pretrained_model_name_or_path: mistralai/Mistral-7B-v0.1
+  attn_implementation: flash_attention_2

@@ -11,9 +11,9 @@ dataset_names: ${eval_datasets}
 debug: false
 layer_to_hook: ${nn.encoder.layer_to_hook}
 
-routing_mode: topk
+routing_mode: top1
 max_num_tasks_to_select: 3
 
-use_finetuned: false
+use_finetuned: true
 
 svd_path: ${misc.svd_path}
