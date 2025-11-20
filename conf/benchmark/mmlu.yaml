@@ -1,4 +1,4 @@
-name: "mmlu_generative"
+name: "mmlu"
 datasets:
 - "1"
 - "2"

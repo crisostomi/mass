@@ -1,4 +1,4 @@
-name: "truthfulqa_gen"
+name: "truthfulqa"
 datasets:
 - "1"
 - "2"
