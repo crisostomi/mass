@@ -12,9 +12,16 @@ import torch
 
 pylogger = logging.getLogger(__name__)
 
+
 class TaskSingularVectorsMerger(TaskVectorBasedMerger):
 
-    def __init__(self, svd_path, svd_compress_factor, non_matrix_params_aggregation, device="cuda"):
+    def __init__(
+        self,
+        svd_path,
+        svd_compress_factor,
+        non_matrix_params_aggregation,
+        device="cuda",
+    ):
         super().__init__()
 
         self.svd_path = svd_path
@@ -57,7 +64,7 @@ class TaskSingularVectorsMerger(TaskVectorBasedMerger):
         )
 
         return merged_encoder
-    
+
     def merge_from_svd_dict(self, base_model, svd_dict):
         multi_task_vector = sum_svd(
             ref_state_dict=copy.deepcopy(base_model.state_dict()),

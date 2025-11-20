@@ -24,7 +24,13 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from mass.utils.task_vectors import get_svd_dict
 from mass.utils.fusion_bench_utils import get_attr, set_attr
 
-from mass.utils.utils import compute_task_dict, get_routing_weights, get_routing_weights_from_finetuned, get_routing_weights_from_task_dict, pad_output
+from mass.utils.utils import (
+    compute_task_dict,
+    get_routing_weights,
+    get_routing_weights_from_finetuned,
+    get_routing_weights_from_task_dict,
+    pad_output,
+)
 import logging
 
 pylogger = logging.getLogger(__name__)
@@ -40,7 +46,7 @@ num_of_tasks_to_scaling_coeff = {
 class MassAlgorithm:
 
     _linear_layer_cls = (nn.Linear,)
-    _image_encoder_cls = (ImageEncoder,)  
+    _image_encoder_cls = (ImageEncoder,)
 
     def __init__(
         self,
@@ -55,7 +61,7 @@ class MassAlgorithm:
         device: str = "cuda",
         svd_path: str = None,
         debug: bool = False,
-        use_finetuned: bool = False
+        use_finetuned: bool = False,
     ):
         """
 
@@ -71,12 +77,12 @@ class MassAlgorithm:
         self.device = device
         self.debug = debug
         self.use_finetuned = use_finetuned
-        
+
         self.vision = isinstance(zeroshot_model, self._image_encoder_cls)
 
         self.merger = merger
         self.base_merger = base_merger
-        
+
         if not self.use_finetuned:
             task_dicts = {}
             for dataset in dataset_names:
@@ -85,10 +91,13 @@ class MassAlgorithm:
                 )
                 del finetuned_models[dataset]
                 torch.cuda.empty_cache()
-            
+
             self.zeroshot_model = zeroshot_model
 
-            if (isinstance(self.base_merger, TaskSingularVectorsMerger) or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy)) and isinstance(self.merger, TaskSingularVectorsMerger):
+            if (
+                isinstance(self.base_merger, TaskSingularVectorsMerger)
+                or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy)
+            ) and isinstance(self.merger, TaskSingularVectorsMerger):
                 self.svd_dict = get_svd_dict(
                     task_dicts,
                     self.dataset_names,
@@ -101,7 +110,9 @@ class MassAlgorithm:
                     zeroshot_model,
                     self.svd_dict,
                 )
-            elif isinstance(self.base_merger, TaskArithmeticMerger) and isinstance(self.merger, TaskArithmeticMerger):
+            elif isinstance(self.base_merger, TaskArithmeticMerger) and isinstance(
+                self.merger, TaskArithmeticMerger
+            ):
                 merged_encoder = self.base_merger.merge_from_task_dicts(
                     zeroshot_model,
                     task_dicts,
@@ -110,7 +121,7 @@ class MassAlgorithm:
             elif isinstance(self.base_merger, DummyMerger):
                 if isinstance(self.merger, TaskArithmeticMerger):
                     self.task_dicts = task_dicts
-                elif  isinstance(self.merger, TaskSingularVectorsMerger):
+                elif isinstance(self.merger, TaskSingularVectorsMerger):
                     self.svd_dict = get_svd_dict(
                         task_dicts,
                         self.dataset_names,
@@ -119,12 +130,16 @@ class MassAlgorithm:
 
                     del task_dicts
             else:
-                raise NotImplementedError(f"Base Merger type {type(self.base_merger)} and Merger {type(self.merger)} not supported yet.")
+                raise NotImplementedError(
+                    f"Base Merger type {type(self.base_merger)} and Merger {type(self.merger)} not supported yet."
+                )
         else:
-            assert routing_mode == "top1", f"When using finetuned models, only 'top1' routing is supported. Given mode: {routing_mode}"
+            assert (
+                routing_mode == "top1"
+            ), f"When using finetuned models, only 'top1' routing is supported. Given mode: {routing_mode}"
             self.zeroshot_model = zeroshot_model
             self.finetuned = finetuned_models
-            
+
         merged_encoder = copy.deepcopy(zeroshot_model)
         merged_encoder = self.merge(merged_encoder, in_place=True)
 
@@ -137,7 +152,9 @@ class MassAlgorithm:
                 if (
                     (
                         isinstance(self.base_merger, TaskSingularVectorsMerger)
-                        or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy)
+                        or isinstance(
+                            self.base_merger, TaskSingularVectorsMergerNoRedundancy
+                        )
                         or (
                             isinstance(self.base_merger, DummyMerger)
                             and isinstance(self.merger, TaskSingularVectorsMerger)
@@ -162,7 +179,6 @@ class MassAlgorithm:
             finetuned=self.finetuned if self.use_finetuned else None,
             merger=self.merger,
         ).to(device)
-
 
     def merge(self, base_model, in_place=True):
         if in_place:
@@ -189,8 +205,10 @@ class MassAlgorithm:
             tqdm_desc (str): Description for the tqdm progress bar.
         """
         if debug:
-            pylogger.warning("Upscaling all linear layers. This might slow down the method quite a lot, should be used only for debug purposes. Requires Wandb integration.")
-                
+            pylogger.warning(
+                "Upscaling all linear layers. This might slow down the method quite a lot, should be used only for debug purposes. Requires Wandb integration."
+            )
+
         for name, module in tqdm(
             tuple(zeroshot_model.named_modules()),
             tqdm_desc,
@@ -207,20 +225,28 @@ class MassAlgorithm:
                     zeroshot_model,
                     name,
                 )
-    
+
     def get_routing_weights(self, name: str, dtype=torch.float32):
         if not self.use_finetuned:
-            if isinstance(self.merger, TaskSingularVectorsMerger) or isinstance(self.merger, TaskSingularVectorsMergerNoRedundancy):
-                return get_routing_weights(self.svd_dict, name + ".weight")  # TODO: remove hardocoding for keys       
+            if isinstance(self.merger, TaskSingularVectorsMerger) or isinstance(
+                self.merger, TaskSingularVectorsMergerNoRedundancy
+            ):
+                return get_routing_weights(
+                    self.svd_dict, name + ".weight"
+                )  # TODO: remove hardocoding for keys
             elif isinstance(self.merger, TaskArithmeticMerger):
-                return get_routing_weights_from_task_dict(self.task_dicts, name + ".weight")
+                return get_routing_weights_from_task_dict(
+                    self.task_dicts, name + ".weight"
+                )
             else:
-                raise NotImplementedError(f"Merger type {type(self.merger)} not supported yet.")
+                raise NotImplementedError(
+                    f"Merger type {type(self.merger)} not supported yet."
+                )
         else:
-            return get_routing_weights_from_finetuned(self.finetuned, self.zeroshot_model, name + ".weight", dtype=dtype)
-            
-                 
-    
+            return get_routing_weights_from_finetuned(
+                self.finetuned, self.zeroshot_model, name + ".weight", dtype=dtype
+            )
+
     def _upscale_linear_layer(
         self,
         base_model: nn.Module,
@@ -239,10 +265,9 @@ class MassAlgorithm:
 
         try:
             routing_weights = self.get_routing_weights(
-                name,
-                dtype=self.zeroshot_model.dtype 
+                name, dtype=self.zeroshot_model.dtype
             )
-            
+
             mass_gate = MassGate(
                 name,
                 module,
@@ -267,15 +292,17 @@ class MassInferenceWrapper(nn.Module):
         base_model,
         zeroshot_model: nn.Module,
         merger: TaskSingularVectorsMerger,
-        svd_dicts = None,
-        task_dicts = None,
-        finetuned = None,
+        svd_dicts=None,
+        task_dicts=None,
+        finetuned=None,
         debug: bool = False,
         device: str = "cuda",
     ):
         super().__init__()
-        assert sum(x is not None for x in [svd_dicts, task_dicts, finetuned]) == 1, "Exactly one of `svd_dicts`, `task_dicts`, or `finetuned` must be non-None."
-        
+        assert (
+            sum(x is not None for x in [svd_dicts, task_dicts, finetuned]) == 1
+        ), "Exactly one of `svd_dicts`, `task_dicts`, or `finetuned` must be non-None."
+
         self.base_model = base_model
         self.zeroshot_model = zeroshot_model
         self.svd_dicts = svd_dicts or None
@@ -289,14 +316,24 @@ class MassInferenceWrapper(nn.Module):
         self.cached_tvs = OrderedDict()
 
         self.debug = debug
-        
-        self.config = self.zeroshot_model.config if hasattr(self.zeroshot_model, 'config') else None
-        self.name_or_path = self.zeroshot_model.name_or_path if hasattr(self.zeroshot_model, 'name_or_path') else None
-        self.dtype = self.zeroshot_model.dtype if hasattr(self.zeroshot_model, 'dtype') else None
+
+        self.config = (
+            self.zeroshot_model.config
+            if hasattr(self.zeroshot_model, "config")
+            else None
+        )
+        self.name_or_path = (
+            self.zeroshot_model.name_or_path
+            if hasattr(self.zeroshot_model, "name_or_path")
+            else None
+        )
+        self.dtype = (
+            self.zeroshot_model.dtype if hasattr(self.zeroshot_model, "dtype") else None
+        )
         if self.finetuned is not None:
             self.zeroshot_model = None
-            
-        self.device = torch.device(device) # Store the target device
+
+        self.device = torch.device(device)  # Store the target device
 
     def to(self, device, *args, **kwargs):
         device_obj = torch.device(device)
@@ -305,7 +342,7 @@ class MassInferenceWrapper(nn.Module):
         if self.zeroshot_model is not None:
             self.zeroshot_model.to(device_obj)
         super().to(device, *args, **kwargs)
-        
+
         return self
 
     def collect_output(self):
@@ -313,7 +350,7 @@ class MassInferenceWrapper(nn.Module):
         output = mass.output
         mass.output = None
         return output
-    
+
     def _process_dataset_groups(self, batch, dataset_group_to_samples, processing_fn):
         batch_size = batch.shape[0]
         sample_embeddings = [None] * batch_size
@@ -321,26 +358,28 @@ class MassInferenceWrapper(nn.Module):
         for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
             assigned_sample_idxs = torch.tensor(assigned_sample_idxs)
             merged_model = self._apply_tv(list(dataset_group))
-            
+
             group_batch = batch[assigned_sample_idxs]
             merged_model.to(batch.device)
-            
+
             group_output = processing_fn(merged_model, group_batch)
 
             for j, idx in enumerate(assigned_sample_idxs):
                 sample_embeddings[idx] = group_output[j : j + 1]
 
         return sample_embeddings
-    
+
     def embed_image(self, batch, classification_heads, num_classes):
         self.base_model(batch)
-        
+
         selected_dataset_idxs, _, dataset_group_to_samples = self.collect_output()
 
         def process_group(merged_model, group_batch):
             return merged_model(group_batch)
-        
-        sample_embeddings = self._process_dataset_groups(batch, dataset_group_to_samples, process_group)
+
+        sample_embeddings = self._process_dataset_groups(
+            batch, dataset_group_to_samples, process_group
+        )
         sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
         outputs = []
@@ -353,16 +392,12 @@ class MassInferenceWrapper(nn.Module):
                 sample_routed_datasets, (int, list, tuple)
             ), f"Unexpected type for routing indices: {type(sample_routed_datasets)}"
 
-
             candidate_logits = [
                 classification_heads[j](sample_embedding.unsqueeze(0))
                 for j in sample_routed_datasets
             ]
-    
-            candidate_scores = [
-                torch.max(logits).item()
-                for logits in candidate_logits
-            ] 
+
+            candidate_scores = [torch.max(logits).item() for logits in candidate_logits]
             best_idx = candidate_scores.index(max(candidate_scores))
             logits = candidate_logits[best_idx]
 
@@ -373,7 +408,7 @@ class MassInferenceWrapper(nn.Module):
         ), "Output classes not set. Use set_metrics() method to set them."
 
         return pad_output(outputs, num_classes)
-    
+
     @torch.no_grad()
     def forward(
         self,
@@ -383,13 +418,13 @@ class MassInferenceWrapper(nn.Module):
         past_key_values: Optional[List[torch.FloatTensor]] = None,
         **kwargs,
     ):
-        
+
         input_ids = input_ids.to(self.device)
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
         if position_ids is not None:
             position_ids = position_ids.to(self.device)
-        
+
         self.base_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -399,23 +434,31 @@ class MassInferenceWrapper(nn.Module):
         )
 
         _, _, dataset_group_to_samples = self.collect_output()
-        
 
         batch_size = input_ids.shape[0]
         final_logits = torch.zeros(
-            batch_size, input_ids.shape[1], self.config.vocab_size,
-            device=self.device, dtype=self.dtype
+            batch_size,
+            input_ids.shape[1],
+            self.config.vocab_size,
+            device=self.device,
+            dtype=self.dtype,
         )
 
         for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
             if not assigned_sample_idxs:
                 continue
-            
+
             merged_model = self._apply_tv(list(dataset_group))
 
             group_input_ids = input_ids[assigned_sample_idxs]
-            group_attention_mask = attention_mask[assigned_sample_idxs] if attention_mask is not None else None
-            group_position_ids = position_ids[assigned_sample_idxs] if position_ids is not None else None
+            group_attention_mask = (
+                attention_mask[assigned_sample_idxs]
+                if attention_mask is not None
+                else None
+            )
+            group_position_ids = (
+                position_ids[assigned_sample_idxs] if position_ids is not None else None
+            )
 
             with torch.no_grad():
                 group_outputs = merged_model(
@@ -433,11 +476,11 @@ class MassInferenceWrapper(nn.Module):
 
             target_vocab_size = final_logits.shape[-1]
             logits = logits[:, :, :target_vocab_size]
-        
+
             final_logits[assigned_sample_idxs] = logits.to(final_logits.dtype)
 
         return CausalLMOutputWithPast(logits=final_logits)
-    
+
     @torch.no_grad()
     def generate(
         self,
@@ -445,14 +488,13 @@ class MassInferenceWrapper(nn.Module):
         attention_mask: Optional[torch.Tensor] = None,
         **generation_kwargs,
     ) -> torch.Tensor:
-        
+
         input_ids = input_ids.to(self.device)
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
-            
+
         self.base_model(input_ids=input_ids, attention_mask=attention_mask)
         _, _, dataset_group_to_samples = self.collect_output()
-        
 
         batch_size = input_ids.shape[0]
         output_sequences = [None] * batch_size
@@ -464,7 +506,11 @@ class MassInferenceWrapper(nn.Module):
             merged_model = self._apply_tv(list(dataset_group))
 
             group_input_ids = input_ids[assigned_sample_idxs]
-            group_attention_mask = attention_mask[assigned_sample_idxs] if attention_mask is not None else None
+            group_attention_mask = (
+                attention_mask[assigned_sample_idxs]
+                if attention_mask is not None
+                else None
+            )
 
             group_output = merged_model.generate(
                 input_ids=group_input_ids,
@@ -474,14 +520,16 @@ class MassInferenceWrapper(nn.Module):
 
             for i, original_idx in enumerate(assigned_sample_idxs):
                 output_sequences[original_idx] = group_output[i]
-            
+
         pad_token_id = self.config.pad_token_id or self.config.eos_token_id
 
         max_len = max(seq.size(0) for seq in output_sequences)
 
-        final_output = torch.full((batch_size, max_len), pad_token_id, dtype=torch.long, device=self.device)
+        final_output = torch.full(
+            (batch_size, max_len), pad_token_id, dtype=torch.long, device=self.device
+        )
         for i, seq in enumerate(output_sequences):
-            final_output[i, :seq.size(0)] = seq
+            final_output[i, : seq.size(0)] = seq
 
         return final_output
 
@@ -490,7 +538,7 @@ class MassInferenceWrapper(nn.Module):
         Delegates the call to the underlying zeroshot model, enabling KV caching.
         """
         return self.base_model.prepare_inputs_for_generation(*args, **kwargs)
-    
+
     def tie_weights(self):
         """
         This method is called by the HFLM wrapper during initialization.
@@ -505,7 +553,7 @@ class MassInferenceWrapper(nn.Module):
         """Apply the aggregated task vector to the model."""
 
         dataset_combo = "_".join(dataset_names)
-        
+
         if self.finetuned is not None:
             aggregated = self.finetuned[dataset_names[0]].to(self.device)
         else:
@@ -516,19 +564,25 @@ class MassInferenceWrapper(nn.Module):
 
                 aggregated = self.merger.merge_from_svd_dict(
                     self.zeroshot_model,
-                    {dataset_name: self.svd_dicts[dataset_name] for dataset_name in dataset_names},
+                    {
+                        dataset_name: self.svd_dicts[dataset_name]
+                        for dataset_name in dataset_names
+                    },
                 )
 
             elif isinstance(self.merger, TaskArithmeticMerger):
-                
+
                 aggregated = self.merger.merge_from_task_dicts(
                     self.zeroshot_model,
-                    {dataset_name: self.task_dicts[dataset_name] for dataset_name in dataset_names},
+                    {
+                        dataset_name: self.task_dicts[dataset_name]
+                        for dataset_name in dataset_names
+                    },
                 )
 
             else:
                 raise NotImplementedError
-        
+
         if len(self.cached_tvs) > self.max_num_tvs_to_keep:
             pylogger.warning("Flushing TV cache to save memory...")
             self.flush_cache()
@@ -538,14 +592,14 @@ class MassInferenceWrapper(nn.Module):
     def flush_cache(self):
         self.cached_tvs = {}
         torch.cuda.empty_cache()
-        
+
     @property
     def train_preprocess(self):
-        return getattr(self.zeroshot_model, 'train_preprocess', None)
+        return getattr(self.zeroshot_model, "train_preprocess", None)
 
     @property
     def val_preprocess(self):
-        return getattr(self.zeroshot_model, 'val_preprocess', None)
+        return getattr(self.zeroshot_model, "val_preprocess", None)
 
     # Logging
 
@@ -591,7 +645,9 @@ class MassInferenceWrapper(nn.Module):
             # Import here to avoid circular imports
             from mass.utils.plots import plot_interactive_coefficients_std
 
-            fig_std = plot_interactive_coefficients_std(mean_coeffs, std_coeffs, dataset_names)
+            fig_std = plot_interactive_coefficients_std(
+                mean_coeffs, std_coeffs, dataset_names
+            )
 
             logger.experiment.log(
                 {

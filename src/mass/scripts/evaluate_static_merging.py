@@ -88,7 +88,7 @@ def run(cfg: DictConfig) -> str:
     """
 
     seed_index_everything(cfg)
-    
+
     num_tasks = len(cfg.benchmark.datasets)
     cfg.core.tags.append(f"n{num_tasks}")
     cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
@@ -115,7 +115,7 @@ def run(cfg: DictConfig) -> str:
     finetuned_models = {
         dataset: load_model_from_hf(
             model_name=cfg.nn.encoder.model_name, dataset_name=dataset
-        ).state_dict() # TODO: uniform to use both without state_dict()
+        ).state_dict()  # TODO: uniform to use both without state_dict()
         for dataset in cfg.benchmark.datasets
     }
 
@@ -157,11 +157,7 @@ def run(cfg: DictConfig) -> str:
 
         model.set_metrics(len(dataset.classnames))
         model.set_task(dataset_name)
-        model.set_finetuning_accuracy(
-            finetuned_accuracies[
-                dataset_name + "Val" if cfg.eval_on_train else dataset_name
-            ]
-        )
+        model.set_finetuning_accuracy(finetuned_accuracies[dataset_name])
 
         callbacks: List[Callback] = build_callbacks(cfg.train.callbacks, template_core)
 

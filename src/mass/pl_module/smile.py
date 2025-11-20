@@ -27,7 +27,7 @@ from mass.utils.utils import pad_unbatched_output, return_params_summary
 pylogger = logging.getLogger(__name__)
 
 
-class SmileUpscalingAlgorithm():
+class SmileUpscalingAlgorithm:
 
     _linear_layer_cls = (nn.Linear,)
 
@@ -71,9 +71,9 @@ class SmileUpscalingAlgorithm():
         self.average_experts = average_experts
         self.model_path = model_path
         self.upscaling_accelerator = kwargs.pop("upscaling_accelerator", None)
-        self.upscaled_layers = set()  
+        self.upscaled_layers = set()
         self.oracle_mode = oracle_mode
-        
+
         finetuned_models_list = list(finetuned_models.values())
 
         params_before = return_params_summary(zeroshot_model)
@@ -96,18 +96,24 @@ class SmileUpscalingAlgorithm():
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             pylogger.info(f"Saving model to {model_path}")
             torch.save(model, model_path)
-            
+
         params_after = return_params_summary(model)
-        pylogger.info(f"Relative parameter increase: {params_after['total_params'] / params_before['total_params']:.2f}x")
-            
+        pylogger.info(
+            f"Relative parameter increase: {params_after['total_params'] / params_before['total_params']:.2f}x"
+        )
+
         # Create inference wrapper
         self.model = SmileInferenceWrapper(
             model=model,
             zeroshot_model=zeroshot_model,
-            dataset_names=list(finetuned_models.keys()) if isinstance(finetuned_models, dict) else [f"task_{i}" for i in range(len(finetuned_models_list))],
-            device=device
+            dataset_names=(
+                list(finetuned_models.keys())
+                if isinstance(finetuned_models, dict)
+                else [f"task_{i}" for i in range(len(finetuned_models_list))]
+            ),
+            device=device,
         ).to(device)
-       
+
     def merge(
         self,
         zeroshot_model: nn.Module,
@@ -222,7 +228,7 @@ class SmileUpscalingAlgorithm():
             finetuned_models (List[nn.Module]): A list of fine-tuned models.
             tqdm_desc (str): Description for the tqdm progress bar.
         """
-        
+
         replace_attention_with_linear(zeroshot_model, finetuned_models)
 
         for name, module in tqdm(
@@ -244,7 +250,7 @@ class SmileUpscalingAlgorithm():
                 self._average_experts(zeroshot_model, finetuned_models, name)
 
 
-class SmileInferenceWrapper(nn.Module):    
+class SmileInferenceWrapper(nn.Module):
     def __init__(
         self,
         model: nn.Module,
@@ -257,13 +263,13 @@ class SmileInferenceWrapper(nn.Module):
         self.zeroshot_model = zeroshot_model
         self.dataset_names = dataset_names
         self.device = device
-        
+
         self.task_to_index = {task: i for i, task in enumerate(dataset_names)}
-        
+
     def collect_votes(self, bsz, device):
         votes = []
         collected_layers = set()
-        
+
         for name, module in self.model.named_modules():
             pylogger.debug(f"Module {name}")
             if isinstance(module, SmileMoELinear) and hasattr(
@@ -279,13 +285,10 @@ class SmileInferenceWrapper(nn.Module):
             votes = torch.stack(votes)
             majority_vote = torch.mode(votes, dim=0).values
         else:
-            majority_vote = torch.zeros(
-                bsz, dtype=torch.long, device=device
-            )
-            
+            majority_vote = torch.zeros(bsz, dtype=torch.long, device=device)
+
         return majority_vote
-        
-        
+
     def embed_image(self, batch, classification_heads, num_classes):
         """Handles image classification tasks."""
         features = self.model(batch)
@@ -309,11 +312,11 @@ class SmileInferenceWrapper(nn.Module):
                 all_outputs[sample_idx] = group_output[i]
 
         return pad_unbatched_output(all_outputs, num_classes)
-    
+
     def generate(self, batch, max_length):
         """Handles language tasks."""
         return self.model.generate(batch, max_length=max_length)
-    
+
     def _group_samples_by_selected_head(self, selected_heads: torch.Tensor):
         """
         Group samples that share the same selected head to be processed together for efficiency
@@ -325,18 +328,17 @@ class SmileInferenceWrapper(nn.Module):
             Dict mapping head_idx to list of sample indices
         """
         head_group_to_samples = {}
-        
+
         for sample_idx, head_idx in enumerate(selected_heads.cpu().numpy()):
             head_idx = int(head_idx)
             head_group_to_samples.setdefault(head_idx, []).append(sample_idx)
-        
+
         return head_group_to_samples
-    
+
     @property
     def train_preprocess(self):
-        return getattr(self.zeroshot_model, 'train_preprocess', None)
+        return getattr(self.zeroshot_model, "train_preprocess", None)
 
     @property
     def val_preprocess(self):
-        return getattr(self.zeroshot_model, 'val_preprocess', None)
-    
+        return getattr(self.zeroshot_model, "val_preprocess", None)

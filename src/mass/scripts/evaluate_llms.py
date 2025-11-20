@@ -24,8 +24,17 @@ import mass  # noqa
 
 from mass.utils.io_utils import boilerplate
 from mass.utils.plots import plot_interactive_radar_chart
-from mass.utils.utils import compute_avg_accuracy, get_finetuning_accuracies, print_memory, build_callbacks
-from mass.pl_module.language_classifier import CLASSIFICATION_TASKS, REGRESSION_TASKS, get_task_config_name
+from mass.utils.utils import (
+    compute_avg_accuracy,
+    get_finetuning_accuracies,
+    print_memory,
+    build_callbacks,
+)
+from mass.pl_module.language_classifier import (
+    CLASSIFICATION_TASKS,
+    REGRESSION_TASKS,
+    get_task_config_name,
+)
 
 pylogger = logging.getLogger(__name__)
 
@@ -36,11 +45,11 @@ torch.set_float32_matmul_precision("high")
 def run(cfg: omegaconf.DictConfig) -> str:
 
     seed_index_everything(cfg)
-    
+
     num_tasks = len(cfg.benchmark.datasets)
     cfg.core.tags.append(f"l{num_tasks}")
     cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
-    
+
     logger, template_core = boilerplate(cfg)
 
     num_tasks = len(cfg.eval_datasets)
@@ -49,22 +58,26 @@ def run(cfg: omegaconf.DictConfig) -> str:
     omegaconf.OmegaConf.set_struct(cfg, False)
     cfg.num_tasks = num_tasks  # Now we can safely update it
     omegaconf.OmegaConf.set_struct(cfg, True)  # Re-enable struct mode
-    
+
     finetuned_accuracies: Dict[str, float] = get_finetuning_accuracies(
         cfg.misc.finetuned_accuracy_path
     )[cfg.nn.encoder.model_name]
-    
+
     zeroshot_encoder = instantiate(cfg.nn.encoder.model)
-    
+
     finetuned_models = {
-        dataset: instantiate(cfg.nn.encoder.model, pretrained_model_name_or_path=cfg.nn.encoder.model.pretrained_model_name_or_path.replace("google/", f"tanganke/") + f"_glue-{dataset}",
+        dataset: instantiate(
+            cfg.nn.encoder.model,
+            pretrained_model_name_or_path=cfg.nn.encoder.model.pretrained_model_name_or_path.replace(
+                "google/", f"tanganke/"
+            )
+            + f"_glue-{dataset}",
         )
         for dataset in cfg.benchmark.datasets
     }
-    
+
     pylogger.info(f"Finetuned models: {finetuned_models.keys()}")
-    
-    
+
     moerging = instantiate(
         cfg.nn.module,
         zeroshot_model=zeroshot_encoder,
@@ -72,47 +85,44 @@ def run(cfg: omegaconf.DictConfig) -> str:
     )
 
     tokenizer = instantiate(cfg.nn.tokenizer)
-    
+
     pylogger.info(f"Model instantiated: {moerging}")
-    
+
     results = {}
     for dataset_name in cfg.benchmark.datasets:
 
         dataset_cfg = omegaconf.OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
         )
-        
+
         dataset = instantiate(
-            dataset_cfg, tokenizer=tokenizer) #cache_dir="~/.cache/huggingface/datasets/glue")
-        
+            dataset_cfg, tokenizer=tokenizer
+        )  # cache_dir="~/.cache/huggingface/datasets/glue")
+
         pylogger.info(f"Dataset {dataset_name} loaded: {dataset}")
-        
+
         # Get appropriate task configuration and instantiate
         task_config_name = get_task_config_name(dataset_name)
         task_cfg = omegaconf.OmegaConf.load(
             PROJECT_ROOT / "conf" / "nn" / "task" / f"{task_config_name}.yaml"
         )
-        
+
         task_model = instantiate(
-            task_cfg, 
-            moe_model=moerging.model.cuda(), 
+            task_cfg,
+            moe_model=moerging.model.cuda(),
             tokenizer=tokenizer,
-            custom_logger=logger
+            custom_logger=logger,
         )
-        
+
         task_model.set_task_name(dataset_name)
-        
+
         pylogger.info(f"Using {task_config_name} for {dataset_name}")
-        
+
         callbacks = build_callbacks(cfg.train.callbacks, template_core)
 
         task_model.set_metrics()
         task_model.set_task(dataset_name)
-        task_model.set_finetuning_accuracy(
-            finetuned_accuracies[
-                dataset_name
-            ]
-        )
+        task_model.set_finetuning_accuracy(finetuned_accuracies[dataset_name])
 
         trainer = pl.Trainer(
             default_root_dir=cfg.core.storage_dir,
@@ -122,25 +132,27 @@ def run(cfg: omegaconf.DictConfig) -> str:
             limit_test_batches=None,
             **cfg.train.trainer,
         )
-        
-        results[dataset_name] = trainer.test(model=task_model, dataloaders=dataset.data_loader)
-        
+
+        results[dataset_name] = trainer.test(
+            model=task_model, dataloaders=dataset.data_loader
+        )
+
     pylogger.info(f"{results}")
-        
+
     avg = compute_avg_accuracy(results)
     results["avg"] = [
         avg
     ]  # as a list for consistency due to lightning logging stuff this way
 
     logger.experiment.log(avg)
-    
+
     pylogger.info(results)
-    
+
     results_path = Path(cfg.misc.results_path)
-    
+
     radarchart = plot_interactive_radar_chart(results, title="Radar Chart")
     logger.experiment.log({"radar": wandb.Plotly(radarchart)})
-    
+
     logger.experiment.log_artifact(
         wandb.Artifact(
             f"results_{cfg.nn.encoder.model_name}_{num_tasks}",
@@ -151,8 +163,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
     if logger is not None:
         logger.experiment.finish()
-          
-    
+
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="eval_language.yaml")
 def main(cfg: omegaconf.DictConfig):

@@ -2,7 +2,12 @@ import copy
 import logging
 from mass.merger.merger import TaskVectorBasedMerger
 from mass.modules.encoder import ImageEncoder
-from mass.utils.utils import apply_dict_to_model, compute_task_dict, print_memory, sum_task_dict
+from mass.utils.utils import (
+    apply_dict_to_model,
+    compute_task_dict,
+    print_memory,
+    sum_task_dict,
+)
 from mass.task_vectors.isotropic_merging import isotropic_sum
 
 import torch
@@ -51,7 +56,10 @@ class IsotropicMerger(TaskVectorBasedMerger):
         model_name = self.model_name
         num_tasks = len(datasets)
 
-        if model_name in self.optimal_alphas and num_tasks in self.optimal_alphas[model_name]:
+        if (
+            model_name in self.optimal_alphas
+            and num_tasks in self.optimal_alphas[model_name]
+        ):
             coefficient = self.optimal_alphas[model_name][num_tasks]
         else:
             coefficient = 1.0 / num_tasks

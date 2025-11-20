@@ -1,7 +1,6 @@
 import torch
 
 
-
 def get_distance(norm, v):
     assert norm == "l2", "Only l2 norm is supported for distance"
     return lambda x, y: torch.norm((x.unsqueeze(1) - y), dim=2)

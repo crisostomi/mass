@@ -49,10 +49,10 @@ def run(cfg: omegaconf.DictConfig) -> str:
         the run directory inside the storage_dir used by the current experiment
     """
     cfg.core.tags.append("mass")
-        
+
     pylogger.info(f"Starting MASS eval")
     seed_index_everything(cfg)
-    
+
     num_tasks = len(cfg.benchmark.datasets)
     cfg.core.tags.append(f"n{num_tasks}")
     cfg.core.tags.append(f"{cfg.nn.encoder.model_name}")
@@ -71,19 +71,16 @@ def run(cfg: omegaconf.DictConfig) -> str:
         cfg.misc.finetuned_accuracy_path
     )[cfg.nn.encoder.model_name]
 
-    zeroshot_encoder: ImageEncoder = instantiate(
-        cfg.nn.encoder.model
-    )
+    zeroshot_encoder: ImageEncoder = instantiate(cfg.nn.encoder.model)
 
     finetuned_models = {
-        dataset: instantiate(
-            cfg.nn.encoder.model, dataset_name=dataset
-        )
+        dataset: instantiate(cfg.nn.encoder.model, dataset_name=dataset)
         for dataset in cfg.benchmark.datasets
     }
-    
 
-    replace_attention_with_linear(zeroshot_encoder, finetuned_models=finetuned_models.values())
+    replace_attention_with_linear(
+        zeroshot_encoder, finetuned_models=finetuned_models.values()
+    )
 
     pylogger.info(f"Number of tasks: {cfg.num_tasks}")
     pylogger.info(f"Finetuned models: {list(finetuned_models.keys())}")
@@ -94,7 +91,12 @@ def run(cfg: omegaconf.DictConfig) -> str:
         finetuned_models=finetuned_models,
     )
 
-    classification_heads: List[ClassificationHead] = get_classification_heads(cfg.benchmark.datasets, cfg.nn.encoder.model_name, cfg.misc.ckpt_path, cfg.misc.openclip_cachedir)
+    classification_heads: List[ClassificationHead] = get_classification_heads(
+        cfg.benchmark.datasets,
+        cfg.nn.encoder.model_name,
+        cfg.misc.ckpt_path,
+        cfg.misc.openclip_cachedir,
+    )
 
     pylogger.info(f"Instantiating final model")
     model = instantiate(
@@ -115,9 +117,11 @@ def run(cfg: omegaconf.DictConfig) -> str:
         dataset_cfg = omegaconf.OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
         )
-        
+
         dataset = instantiate(
-            dataset_cfg, preprocess_fn=zeroshot_encoder.val_preprocess, batch_size=cfg.data_batch_size
+            dataset_cfg,
+            preprocess_fn=zeroshot_encoder.val_preprocess,
+            batch_size=cfg.data_batch_size,
         )
 
         model.set_metrics(len(dataset.classnames))
@@ -129,7 +133,6 @@ def run(cfg: omegaconf.DictConfig) -> str:
         )
 
         callbacks: List[Callback] = build_callbacks(cfg.train.callbacks, template_core)
-
 
         trainer = pl.Trainer(
             default_root_dir=cfg.core.storage_dir,

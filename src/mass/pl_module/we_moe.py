@@ -52,7 +52,7 @@ def entropy_loss(logits: Tensor) -> Tensor:
     return -torch.sum(probs * torch.log(probs + 1e-8), dim=-1).mean()
 
 
-class WeightEnsemblingMoEAlgorithm():
+class WeightEnsemblingMoEAlgorithm:
     _mlp_class = (nn.Sequential,)
 
     def __init__(
@@ -78,7 +78,6 @@ class WeightEnsemblingMoEAlgorithm():
         openclip_cachedir=None,
     ):
 
-
         # Store configuration parameters
         self.dataset_names = dataset_names
         self.merger = merger
@@ -94,17 +93,19 @@ class WeightEnsemblingMoEAlgorithm():
         self.use_grad_accumulate = use_grad_accumulate
         self.model_path = model_path
         self.device = device
-        
+
         self.task_to_index = {task: i for i, task in enumerate(dataset_names)}
 
         self.zeroshot_model = zeroshot_model
         self.finetuned_models = finetuned_models
-        self.classification_heads = get_classification_heads(self.dataset_names, encoder_name, ckpt_path, openclip_cachedir)
+        self.classification_heads = get_classification_heads(
+            self.dataset_names, encoder_name, ckpt_path, openclip_cachedir
+        )
 
         pylogger.info(
             "Fusing models using WeightEnsembling Mixture of Experts modules."
         )
-        
+
         moe_model = self.construct_moe_model(zeroshot_model, finetuned_models)
 
         print_params_summary(moe_model)
@@ -263,16 +264,21 @@ class WeightEnsemblingMoEAlgorithm():
 
         # Configure optimizer - handle both partial and regular configs
         trainable_params = [p for p in module.parameters() if p.requires_grad]
-        
+
         optimizer: torch.optim.Optimizer
         if callable(self.optimizer_config):
-            optimizer = cast(torch.optim.Optimizer, self.optimizer_config(params=trainable_params))
+            optimizer = cast(
+                torch.optim.Optimizer, self.optimizer_config(params=trainable_params)
+            )
         else:
-            optimizer = cast(torch.optim.Optimizer, instantiate(
-                self.optimizer_config,
-                params=trainable_params,
-            ))
-        
+            optimizer = cast(
+                torch.optim.Optimizer,
+                instantiate(
+                    self.optimizer_config,
+                    params=trainable_params,
+                ),
+            )
+
         print_params_summary(module)
         module.cuda()
         module.train()
@@ -308,7 +314,7 @@ class WeightEnsemblingMoEAlgorithm():
                     assert (
                         logits.dim() == 2
                     ), f"Expected logits to be 2D, got {logits.dim()}"
-                    
+
                     task_loss = entropy_loss(logits)
                     if total_loss is None:
                         total_loss = task_loss
@@ -337,12 +343,12 @@ class WeMoEInferenceWrapper(nn.Module):
         self.zeroshot_model = zeroshot_model
         self.dataset_names = dataset_names
         self.device = device
-        
+
         self.task_to_index = {task: i for i, task in enumerate(dataset_names)}
-    
+
     def collect_votes(self, bsz, device):
         votes = []
-        
+
         for name, module in self.model.named_modules():
             if isinstance(module, WeightEnsemblingMoE) and hasattr(
                 module, "last_selected_experts"
@@ -356,9 +362,7 @@ class WeMoEInferenceWrapper(nn.Module):
             votes = torch.stack(votes)
             majority_vote = torch.mode(votes, dim=0).values
         else:
-            majority_vote = torch.zeros(
-                bsz, dtype=torch.long, device=device
-            )
+            majority_vote = torch.zeros(bsz, dtype=torch.long, device=device)
         return majority_vote
 
     def embed_image(self, batch, classification_heads, num_classes):
@@ -374,27 +378,24 @@ class WeMoEInferenceWrapper(nn.Module):
         for head_idx, sample_indices in head_groups.items():
 
             group_features = features[sample_indices]
-            group_output = classification_heads[
-                head_idx
-            ](group_features)
+            group_output = classification_heads[head_idx](group_features)
 
             for i, sample_idx in enumerate(sample_indices):
                 all_outputs[sample_idx] = group_output[i]
 
         return pad_unbatched_output(all_outputs, num_classes)
-    
-    
+
     @property
     def train_preprocess(self):
-        return getattr(self.zeroshot_model, 'train_preprocess', None)
+        return getattr(self.zeroshot_model, "train_preprocess", None)
 
     @property
     def val_preprocess(self):
-        return getattr(self.zeroshot_model, 'val_preprocess', None)
-    
+        return getattr(self.zeroshot_model, "val_preprocess", None)
+
     def generate(self, batch, max_length):
         return self.model.generate(batch, max_length=max_length)
-    
+
     def group_samples_by_selected_head(self, selected_heads: torch.Tensor):
         """
         Group samples that share the same selected head to be processed together for efficiency

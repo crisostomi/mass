@@ -34,7 +34,7 @@ def evaluate_accuracy(model, batch, tokenizer):
 
     correct = 0
     total = 0
-    
+
     with torch.no_grad():
         outputs = model.generate(batch["input_ids"], max_length=10)
         output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
@@ -71,7 +71,6 @@ def evaluate_spearman_rho(model, batch, tokenizer):
 
         all_preds.extend(output_text)
         all_labels.extend(labels)
-
 
     from scipy.stats import spearmanr
 

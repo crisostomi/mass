@@ -49,7 +49,9 @@ class LanguageTester(pl.LightningModule):
         self.tokenizer = tokenizer
         self.custom_logger = custom_logger
 
-        self.log_fn = lambda metric, val: self.log(metric, val, on_step=False, on_epoch=True)
+        self.log_fn = lambda metric, val: self.log(
+            metric, val, on_step=False, on_epoch=True
+        )
 
     def set_task_name(self, task_name):
         self.task_name = task_name
@@ -75,9 +77,11 @@ class LanguageTester(pl.LightningModule):
         if hasattr(self.moe_model, "logging"):
             self.moe_model.logging(self.custom_logger, self.task_name)
 
-        accuracy = self.trainer.callback_metrics[f"acc/test/{self.task_name}"].cpu().item()
+        accuracy = (
+            self.trainer.callback_metrics[f"acc/test/{self.task_name}"].cpu().item()
+        )
 
-        normalized_acc = accuracy / self.finetuning_accuracy  
+        normalized_acc = accuracy / self.finetuning_accuracy
 
         self.log_fn(f"normalized_acc/test/{self.task_name}", normalized_acc)
 
@@ -86,7 +90,7 @@ class LanguageTester(pl.LightningModule):
 
     def set_task(self, task_name):
         self.task_name = task_name
-        
+
     def set_finetuning_accuracy(self, finetuning_accuracy):
         self.finetuning_accuracy = finetuning_accuracy
 

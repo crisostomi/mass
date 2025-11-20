@@ -35,7 +35,6 @@ class MultiHeadImageClassifier(pl.LightningModule):
             metric, val, on_step=False, on_epoch=True
         )
         self.freeze_head()
-        
 
     def freeze_head(self):
         for idx in range(len(self.classification_heads)):
@@ -43,13 +42,15 @@ class MultiHeadImageClassifier(pl.LightningModule):
             self.classification_heads[idx].bias.requires_grad_(False)
 
     def forward(self, inputs):
-        return self.moe_model.embed_image(inputs, self.classification_heads, self.num_classes)
+        return self.moe_model.embed_image(
+            inputs, self.classification_heads, self.num_classes
+        )
 
     def _step(self, batch: Dict[str, torch.Tensor], split: str) -> Mapping[str, Any]:
-        batch = maybe_dictionarize(batch, 'x', 'y')
+        batch = maybe_dictionarize(batch, "x", "y")
 
-        x = batch['x']
-        gt_y = batch['y']
+        x = batch["x"]
+        gt_y = batch["y"]
 
         logits = self(x)
         loss = F.cross_entropy(logits, gt_y)
@@ -64,7 +65,7 @@ class MultiHeadImageClassifier(pl.LightningModule):
         return {"logits": logits.detach(), "loss": loss}
 
     def on_test_epoch_end(self):
-        
+
         if hasattr(self.moe_model, "logging"):
             self.moe_model.logging(self.custom_logger, self.task_name)
 
@@ -102,7 +103,7 @@ class MultiHeadImageClassifier(pl.LightningModule):
 
     def set_finetuning_accuracy(self, finetuning_accuracy):
         self.finetuning_accuracy = finetuning_accuracy
-        
+
     def set_metrics(self, num_classes):
 
         self.num_classes = num_classes

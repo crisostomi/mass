@@ -31,7 +31,7 @@ num_of_tasks_to_scaling_coeff = {
 class MassAlgorithm:
 
     _linear_layer_cls = (nn.Linear,)
-    _image_encoder_cls = (ImageEncoder,)  
+    _image_encoder_cls = (ImageEncoder,)
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class MassAlgorithm:
         self.max_num_tasks_to_select = max_num_tasks_to_select
         self.device = device
         self.debug = debug
-        
+
         self.vision = isinstance(zeroshot_model, self._image_encoder_cls)
 
         self.merger = merger
@@ -123,8 +123,10 @@ class MassAlgorithm:
             tqdm_desc (str): Description for the tqdm progress bar.
         """
         if debug:
-            pylogger.warning("Upscaling all linear layers. This might slow down the method quite a lot, should be used only for debug purposes. Requires Wandb integration.")
-                
+            pylogger.warning(
+                "Upscaling all linear layers. This might slow down the method quite a lot, should be used only for debug purposes. Requires Wandb integration."
+            )
+
         for name, module in tqdm(
             tuple(zeroshot_model.named_modules()),
             tqdm_desc,
@@ -141,6 +143,7 @@ class MassAlgorithm:
                     zeroshot_model,
                     name,
                 )
+
     def _upscale_linear_layer(
         self,
         base_model: nn.Module,
@@ -160,11 +163,13 @@ class MassAlgorithm:
 
         try:
 
-            # pylogger.info(f"Creating MassGate for layer {name}")
+            # pylogger.info(f"Creating MassGate for layer {name}")
             mass_gate = MassGate(
                 name,
                 module,
-                get_routing_weights(self.svd_dict, name + ".weight"), # TODO: remove hardocoding for keys
+                get_routing_weights(
+                    self.svd_dict, name + ".weight"
+                ),  # TODO: remove hardocoding for keys
                 self.dataset_names,
                 self.routing_mode,
                 self.max_num_tasks_to_select,
@@ -208,7 +213,7 @@ class MassInferenceWrapper(nn.Module):
         output = mass.output
         mass.output = None
         return output
-    
+
     def _process_dataset_groups(self, batch, dataset_group_to_samples, processing_fn):
         batch_size = batch.shape[0]
         sample_embeddings = [None] * batch_size
@@ -216,27 +221,29 @@ class MassInferenceWrapper(nn.Module):
         for dataset_group, assigned_sample_idxs in dataset_group_to_samples.items():
             assigned_sample_idxs = torch.tensor(assigned_sample_idxs)
             merged_model = self._apply_tv(list(dataset_group))
-            
+
             group_batch = batch[assigned_sample_idxs]
             merged_model.to(batch.device)
-            
+
             group_output = processing_fn(merged_model, group_batch)
 
             for j, idx in enumerate(assigned_sample_idxs):
                 sample_embeddings[idx] = group_output[j : j + 1]
 
         return sample_embeddings
-    
+
     def embed_image(self, batch, classification_heads, num_classes):
         self.base_model(batch)
-        
+
         selected_dataset_idxs, _, dataset_group_to_samples = self.collect_output()
 
         # needed to handle the difference in image/text encoders (see below)
         def process_group(merged_model, group_batch):
             return merged_model(group_batch)
-        
-        sample_embeddings = self._process_dataset_groups(batch, dataset_group_to_samples, process_group)
+
+        sample_embeddings = self._process_dataset_groups(
+            batch, dataset_group_to_samples, process_group
+        )
         sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
         outputs = []
@@ -255,10 +262,7 @@ class MassInferenceWrapper(nn.Module):
                 for j in sample_routed_datasets
             ]
             # for each dataset, get the heads_selection_criteria score
-            candidate_scores = [
-                torch.max(logits).item()
-                for logits in candidate_logits
-            ] 
+            candidate_scores = [torch.max(logits).item() for logits in candidate_logits]
             # get the index of the best score among the datasets
             best_idx = candidate_scores.index(max(candidate_scores))
             # get the logits of the best dataset
@@ -271,7 +275,6 @@ class MassInferenceWrapper(nn.Module):
         ), "Output classes not set. Use set_metrics() method to set them."
 
         return pad_output(outputs, num_classes)
-    
 
     def generate(self, batch, max_length):
         self.base_model.generate(batch, max_length=max_length)
@@ -280,13 +283,17 @@ class MassInferenceWrapper(nn.Module):
 
         def process_group(merged_model, group_batch):
             return merged_model.generate(group_batch, max_length=max_length)
-        
-        sample_embeddings = self._process_dataset_groups(batch, dataset_group_to_samples, process_group)
+
+        sample_embeddings = self._process_dataset_groups(
+            batch, dataset_group_to_samples, process_group
+        )
 
         max_len = max(t.size(1) for t in sample_embeddings if t is not None)
 
         # Try to read pad_token_id from the merged model config, else default to -100
-        pad_token_id = getattr(getattr(self.base_model, "config", None), "pad_token_id", -100)
+        pad_token_id = getattr(
+            getattr(self.base_model, "config", None), "pad_token_id", -100
+        )
         pad_value = pad_token_id if isinstance(pad_token_id, int) else -100
 
         for i, t in enumerate(sample_embeddings):
@@ -296,7 +303,6 @@ class MassInferenceWrapper(nn.Module):
                 sample_embeddings[i] = torch.nn.functional.pad(
                     t, (0, max_len - seq_len), value=pad_value
                 )
-
 
         sample_embeddings = torch.cat(sample_embeddings, dim=0)
 
@@ -315,7 +321,10 @@ class MassInferenceWrapper(nn.Module):
 
             aggregated = self.merger.merge_from_svd_dict(
                 self.zeroshot_model,
-                {dataset_name: self.svd_dicts[dataset_name] for dataset_name in dataset_names},
+                {
+                    dataset_name: self.svd_dicts[dataset_name]
+                    for dataset_name in dataset_names
+                },
             )
 
             if len(self.cached_tvs) > self.max_num_tvs_to_keep:
@@ -331,14 +340,14 @@ class MassInferenceWrapper(nn.Module):
     def flush_cache(self):
         self.cached_tvs = {}
         torch.cuda.empty_cache()
-        
+
     @property
     def train_preprocess(self):
-        return getattr(self.zeroshot_model, 'train_preprocess', None)
+        return getattr(self.zeroshot_model, "train_preprocess", None)
 
     @property
     def val_preprocess(self):
-        return getattr(self.zeroshot_model, 'val_preprocess', None)
+        return getattr(self.zeroshot_model, "val_preprocess", None)
 
     # Logging
 
@@ -384,7 +393,9 @@ class MassInferenceWrapper(nn.Module):
             # Import here to avoid circular imports
             from mass.utils.plots import plot_interactive_coefficients_std
 
-            fig_std = plot_interactive_coefficients_std(mean_coeffs, std_coeffs, dataset_names)
+            fig_std = plot_interactive_coefficients_std(
+                mean_coeffs, std_coeffs, dataset_names
+            )
 
             logger.experiment.log(
                 {
@@ -424,7 +435,9 @@ class MassInferenceWrapper(nn.Module):
                         }
                     )
 
-                pylogger.info(f"Logged task accuracy statistics for current task: {current_task}")
+                pylogger.info(
+                    f"Logged task accuracy statistics for current task: {current_task}"
+                )
             else:
                 pylogger.warning(
                     f"Current task '{current_task}' not found in dataset names: {dataset_names}"

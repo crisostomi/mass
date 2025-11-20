@@ -31,7 +31,7 @@ class MassGate(nn.Module):
         visual: bool = True,  # cls or mean
     ):
         super().__init__()
-        
+
         self.name = name
         self.module = module
         self.routing_mode = routing_mode
@@ -41,17 +41,15 @@ class MassGate(nn.Module):
         self.max_num_tasks_to_select = min(max_num_tasks_to_select, len(dataset_names))
 
         v, s, _ = routing_weights
-        
+
         self.register_buffer("routing_weights", v)
         self.register_buffer("routing_singular_values", s)
 
         self.debug = debug
 
-        self.select_token = lambda x: ( x.mean(dim=1) if not visual else x[0, :, :]) 
-        
-        self.dataset_idx_to_name = {
-            i: name for i, name in enumerate(dataset_names)
-        }
+        self.select_token = lambda x: (x.mean(dim=1) if not visual else x[0, :, :])
+
+        self.dataset_idx_to_name = {i: name for i, name in enumerate(dataset_names)}
 
         self.output = None
 
@@ -60,7 +58,6 @@ class MassGate(nn.Module):
         self.layer_impact_log = defaultdict(list)
         self.norms_to_log = []
 
-            
     def forward(self, x: torch.Tensor, bsz: int = None):
         """
         The overall forward pass of the router.
@@ -76,7 +73,6 @@ class MassGate(nn.Module):
             selected_dataset_idxs
         )
         self.output = selected_dataset_idxs, dataset_coeffs, dataset_group_to_samples
-        
 
         return self.module(x)
 
@@ -92,10 +88,10 @@ class MassGate(nn.Module):
             self.layer_accuracy_to_log[self.name].append(task_predictions.cpu())
 
         return tv_coefficients
-    
+
     def _compute_logits(self, x, bsz: int = None) -> torch.Tensor:
         # pylogger.info(f"Layer name {self.name}, input shape {x.shape}")
-        
+
         if bsz and len(x.shape) == 2:
             patches = x.shape[0] // bsz
             x = x.view(patches, bsz, *x.shape[1:])
@@ -105,7 +101,9 @@ class MassGate(nn.Module):
         pylogger.info(f"Layer name {self.name}, selected token shape {x.shape}")
 
         norms = compute_residual_norm(
-            x, v=self.routing_weights, s=self.routing_singular_values, 
+            x,
+            v=self.routing_weights,
+            s=self.routing_singular_values,
         )
 
         # logging stuff
@@ -135,10 +133,11 @@ class MassGate(nn.Module):
                 standardized_norms / self.temperature, dim=1
             )
         else:
-            raise NotImplementedError(f"Routing mode {self.routing_mode} is not implemented")
+            raise NotImplementedError(
+                f"Routing mode {self.routing_mode} is not implemented"
+            )
 
         return tv_coefficients
-
 
     def _filter_datasets(self, tv_coefficients):
         selected_dataset_idxs = []
@@ -188,14 +187,13 @@ class MassGate(nn.Module):
             )
 
         return dataset_group_to_samples
-    
+
     @property
     def weight(self):
         return self.module.weight
-    
+
     def reset_to_log(self):
         self.norms_to_log = []
         self.layer_residuals_to_log = defaultdict(list)
         self.layer_accuracy_to_log = defaultdict(list)
         self.layer_impact_log = defaultdict(list)
-

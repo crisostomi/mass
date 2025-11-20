@@ -243,8 +243,6 @@ def load_dataset(
     return dataset
 
 
-
-
 def maybe_dictionarize(batch, x_key, y_key):
     if isinstance(batch, dict):
         return batch
@@ -258,6 +256,7 @@ def maybe_dictionarize(batch, x_key, y_key):
 
     return batch
 
+
 class GenericDataset(object):
     def __init__(self):
         self.train_dataset = None
@@ -268,6 +267,7 @@ class GenericDataset(object):
 
     def __len__(self):
         return len(self.train_dataset)
+
 
 class TaskDataset(Dataset):
     """Wraps a dataset to replace labels with a dataset-specific task index."""
@@ -294,7 +294,7 @@ def get_task_evaluation_dataset(
         dataset_cfg = omegaconf.OmegaConf.load(
             PROJECT_ROOT / "conf" / "dataset" / f"{dataset_name}.yaml"
         )
-        
+
         dataset = instantiate(
             dataset_cfg, preprocess_fn=preprocess_fn, batch_size=batch_size
         )

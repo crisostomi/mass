@@ -25,7 +25,7 @@ pylogger = logging.getLogger(__name__)
 def print_memory(context: str):
     process = psutil.Process(os.getpid())
     ram_mb = process.memory_info().rss / 1024**2
-    
+
     log_message = f"{context} -- System RAM: {ram_mb:.2f} MB"
 
     if torch.cuda.is_available():
@@ -33,7 +33,7 @@ def print_memory(context: str):
         gpu_peak_mb = torch.cuda.max_memory_allocated() / 1024**2
         _gpu_free_bytes, gpu_total_bytes = torch.cuda.mem_get_info()
         gpu_total_mb = gpu_total_bytes / 1024**2
-        
+
         log_message += (
             f" | GPU Memory: "
             f"{gpu_allocated_mb:.2f} MB (Allocated) / "
@@ -118,6 +118,7 @@ def compute_avg_accuracy(results) -> Dict:
         "normalized_acc/test/avg": average_normalized_acc,
     }
 
+
 def torch_save(model, save_path):
     if os.path.dirname(save_path) != "":
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -145,30 +146,42 @@ def get_probs(inputs, classifier):
     logits = get_logits(inputs, classifier)
     return logits.softmax(dim=1)
 
+
 def print_params_summary(model: torch.nn.Module):
     pylogger.info(
         f"Number of trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}, ({sum(p.numel() for p in model.parameters() if p.requires_grad) / sum(p.numel() for p in model.parameters()) * 100}%)"
     )
-    pylogger.info(f"Total number of parameters: {sum(p.numel() for p in model.parameters())}")
-    
+    pylogger.info(
+        f"Total number of parameters: {sum(p.numel() for p in model.parameters())}"
+    )
+
+
 def return_params_summary(model: torch.nn.Module) -> Dict[str, int]:
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     non_trainable_params = total_params - trainable_params
-    trainable_percentage = (trainable_params / total_params * 100) if total_params > 0 else 0
+    trainable_percentage = (
+        (trainable_params / total_params * 100) if total_params > 0 else 0
+    )
 
     return {
         "total_params": total_params,
         "trainable_params": trainable_params,
         "non_trainable_params": non_trainable_params,
-        "trainable_percentage": trainable_percentage
+        "trainable_percentage": trainable_percentage,
     }
-    
-def print_parameters_increase(model_before: torch.nn.Module, model_after: torch.nn.Module):
+
+
+def print_parameters_increase(
+    model_before: torch.nn.Module, model_after: torch.nn.Module
+):
     params_before = sum(p.numel() for p in model_before.parameters())
     params_after = sum(p.numel() for p in model_after.parameters())
     increase = params_after - params_before
-    pylogger.info(f"Parameters before: {params_before}, after: {params_after}, increase: {increase} ({increase / params_before * 100:.2f}%)")
+    pylogger.info(
+        f"Parameters before: {params_before}, after: {params_after}, increase: {increase} ({increase / params_before * 100:.2f}%)"
+    )
+
 
 class LabelSmoothing(torch.nn.Module):
     def __init__(self, smoothing=0.0):
@@ -205,6 +218,7 @@ def build_callbacks(cfg: ListConfig, *args: Callback, verbose=False) -> List[Cal
 
     return callbacks
 
+
 # TODO: unify with the below
 def pad_unbatched_output(outputs, output_classes):
     """
@@ -234,6 +248,7 @@ def pad_unbatched_output(outputs, output_classes):
         trimmed_outputs.append(out)
 
     return torch.stack(trimmed_outputs, dim=0)
+
 
 # TODO: unify with the above
 def pad_output(outputs, output_classes):
@@ -355,6 +370,7 @@ def apply_dict_to_model(task_vector_dict, model, coefficient: float = 1.0):
         model.load_state_dict(new_state_dict, strict=False)  # Load updated parameters
     return model.cuda()
 
+
 def apply_dict_to_dict(task_vector_dict, model_dict, coefficient: float = 1.0):
     """
     Applies a task vector dictionary to a model. The resulting model is the deep copy of the input model
@@ -381,9 +397,9 @@ def sum_task_dict(task_vector_dict_1, task_vector_dict_2):
 
     for key, value in task_vector_dict_2.items():
         if key in task_vector_dict_1:
-            task_vector_dict_1[key] += value.cuda() # TODO: remove
+            task_vector_dict_1[key] += value.cuda()  # TODO: remove
         else:
-            task_vector_dict_1[key] = value.cuda() # TODO: remove
+            task_vector_dict_1[key] = value.cuda()  # TODO: remove
     return task_vector_dict_1
 
 
@@ -394,37 +410,47 @@ def is_matrix(layer):
 def is_matrix_dict(layer):
     return isinstance(layer, dict) and "u" in layer
 
-def get_routing_weights_from_finetuned(finetuned, zeroshot, layer, device="cuda", dtype=torch.float32):
+
+def get_routing_weights_from_finetuned(
+    finetuned, zeroshot, layer, device="cuda", dtype=torch.float32
+):
     """
     Computes SVD components and returns them on the specified device and with the specified dtype.
     """
     vs = []
     sigma = []
     us = []
-    
+
     for task in finetuned.keys():
         if layer not in finetuned[task].state_dict():
-            raise KeyError(f"Layer '{layer}' not found in finetuned model for key '{task}'.")
-        
-        layer_tensor = finetuned[task].state_dict()[layer] - zeroshot.state_dict()[layer]
+            raise KeyError(
+                f"Layer '{layer}' not found in finetuned model for key '{task}'."
+            )
+
+        layer_tensor = (
+            finetuned[task].state_dict()[layer] - zeroshot.state_dict()[layer]
+        )
 
         if not is_matrix(layer_tensor):
             pylogger.warning(f"Layer '{layer}' in task '{task}' is not a matrix.")
             continue
 
         with torch.no_grad():
-            u, s, v = compute_svd_and_compress(layer_tensor.to(device), 1 / len(finetuned))
+            u, s, v = compute_svd_and_compress(
+                layer_tensor.to(device), 1 / len(finetuned)
+            )
 
         vs.append(v.to(device=device, dtype=dtype))
         sigma.append(s.to(device=device, dtype=dtype))
         us.append(u.to(device=device, dtype=dtype))
-    
+
     return (
         torch.stack(vs) if vs else None,
         torch.stack(sigma) if sigma else None,
         torch.stack(us) if us else None,
     )
-    
+
+
 def get_routing_weights_from_task_dict(task_dict, layer):
     vs = []
     sigma = []
@@ -433,7 +459,7 @@ def get_routing_weights_from_task_dict(task_dict, layer):
     for task in task_dict.keys():
         if layer not in task_dict[task]:
             raise KeyError(f"Layer '{layer}' not found in task dict for key '{task}'.")
-        
+
         layer_tensor = task_dict[task][layer]
 
         if not is_matrix(layer_tensor):
@@ -443,11 +469,10 @@ def get_routing_weights_from_task_dict(task_dict, layer):
         with torch.no_grad():
             u, s, v = compute_svd_and_compress(layer_tensor, 1 / len(task_dict))
 
-
         vs.append(v.to("cuda"))
         sigma.append(s.to("cuda"))
         us.append(u.to("cuda"))
-    
+
     return (
         torch.stack(vs) if vs else None,
         torch.stack(sigma) if sigma else None,
@@ -474,12 +499,16 @@ def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
 
     for dt in svd_dict.keys():
         if layer not in svd_dict[dt]:
-            raise KeyError(f"Layer '{layer}' not found in SVD dictionary for key '{dt}'.")
+            raise KeyError(
+                f"Layer '{layer}' not found in SVD dictionary for key '{dt}'."
+            )
 
         layer_data = svd_dict[dt][layer]
         if not all(k in layer_data for k in ["v", "s", "u"]):
-            raise KeyError(f"Missing keys in SVD data for layer '{layer}' under key '{dt}'.")
-        
+            raise KeyError(
+                f"Missing keys in SVD data for layer '{layer}' under key '{dt}'."
+            )
+
         vs.append(layer_data["v"].to("cuda"))
         sigma.append(layer_data["s"].to("cuda"))
         us.append(layer_data["u"].to("cuda"))
@@ -489,6 +518,50 @@ def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
         torch.stack(sigma) if get_sigma and sigma else None,
         torch.stack(us) if get_u and us else None,
     )
+    
+def get_routing_weights_whitened(svd_dict, layer, get_sigma=False, get_u=False):
+    """
+    Returns the right singular vectors.
+
+    Args:
+        svd_dict (dict): Dictionary containing SVD components.
+        layer (str): Layer name to retrieve weights for.
+        get_sigma (bool): Whether to return singular values.
+        get_u (bool): Whether to return left singular vectors.
+
+    Returns:
+        tuple: Stacked right singular vectors, singular values (if requested), and left singular vectors (if requested).
+    """
+    vs = []
+    sigma = []
+    us = []
+
+    for dt in svd_dict.keys():
+        if layer not in svd_dict[dt]:
+            raise KeyError(
+                f"Layer '{layer}' not found in SVD dictionary for key '{dt}'."
+            )
+
+        layer_data = svd_dict[dt][layer]
+        if not all(k in layer_data for k in ["v", "s", "u"]):
+            raise KeyError(
+                f"Missing keys in SVD data for layer '{layer}' under key '{dt}'."
+            )
+
+        vs.append(layer_data["v"].to("cuda"))
+        sigma.append(layer_data["s"].to("cuda"))
+        us.append(layer_data["u"].to("cuda"))
+
+
+        torch.stack(vs) if vs else None,
+        torch.stack(sigma) if get_sigma and sigma else None,
+        torch.stack(us) if get_u and us else None,
+        
+        # Now do your multi-step SVD approach
+        u_u, s_u, v_u = torch.linalg.svd(sum_u, full_matrices=False)
+        u_v, s_v, v_v = torch.linalg.svd(sum_v, full_matrices=False)
+
+
 
 def is_supported_layer(layer_key: str) -> bool:
     """
@@ -504,6 +577,7 @@ def is_supported_layer(layer_key: str) -> bool:
         and not ("c_fc" in layer_key)
     )
 
+
 def router_key_from_layer(key, index):
     return f"encoder.model.visual.transformer.resblocks.{index}.{key}"
 
@@ -514,6 +588,7 @@ def svd_key_from_layer(key, index):
         return base + ".in_proj_weight"
     elif "mlp" in key:
         return base + ".c_fc.weight"
+
 
 def from_router_to_svd_dict_key(key):
     key = key.replace("model.encoder.", "")

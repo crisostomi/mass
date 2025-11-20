@@ -30,7 +30,9 @@ def torch_default_data_collator(features):
     # (it should be automatically the case, but let's make sure of it.)
     if "label" in first and first["label"] is not None:
         label = (
-            first["label"].item() if isinstance(first["label"], torch.Tensor) else first["label"]
+            first["label"].item()
+            if isinstance(first["label"], torch.Tensor)
+            else first["label"]
         )
         dtype = torch.long if isinstance(label, int) else torch.float
         batch["labels"] = torch.tensor([f["label"] for f in features], dtype=dtype)
@@ -38,8 +40,12 @@ def torch_default_data_collator(features):
         if isinstance(first["label_ids"], torch.Tensor):
             batch["labels"] = torch.stack([f["label_ids"] for f in features])
         else:
-            dtype = torch.long if isinstance(first["label_ids"][0], int) else torch.float
-            batch["labels"] = torch.tensor([f["label_ids"] for f in features], dtype=dtype)
+            dtype = (
+                torch.long if isinstance(first["label_ids"][0], int) else torch.float
+            )
+            batch["labels"] = torch.tensor(
+                [f["label_ids"] for f in features], dtype=dtype
+            )
 
     # Handling of all other possible keys.
     # Again, we will use the first element to figure out which key/values are not None for this model.

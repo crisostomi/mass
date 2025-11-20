@@ -14,9 +14,12 @@ import torch
 import logging
 from tqdm import tqdm
 from typing import Tuple
+from scipy.linalg import subspace_angles
+
 
 def is_matrix(layer):
     return len(layer.shape) == 2
+
 
 pylogger = logging.getLogger(__name__)
 
@@ -47,19 +50,21 @@ def sum_svd(
     datasets = list(svd_dicts.keys())
     pylogger.info(f"Datasets: {datasets}")
 
-    for layer_name in tqdm(layer_names, desc="Summing SVD") if not silent else layer_names:
+    for layer_name in (
+        tqdm(layer_names, desc="Summing SVD") if not silent else layer_names
+    ):
         is_matrix = aggregated_model_dict[layer_name].dim() == 2
         offset = 0
-        
+
         if "text_projection" in layer_name:
-                continue
+            continue
         if "embed_tokens" in layer_name:
             continue
         if "lm_head" in layer_name:
             continue
 
         for i, dataset in enumerate(datasets):
-            
+
             if is_matrix:
 
                 delta_layer_svd = svd_dicts[dataset][layer_name]
@@ -72,7 +77,9 @@ def sum_svd(
                 u, s, v = u.to(device), s.to(device), v.to(device)
 
                 if i == 0:
-                    total_rank = sum(svd_dicts[d][layer_name]["s"].shape[0] for d in datasets)
+                    total_rank = sum(
+                        svd_dicts[d][layer_name]["s"].shape[0] for d in datasets
+                    )
                     sum_u = torch.zeros(u.shape[0], total_rank, device=device)
                     sum_s = torch.zeros(total_rank, device=device)
                     sum_v = torch.zeros(total_rank, v.shape[1], device=device)
@@ -108,7 +115,8 @@ def sum_svd(
         # text_projection is ignored and vectors were already aggregated
         if "text_projection" in layer_name or not is_matrix:
             continue
-
+        print(layer_name)
+        print(sum_u.shape, sum_v.shape, sum_s.shape)
         u_u, s_u, v_u = torch.linalg.svd(sum_u, full_matrices=False)
         u_v, s_v, v_v = torch.linalg.svd(sum_v, full_matrices=False)
 
@@ -165,7 +173,9 @@ def compress_tv(task_dicts, compress_rate: float, compress_ratio_per_task=None):
     with torch.no_grad():
         svd_dict = {}
 
-        for dataset, task_dict in tqdm(task_dicts.items(), desc="Computing and compressing SVD"):
+        for dataset, task_dict in tqdm(
+            task_dicts.items(), desc="Computing and compressing SVD"
+        ):
             svd_dict[dataset] = {}
 
             for key, layer in task_dict.items():
@@ -258,6 +268,133 @@ def measure_cosine_similarity(delta1: torch.Tensor, delta2: torch.Tensor) -> flo
         return 0.0
 
     return dot / (norm1 * norm2)
+
+
+@torch.no_grad()
+def sum_svd_principal_angles(
+    ref_state_dict: dict,
+    svd_dict: dict,
+    device: str = "cuda",
+    principal_angle_threshold: float = 0.2,
+):
+    """
+    Takes the SVD for each vector in the task_vectors, concatenates the low-rank matrices,
+    and merges them. If two tasks are more similar than `similarity_threshold`,
+    we skip the second one.
+
+    Args:
+        ref_state_dict (dict): The reference pretrained model state dict.
+        svd_dict (dict): {dataset_name -> {layer_name -> {"u","s","v"}}}.
+        device (str): e.g. "cuda" or "cpu".
+        similarity_threshold (float): If the cosine similarity between the new task
+                                      delta and any accepted delta is above this,
+                                      we skip merging it.
+
+    Returns:
+        dict: A dictionary containing the new merged weights.
+    """
+
+    aggregated_model_dict = ref_state_dict
+    layer_names = list(aggregated_model_dict.keys())
+    datasets = list(svd_dict.keys())
+
+    for layer_name in tqdm(layer_names, desc="Summing SVD"):
+        # check if this layer is 2D (weight matrix) or not
+        is_layer_matrix = aggregated_model_dict[layer_name].dim() == 2
+        offset = 0
+
+        # We'll hold tasks that we "accept" (not skip) for merging
+        accepted_tasks = []
+        # Keep a flattened version of each accepted delta for similarity checks
+        accepted_deltas = []
+
+        for i, dataset in enumerate(datasets):
+            if "text_projection" in layer_name:
+                continue
+
+            if is_layer_matrix:
+                # Retrieve the SVD factors
+                delta_layer_svd = svd_dict[dataset][layer_name]
+                u, s, v = (
+                    delta_layer_svd["u"].to(device),
+                    delta_layer_svd["s"].to(device),
+                    delta_layer_svd["v"].to(device),
+                )
+                # Reconstruct the matrix delta_i
+                # shape: [m, rank] * [rank, rank] * [rank, n] => [m, n]
+                delta = u @ torch.diag_embed(s) @ v
+
+                skip_this = False
+                for accepted in accepted_deltas:
+                    sim = subspace_angles(delta.cpu(), accepted.cpu())
+                    if len(sim) == 0:
+                        continue
+                    theta = sim[0]  
+                    cosine_similarity = torch.cos(torch.tensor(theta))
+                    print(cosine_similarity)
+                    if cosine_similarity > principal_angle_threshold:
+                        pylogger.info(
+                            f"Skipping task {dataset} for layer {layer_name} due to similarity {sim}"
+                        )
+                        skip_this = True
+                        break
+
+                if not skip_this:
+                    # If no overlap > threshold, accept it
+                    accepted_tasks.append((u, s, v))
+                    accepted_deltas.append(delta.cuda())
+
+            else:
+                # For 1D layers, we do the usual average
+                delta_layer = svd_dict[dataset][layer_name]["dim1"].to(device)
+                if i == 0:
+                    aggregated_model_dict[layer_name] = delta_layer
+                else:
+                    aggregated_model_dict[layer_name] += (
+                        delta_layer - aggregated_model_dict[layer_name]
+                    ) / (i + 1)
+
+        # Now that we've decided which tasks are accepted for this layer,
+        # we proceed with the same logic as before to build sum_u, sum_s, sum_v
+        # from the accepted tasks only
+        if "text_projection" in layer_name or not is_layer_matrix:
+            continue
+
+        if len(accepted_tasks) == 0:
+            # If we ended up skipping all tasks for this layer, just keep it as ref
+            # or set it to zero, up to you. We'll just keep pretrained weights.
+            continue
+
+        # Build the big (sum_u, sum_s, sum_v) from accepted tasks
+        # We do the same "concatenate columns" approach
+        # first, figure out total rank
+        total_rank = sum(task_s.shape[0] for (_, task_s, _) in accepted_tasks)
+
+        # Prepare placeholders
+        sum_u = torch.zeros(
+            accepted_tasks[0][0].shape[0], total_rank, device=device
+        )  # [m, total_rank]
+        sum_s = torch.zeros(total_rank, device=device)
+        sum_v = torch.zeros(total_rank, accepted_tasks[0][2].shape[1], device=device)
+
+        offset = 0
+        for u_i, s_i, v_i in accepted_tasks:
+            rank_i = s_i.shape[0]
+            sum_u[:, offset : offset + rank_i] = u_i
+            sum_s[offset : offset + rank_i] = s_i
+            sum_v[offset : offset + rank_i, :] = v_i
+            offset += rank_i
+
+        # Now do your multi-step SVD approach
+        u_u, s_u, v_u = torch.linalg.svd(sum_u, full_matrices=False)
+        u_v, s_v, v_v = torch.linalg.svd(sum_v, full_matrices=False)
+
+        # Reconstruct the final merged matrix
+        # aggregated_model_dict[layer_name] = ...
+        merged = torch.linalg.multi_dot((u_u, v_u, torch.diag(sum_s), u_v, v_v))
+        aggregated_model_dict[layer_name] = merged.to(device)
+
+    return aggregated_model_dict
 
 
 @torch.no_grad()
