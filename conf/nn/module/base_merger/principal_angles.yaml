@@ -1,0 +1,5 @@
+
+_target_: mass.merger.principal_angles_merger.TaskSingularVectorsWithPrincipalAngles
+svd_path: ${misc.svd_path}
+svd_compress_factor: null 
+principal_angle_threshold: 0.01

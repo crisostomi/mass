@@ -15,6 +15,7 @@ import wandb
 from mass.merger.arithmetic_merger import TaskArithmeticMerger
 from mass.merger.dummy_merger import DummyMerger
 from mass.merger.no_red_tsv import TaskSingularVectorsMergerNoRedundancy
+from mass.merger.principal_angles_merger import TaskSingularVectorsWithPrincipalAngles
 from mass.merger.tsv import TaskSingularVectorsMerger
 from mass.modules.mass_gate import MassGate
 from mass.modules.encoder import ImageEncoder
@@ -29,18 +30,14 @@ from mass.utils.utils import (
     get_routing_weights,
     get_routing_weights_from_finetuned,
     get_routing_weights_from_task_dict,
+    get_routing_weights_whitened,
     pad_output,
+    reconstruct_tv_from_svddict,
 )
 import logging
 
 pylogger = logging.getLogger(__name__)
 
-
-num_of_tasks_to_scaling_coeff = {
-    1: 1.0,
-    2: 0.4,
-    3: 0.35,
-}
 
 
 class MassAlgorithm:
@@ -62,6 +59,7 @@ class MassAlgorithm:
         svd_path: str = None,
         debug: bool = False,
         use_finetuned: bool = False,
+        whitened: bool = False,
     ):
         """
 
@@ -76,6 +74,7 @@ class MassAlgorithm:
         self.max_num_tasks_to_select = max_num_tasks_to_select
         self.device = device
         self.debug = debug
+        self.whitened = whitened
         self.use_finetuned = use_finetuned
 
         self.vision = isinstance(zeroshot_model, self._image_encoder_cls)
@@ -83,7 +82,9 @@ class MassAlgorithm:
         self.merger = merger
         self.base_merger = base_merger
 
-        if not self.use_finetuned:
+        if (
+            not self.use_finetuned
+        ):  # finetuned might be pre-merged models, that we suggest to use in case of very large and few models
             task_dicts = {}
             for dataset in dataset_names:
                 task_dicts[dataset] = compute_task_dict(
@@ -96,7 +97,7 @@ class MassAlgorithm:
 
             if (
                 isinstance(self.base_merger, TaskSingularVectorsMerger)
-                or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy)
+                or isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy) or isinstance(self.base_merger, TaskSingularVectorsWithPrincipalAngles)
             ) and isinstance(self.merger, TaskSingularVectorsMerger):
                 self.svd_dict = get_svd_dict(
                     task_dicts,
@@ -116,6 +117,19 @@ class MassAlgorithm:
                 merged_encoder = self.base_merger.merge_from_task_dicts(
                     zeroshot_model,
                     task_dicts,
+                )
+                self.task_dicts = task_dicts
+            elif isinstance(
+                self.base_merger, TaskSingularVectorsMergerNoRedundancy
+            ) and isinstance(self.merger, TaskArithmeticMerger):
+                svd_dict = get_svd_dict(
+                    task_dicts,
+                    self.dataset_names,
+                    svd_path,
+                )
+                merged_encoder = self.base_merger.merge_from_svd_dict(
+                    zeroshot_model,
+                    svd_dict,
                 )
                 self.task_dicts = task_dicts
             elif isinstance(self.base_merger, DummyMerger):
@@ -139,9 +153,12 @@ class MassAlgorithm:
             ), f"When using finetuned models, only 'top1' routing is supported. Given mode: {routing_mode}"
             self.zeroshot_model = zeroshot_model
             self.finetuned = finetuned_models
+            merged_encoder = copy.deepcopy(zeroshot_model)
 
-        merged_encoder = copy.deepcopy(zeroshot_model)
         merged_encoder = self.merge(merged_encoder, in_place=True)
+        
+        if isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy) and isinstance(self.merger, TaskArithmeticMerger):
+            self.task_dicts = {task: reconstruct_tv_from_svddict(svd_dict) for task, svd_dict in svd_dict.items()}
 
         self.model = MassInferenceWrapper(
             layer_to_hook,
@@ -151,10 +168,13 @@ class MassAlgorithm:
                 self.svd_dict
                 if (
                     (
-                        isinstance(self.base_merger, TaskSingularVectorsMerger)
-                        or isinstance(
-                            self.base_merger, TaskSingularVectorsMergerNoRedundancy
+                        (
+                            isinstance(self.base_merger, TaskSingularVectorsMerger)
+                            or isinstance(
+                                self.base_merger, TaskSingularVectorsMergerNoRedundancy
+                            ) or isinstance(self.base_merger, TaskSingularVectorsWithPrincipalAngles)
                         )
+                        and isinstance(self.merger, TaskSingularVectorsMerger)
                         or (
                             isinstance(self.base_merger, DummyMerger)
                             and isinstance(self.merger, TaskSingularVectorsMerger)
@@ -171,7 +191,7 @@ class MassAlgorithm:
                         isinstance(self.merger, TaskArithmeticMerger)
                         and isinstance(self.base_merger, DummyMerger)
                     )
-                    or isinstance(self.base_merger, TaskArithmeticMerger)
+                    or isinstance(self.base_merger, TaskArithmeticMerger) or (isinstance(self.base_merger, TaskSingularVectorsMergerNoRedundancy) and isinstance(self.merger, TaskArithmeticMerger))
                 )
                 and not self.use_finetuned
                 else None
@@ -230,10 +250,15 @@ class MassAlgorithm:
         if not self.use_finetuned:
             if isinstance(self.merger, TaskSingularVectorsMerger) or isinstance(
                 self.merger, TaskSingularVectorsMergerNoRedundancy
-            ):
-                return get_routing_weights(
-                    self.svd_dict, name + ".weight"
-                )  # TODO: remove hardocoding for keys
+            ):  #
+                if not self.whitened:
+                    return get_routing_weights(
+                        self.svd_dict, name + ".weight"
+                    )  # TODO: remove hardocoding for keys
+                else:
+                    return get_routing_weights_whitened(
+                        self.svd_dict, name + ".weight"
+                    )
             elif isinstance(self.merger, TaskArithmeticMerger):
                 return get_routing_weights_from_task_dict(
                     self.task_dicts, name + ".weight"
@@ -264,8 +289,10 @@ class MassAlgorithm:
         module = get_attr(base_model, name_list)
 
         try:
+            dtype = self.zeroshot_model.dtype if hasattr(self.zeroshot_model, "dtype") else torch.float32
+            
             routing_weights = self.get_routing_weights(
-                name, dtype=self.zeroshot_model.dtype
+                name, dtype=dtype
             )
 
             mass_gate = MassGate(
@@ -312,7 +339,7 @@ class MassInferenceWrapper(nn.Module):
 
         self.layer_to_hook = layer_to_hook
 
-        self.max_num_tvs_to_keep = 2
+        self.max_num_tvs_to_keep = 10
         self.cached_tvs = OrderedDict()
 
         self.debug = debug
@@ -569,7 +596,6 @@ class MassInferenceWrapper(nn.Module):
                         for dataset_name in dataset_names
                     },
                 )
-
             elif isinstance(self.merger, TaskArithmeticMerger):
 
                 aggregated = self.merger.merge_from_task_dicts(

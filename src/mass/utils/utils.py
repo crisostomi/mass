@@ -419,7 +419,6 @@ def get_routing_weights_from_finetuned(
     """
     vs = []
     sigma = []
-    us = []
 
     for task in finetuned.keys():
         if layer not in finetuned[task].state_dict():
@@ -436,25 +435,23 @@ def get_routing_weights_from_finetuned(
             continue
 
         with torch.no_grad():
-            u, s, v = compute_svd_and_compress(
+            _, s, v = compute_svd_and_compress(
                 layer_tensor.to(device), 1 / len(finetuned)
             )
 
         vs.append(v.to(device=device, dtype=dtype))
         sigma.append(s.to(device=device, dtype=dtype))
-        us.append(u.to(device=device, dtype=dtype))
 
     return (
         torch.stack(vs) if vs else None,
         torch.stack(sigma) if sigma else None,
-        torch.stack(us) if us else None,
+        None
     )
 
 
 def get_routing_weights_from_task_dict(task_dict, layer):
     vs = []
     sigma = []
-    us = []
 
     for task in task_dict.keys():
         if layer not in task_dict[task]:
@@ -467,16 +464,15 @@ def get_routing_weights_from_task_dict(task_dict, layer):
             continue
 
         with torch.no_grad():
-            u, s, v = compute_svd_and_compress(layer_tensor, 1 / len(task_dict))
+            _, s, v = compute_svd_and_compress(layer_tensor, 1 / len(task_dict))
 
         vs.append(v.to("cuda"))
         sigma.append(s.to("cuda"))
-        us.append(u.to("cuda"))
 
     return (
         torch.stack(vs) if vs else None,
         torch.stack(sigma) if sigma else None,
-        torch.stack(us) if us else None,
+        None
     )
 
 
@@ -495,7 +491,6 @@ def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
     """
     vs = []
     sigma = []
-    us = []
 
     for dt in svd_dict.keys():
         if layer not in svd_dict[dt]:
@@ -511,15 +506,15 @@ def get_routing_weights(svd_dict, layer, get_sigma=False, get_u=False):
 
         vs.append(layer_data["v"].to("cuda"))
         sigma.append(layer_data["s"].to("cuda"))
-        us.append(layer_data["u"].to("cuda"))
+
 
     return (
         torch.stack(vs) if vs else None,
         torch.stack(sigma) if get_sigma and sigma else None,
-        torch.stack(us) if get_u and us else None,
+        None
     )
     
-def get_routing_weights_whitened(svd_dict, layer, get_sigma=False, get_u=False):
+def get_routing_weights_whitened(svd_dict, layer, get_sigma=False, get_u=False, whitened=False):
     """
     Returns the right singular vectors.
 
@@ -534,7 +529,6 @@ def get_routing_weights_whitened(svd_dict, layer, get_sigma=False, get_u=False):
     """
     vs = []
     sigma = []
-    us = []
 
     for dt in svd_dict.keys():
         if layer not in svd_dict[dt]:
@@ -550,17 +544,27 @@ def get_routing_weights_whitened(svd_dict, layer, get_sigma=False, get_u=False):
 
         vs.append(layer_data["v"].to("cuda"))
         sigma.append(layer_data["s"].to("cuda"))
-        us.append(layer_data["u"].to("cuda"))
+        
+    mean = []
+    for i,v in enumerate(vs):
+        mean.append(torch.mean(v, dim=1, keepdim=True))
+        print(f"mean[i].shape: {mean[i].shape}")
+        vs[i] = v - mean[i]
+        print(f"vs[i].shape: {vs[i].shape}")
+    print(len(vs))
+    Vs = torch.cat(vs, dim=0)
+    print(f"Vs.shape: {Vs.shape}")
+    cov = torch.cov(Vs.T)
+    print(f"cov.shape: {cov.shape}")
 
-
+    
+    return (
         torch.stack(vs) if vs else None,
         torch.stack(sigma) if get_sigma and sigma else None,
-        torch.stack(us) if get_u and us else None,
+        torch.cholesky_inverse(cov)
+    ) 
         
-        # Now do your multi-step SVD approach
-        u_u, s_u, v_u = torch.linalg.svd(sum_u, full_matrices=False)
-        u_v, s_v, v_v = torch.linalg.svd(sum_v, full_matrices=False)
-
+    
 
 
 def is_supported_layer(layer_key: str) -> bool:

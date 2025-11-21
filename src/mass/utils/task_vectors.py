@@ -115,8 +115,6 @@ def sum_svd(
         # text_projection is ignored and vectors were already aggregated
         if "text_projection" in layer_name or not is_matrix:
             continue
-        print(layer_name)
-        print(sum_u.shape, sum_v.shape, sum_s.shape)
         u_u, s_u, v_u = torch.linalg.svd(sum_u, full_matrices=False)
         u_v, s_v, v_v = torch.linalg.svd(sum_v, full_matrices=False)
 
@@ -329,7 +327,7 @@ def sum_svd_principal_angles(
                     sim = subspace_angles(delta.cpu(), accepted.cpu())
                     if len(sim) == 0:
                         continue
-                    theta = sim[0]  
+                    theta = sim[0]
                     cosine_similarity = torch.cos(torch.tensor(theta))
                     print(cosine_similarity)
                     if cosine_similarity > principal_angle_threshold:

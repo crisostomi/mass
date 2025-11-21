@@ -2,8 +2,8 @@ _target_: mass.pl_module.mass.MassAlgorithm
 
 defaults:
   - _self_
-  - base_merger: dummy
-  - merger: ta
+  - base_merger: ??
+  - merger: ??
 
 zeroshot_model: ??
 finetuned_models: ??
@@ -11,9 +11,10 @@ dataset_names: ${eval_datasets}
 debug: false
 layer_to_hook: ${nn.encoder.layer_to_hook}
 
-routing_mode: top1
+routing_mode: topk
 max_num_tasks_to_select: 3
 
-use_finetuned: true
+use_finetuned: false
+whitened: false
 
 svd_path: ${misc.svd_path}

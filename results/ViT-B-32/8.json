@@ -1,64 +1,64 @@
 {
     "Cars": [
         {
-            "acc/test/Cars": 0.9398437738418579,
-            "loss/test/Cars": 0.2214561402797699,
-            "normalized_acc/test/Cars": 1.177513837814331
+            "acc/test/Cars": 0.7918169498443604,
+            "loss/test/Cars": 0.7698134779930115,
+            "normalized_acc/test/Cars": 0.9920536279678345
         }
     ],
     "RESISC45": [
         {
-            "acc/test/RESISC45": 0.856249988079071,
-            "loss/test/RESISC45": 0.5008522272109985,
-            "normalized_acc/test/RESISC45": 0.8984635472297668
+            "acc/test/RESISC45": 0.8560317754745483,
+            "loss/test/RESISC45": 1.740957498550415,
+            "normalized_acc/test/RESISC45": 0.8982345461845398
         }
     ],
     "EuroSAT": [
         {
-            "acc/test/EuroSAT": 0.9546874761581421,
-            "loss/test/EuroSAT": 0.13934560120105743,
-            "normalized_acc/test/EuroSAT": 0.9618120193481445
+            "acc/test/EuroSAT": 0.8870370388031006,
+            "loss/test/EuroSAT": 1.0816038846969604,
+            "normalized_acc/test/EuroSAT": 0.8936567306518555
         }
     ],
     "SVHN": [
         {
-            "acc/test/SVHN": 0.932812511920929,
-            "loss/test/SVHN": 0.22342638671398163,
-            "normalized_acc/test/SVHN": 0.964988648891449
+            "acc/test/SVHN": 0.964082658290863,
+            "loss/test/SVHN": 0.14892743527889252,
+            "normalized_acc/test/SVHN": 0.9973374605178833
         }
     ],
     "GTSRB": [
         {
-            "acc/test/GTSRB": 0.949999988079071,
-            "loss/test/GTSRB": 0.19189080595970154,
-            "normalized_acc/test/GTSRB": 0.9602640867233276
+            "acc/test/GTSRB": 0.9360253214836121,
+            "loss/test/GTSRB": 0.6186880469322205,
+            "normalized_acc/test/GTSRB": 0.9461384415626526
         }
     ],
     "MNIST": [
         {
-            "acc/test/MNIST": 0.9945312738418579,
-            "loss/test/MNIST": 0.020897231996059418,
-            "normalized_acc/test/MNIST": 1.0000314712524414
+            "acc/test/MNIST": 0.9947999715805054,
+            "loss/test/MNIST": 0.02062315121293068,
+            "normalized_acc/test/MNIST": 1.0003015995025635
         }
     ],
     "DTD": [
         {
-            "acc/test/DTD": 0.731249988079071,
-            "loss/test/DTD": 0.9955638647079468,
-            "normalized_acc/test/DTD": 0.9352040886878967
+            "acc/test/DTD": 0.7521276473999023,
+            "loss/test/DTD": 1.4814049005508423,
+            "normalized_acc/test/DTD": 0.961904764175415
         }
     ],
     "SUN397": [
         {
-            "acc/test/SUN397": 0.7914062738418579,
-            "loss/test/SUN397": 0.6704509854316711,
-            "normalized_acc/test/SUN397": 1.0569477081298828
+            "acc/test/SUN397": 0.7270025014877319,
+            "loss/test/SUN397": 1.3829052448272705,
+            "normalized_acc/test/SUN397": 0.9709345102310181
         }
     ],
     "avg": [
         {
-            "acc/test/avg": 0.8938476592302322,
-            "normalized_acc/test/avg": 0.994403176009655
+            "acc/test/avg": 0.863615483045578,
+            "normalized_acc/test/avg": 0.9575702100992203
         }
     ]
 }

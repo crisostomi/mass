@@ -2,3 +2,4 @@ _target_: mass.merger.tsv.TaskSingularVectorsMerger
 svd_path: ${misc.svd_path}
 svd_compress_factor: null 
 non_matrix_params_aggregation: "mean" # "base_model"
+coefficient: 1.0

@@ -56,3 +56,20 @@ class TaskSingularVectorsWithPrincipalAngles(TaskVectorBasedMerger):
         )
 
         return merged_encoder
+    
+    def merge_from_svd_dict(self, base_model, svd_dict):
+        multi_task_vector = sum_svd_principal_angles(
+            ref_state_dict=copy.deepcopy(base_model.state_dict()),
+            svd_dict=svd_dict,
+            principal_angle_threshold=self.principal_angle_threshold,
+        )
+
+        merged_encoder = copy.deepcopy(base_model)
+
+        # pylogger.info(f"Applying multi-task vector to base model")
+        merged_encoder = apply_dict_to_model(
+            multi_task_vector,
+            merged_encoder,
+        )
+
+        return merged_encoder

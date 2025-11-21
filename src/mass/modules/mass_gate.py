@@ -40,10 +40,11 @@ class MassGate(nn.Module):
         self.dataset_names = dataset_names
         self.max_num_tasks_to_select = min(max_num_tasks_to_select, len(dataset_names))
 
-        v, s, _ = routing_weights
+        v, s, cov = routing_weights
 
         self.register_buffer("routing_weights", v)
         self.register_buffer("routing_singular_values", s)
+        self.register_buffer("covariance", cov)
 
         self.debug = debug
 
@@ -104,6 +105,8 @@ class MassGate(nn.Module):
             x,
             v=self.routing_weights,
             s=self.routing_singular_values,
+            cov=self.covariance,
+            norm="l2" if self.covariance is None else "mahalanobis",
         )
 
         # logging stuff
