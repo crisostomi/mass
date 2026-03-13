@@ -103,17 +103,14 @@ conf/
 └── train_router.yaml         # Train MLP router config
 ```
 
-## 📚 References
+## 📚 Citation
 
 ```bibtex
-@misc{tang2024fusionbenchcomprehensivebenchmarkdeep,
-      title={FusionBench: A Comprehensive Benchmark of Deep Model Fusion}, 
-      author={Anke Tang and Li Shen and Yong Luo and Han Hu and Bo Du and Dacheng Tao},
-      year={2024},
-      eprint={2406.03280},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2406.03280}
+@article{crisostomi2025mass,
+  title={Mass: Moerging through adaptive subspace selection},
+  author={Crisostomi, Donato and Zirilli, Alessandro and Gargiulo, Antonio Andrea and Bucarelli, Maria Sofia and Scardapane, Simone and Silvestri, Fabrizio and Masi, Iacopo and Rodol{\`a}, Emanuele},
+  journal={ICLR 2026},
+  year={2026}
 }
 ```
 
