@@ -23,7 +23,7 @@ class TaskArithmeticMerger(TaskVectorBasedMerger):
         self.optimal_alpha = optimal_alpha
 
     def merge(
-        self, base_model: ImageEncoder, finetuned_models: Dict[str, ImageEncoder]
+        self, base_model: ImageEncoder, finetuned_models: Dict[str, Dict]
     ) -> ImageEncoder:
 
         cumulative_dict = {}
@@ -34,7 +34,7 @@ class TaskArithmeticMerger(TaskVectorBasedMerger):
             cumulative_dict = sum_task_dict(
                 cumulative_dict,
                 compute_task_dict(
-                    base_model.state_dict(), finetuned_models[dataset].state_dict()
+                    base_model.state_dict(), finetuned_models[dataset]
                 ),
             )
             del finetuned_models[dataset]  # Delete one model at a time

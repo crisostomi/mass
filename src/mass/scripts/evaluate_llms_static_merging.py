@@ -69,21 +69,19 @@ def run(cfg: omegaconf.DictConfig) -> str:
                 "google/", f"tanganke/"
             )
             + f"_glue-{dataset}",
-        )
+        ).state_dict()
         for dataset in cfg.benchmark.datasets
     }
 
     pylogger.info(f"Finetuned models: {finetuned_models.keys()}")
 
-    moerging = instantiate(
-        cfg.nn.module,
-        zeroshot_model=zeroshot_encoder,
-        finetuned_models=finetuned_models,
-    )
+    merger = instantiate(cfg.merger)
+
+    merged_model = merger.merge(zeroshot_encoder, finetuned_models)
 
     tokenizer = instantiate(cfg.nn.tokenizer)
 
-    pylogger.info(f"Model instantiated: {moerging}")
+    pylogger.info(f"Model merged: {merged_model}")
 
     results = {}
     for dataset_name in cfg.benchmark.datasets:
@@ -106,7 +104,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
 
         task_model = instantiate(
             task_cfg,
-            moe_model=moerging.model.cuda(),
+            moe_model=merged_model.cuda(),
             tokenizer=tokenizer,
             custom_logger=logger,
         )
@@ -162,7 +160,7 @@ def run(cfg: omegaconf.DictConfig) -> str:
         logger.experiment.finish()
 
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="eval_language.yaml")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="static_language.yaml")
 def main(cfg: omegaconf.DictConfig):
     run(cfg)
 

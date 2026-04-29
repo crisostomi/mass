@@ -1,0 +1,43 @@
+core:
+  project_name: mass
+  storage_dir: ${oc.env:PROJECT_ROOT}/storage
+  entity: gladia
+  version: 0.0.1
+  tags:
+  - static_merging
+  - language
+
+
+defaults:
+  - hydra: default
+  - nn: language
+  - train: default
+  - merger: ta # ta is broken with state_dicts; weight_avg fails on classifier-head keys; tsv works (compute_task_dict skips extras, strict=False load)
+  - benchmark: glue
+  - override nn/module: null
+  - override hydra/launcher: basic
+  - override hydra/job_logging: none
+  - override hydra/hydra_logging: none
+  - _self_
+
+seed_index: 0
+num_tasks: ???
+device: 'cuda'
+
+
+eval_datasets: ${benchmark.datasets}
+
+task_vectors:
+  to_remove: []
+
+# compression_ratio = 1 / svd_compress_factor, if null the ratio is set to 1 / num_tasks
+svd_compress_factor: null
+
+misc:
+  ckpt_path: ${oc.env:PROJECT_ROOT}/checkpoints/${nn.encoder.model_name}
+  pretrained_checkpoint: ${misc.ckpt_path}/base/model.pt
+  openclip_cachedir: "${oc.env:PROJECT_ROOT}/checkpoints/openclip_cache/"
+  checkpoint_dir: ${oc.env:PROJECT_ROOT}/checkpoints/linear_router
+  svd_path: "${oc.env:PROJECT_ROOT}/checkpoints/svd_dict_${nn.encoder.model_name}_${num_tasks}.pt"
+  finetuned_accuracy_path: "${oc.env:PROJECT_ROOT}/results/finetuning/flan-t5.json"
+  results_path: "${oc.env:PROJECT_ROOT}/results/${nn.encoder.model_name}/"
