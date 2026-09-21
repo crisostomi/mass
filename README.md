@@ -6,9 +6,6 @@
     <a href="https://black.readthedocs.io/en/stable/"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 </p>
 
-> [!WARNING] 
-> Codebase undergoing a refactoring. Use with caution.
-
 ## 👨🏻‍💻 Development installation
 
 Setup the development environment:
